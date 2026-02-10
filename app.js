@@ -1,202 +1,196 @@
-// --- KONFIGURATION ---
-const SUPABASE_URL = 'https://ujccdnduolqyzjoeghrl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqY2NkbmR1b2xxeXpqb2VnaHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjI5NTIsImV4cCI6MjA4NjI5ODk1Mn0.4P_H3vrvOnfNGK4TKjas75pu3HpNT3OSMAPzK9Ok64s';
-const INVITATION_CODE = '123';
+/**
+ * DART TRACKER PRO - VOLLSTÄNDIGE VERSION
+ * Fixes: ReferenceErrors behoben, Auto-Email-Generierung für Namen-Login
+ */
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SB_URL = 'https://ujccdnduolqyzjoeghrl.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqY2NkbmR1b2xxeXpqb2VnaHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjI5NTIsImV4cCI6MjA4NjI5ODk1Mn0.4P_H3vrvOnfNGK4TKjas75pu3HpNT3OSMAPzK9Ok64s';
+const INVITE_REQUIRED = '123';
 
-// --- STATE MANAGEMENT ---
-const state = {
+const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
+
+// --- GLOBAL STATE ---
+let state = {
     user: null,
     profile: null,
-    currentScore: 501,
-    currentDart: 1
+    game: {
+        active: false,
+        mode: '501_classic',
+        startScore: 501,
+        currentScore: 501,
+        dartsInLeg: 0,
+        firstDartHits: 0
+    }
 };
 
-// --- DOM ELEMENTS ---
-const el = {
-    authScreen: document.getElementById('auth-screen'),
-    appScreen: document.getElementById('app-screen'),
-    inviteInput: document.getElementById('invite-code'),
-    emailInput: document.getElementById('email'),
-    passInput: document.getElementById('password'),
-    nameInput: document.getElementById('username'),
-    loginBtn: document.getElementById('btn-login'),
-    signupBtn: document.getElementById('btn-signup'),
-    logoutBtn: document.getElementById('btn-logout'),
-    authError: document.getElementById('auth-error'),
+// --- DOM NODES ---
+const nodes = {
+    auth: document.getElementById('auth-screen'),
+    app: document.getElementById('app-screen'),
+    email: document.getElementById('email'), // Wird für Login/Namen genutzt
+    pass: document.getElementById('password'),
+    invite: document.getElementById('invite-code'),
+    user: document.getElementById('username'),
+    scoreInput: document.getElementById('throw-input'),
     displayName: document.getElementById('display-name'),
     displayLevel: document.getElementById('display-level'),
     xpBar: document.getElementById('xp-bar'),
-    scoreDisplay: document.getElementById('current-score'),
-    scoreInput: document.getElementById('throw-input'),
-    submitScoreBtn: document.getElementById('submit-score')
+    currentScore: document.getElementById('current-score'),
+    errorMsg: document.getElementById('auth-error')
 };
 
-// --- AUTHENTIFIZIERUNG ---
-async function init() {
-    // Session check beim Start
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-        handleLoginSuccess(session.user);
+// --- HELPER FUNCTIONS ---
+function flashError(msg, type = "error") {
+    nodes.errorMsg.textContent = msg;
+    nodes.errorMsg.style.color = type === "error" ? "#ff4b4b" : "#00f2ff";
+    setTimeout(() => nodes.errorMsg.textContent = '', 4000);
+}
+
+function showScreen(screen) {
+    if (screen === 'auth') {
+        nodes.auth.classList.remove('hidden');
+        nodes.app.classList.add('hidden');
     } else {
-        el.appScreen.classList.add('hidden');
-        el.authScreen.classList.remove('hidden');
+        nodes.auth.classList.add('hidden');
+        nodes.app.classList.remove('hidden');
     }
 }
 
-async function handleLoginSuccess(user) {
-    state.user = user;
-    el.authScreen.classList.add('hidden');
-    el.appScreen.classList.remove('hidden');
-    
-    // Profil laden
-    await loadProfile();
+// Erstellt aus einem Namen eine technische E-Mail (z.B. "max" -> "max@dart.app")
+function formatEmail(input) {
+    return input.includes('@') ? input : `${input.toLowerCase().trim()}@dart.app`;
 }
 
-async function signUp() {
-    const email = el.emailInput.value;
-    const password = el.passInput.value;
-    const invite = el.inviteInput.value;
-    const username = el.nameInput.value;
-
-    if (invite !== INVITATION_CODE) {
-        showError("Falscher Invite Code!");
-        return;
-    }
-
-    // Wir senden den Invite Code und Username in den Metadaten mit
-    // Der Datenbank-Trigger (Phase 1) prüft diese Daten
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-            data: {
-                invite_code: invite,
-                username: username
-            }
-        }
-    });
-
-    if (error) {
-        showError(error.message);
-    } else {
-        showError("Account erstellt! Bitte einloggen.", false); // false = grüne Farbe (muss in CSS angepasst werden) oder Info
-    }
-}
-
-async function signIn() {
-    const email = el.emailInput.value;
-    const password = el.passInput.value;
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email, password
-    });
-
-    if (error) showError(error.message);
-    else handleLoginSuccess(data.user);
-}
-
-async function signOut() {
-    await supabase.auth.signOut();
-    window.location.reload();
-}
-
-// --- DATEN & GAME LOGIC ---
-async function loadProfile() {
-    const { data, error } = await supabase
+// --- DATABASE ACTIONS ---
+async function fetchUserProfile() {
+    const { data, error } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('id', state.user.id)
         .single();
-
     if (data) {
         state.profile = data;
-        updateUI();
+        renderProfile();
     }
 }
 
-function updateUI() {
+async function syncMatchToDatabase(xpGained, matchStats) {
+    const { error } = await supabaseClient.rpc('finish_game', {
+        p_game_mode: state.game.mode,
+        p_stats: matchStats,
+        p_xp_gained: xpGained,
+        p_first_dart_hits: state.game.firstDartHits
+    });
+    if (!error) await fetchUserProfile();
+}
+
+// --- AUTH LOGIC (Vor dem Event-Setup definiert!) ---
+async function handleSignIn() {
+    const email = formatEmail(nodes.email.value);
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: nodes.pass.value
+    });
+
+    if (error) flashError("Login fehlgeschlagen: " + error.message);
+    else setupAuthenticatedSession(data.user);
+}
+
+async function handleSignUp() {
+    const name = nodes.user.value;
+    const email = formatEmail(name);
+    const password = nodes.pass.value;
+    const invite = nodes.invite.value;
+
+    if (invite !== INVITE_REQUIRED) return flashError("Falscher Invite-Code!");
+    if (!name || !password) return flashError("Name und Passwort nötig!");
+
+    const { data, error } = await supabaseClient.auth.signUp({
+        email, password,
+        options: { data: { username: name, invite_code: invite } }
+    });
+
+    if (error) flashError(error.message);
+    else if (data.user) {
+        setupAuthenticatedSession(data.user);
+        flashError("Konto erstellt & eingeloggt!", "info");
+    }
+}
+
+async function setupAuthenticatedSession(user) {
+    state.user = user;
+    await fetchUserProfile();
+    showScreen('app');
+}
+
+// --- GAME ENGINE ---
+function updateGameUI() {
+    nodes.currentScore.textContent = state.game.currentScore;
+}
+
+function processScoreInput() {
+    const value = parseInt(nodes.scoreInput.value);
+    if (isNaN(value) || value < 0 || value > 180) return flashError("0-180 eingeben");
+
+    // Statistik: Traf der erste Dart?
+    if (state.game.dartsInLeg === 0 && value > 0) state.game.firstDartHits++;
+
+    const remaining = state.game.currentScore - value;
+    if (remaining === 0) {
+        finishLeg(value);
+    } else if (remaining < 2) {
+        flashError("Bust!");
+    } else {
+        state.game.currentScore = remaining;
+        state.game.dartsInLeg += 3;
+        updateGameUI();
+    }
+    nodes.scoreInput.value = '';
+}
+
+function finishLeg(finalScore) {
+    const xp = 50 + Math.max(0, 100 - state.game.dartsInLeg);
+    const stats = { darts: state.game.dartsInLeg + 3, avg: ((501/(state.game.dartsInLeg+3))*3).toFixed(1) };
+    
+    syncMatchToDatabase(xp, stats);
+    state.game.currentScore = 501;
+    state.game.dartsInLeg = 0;
+    state.game.firstDartHits = 0;
+    updateGameUI();
+    alert(`Sieg! +${xp} XP`);
+}
+
+// --- UI RENDERING ---
+function renderProfile() {
     if (!state.profile) return;
-    el.displayName.textContent = state.profile.username;
-    el.displayLevel.textContent = state.profile.level;
+    nodes.displayName.textContent = state.profile.username;
+    nodes.displayLevel.textContent = state.profile.level;
     
-    // XP Bar Berechnung (Vereinfacht: 0-100% für aktuelles Level)
-    // In einem echten System müsste man XP für nächstes Level berechnen
-    const xpMod = state.profile.xp % 100; 
-    el.xpBar.style.width = `${xpMod}%`;
+    const currentLevelBaseXP = Math.pow(state.profile.level - 1, 2) * 50;
+    const nextLevelXP = Math.pow(state.profile.level, 2) * 50;
+    const progress = state.profile.xp - currentLevelBaseXP;
+    const totalNeeded = nextLevelXP - currentLevelBaseXP;
+    
+    nodes.xpBar.style.width = `${Math.max(5, (progress / totalNeeded) * 100)}%`;
 }
 
-async function submitThrow() {
-    const score = parseInt(el.scoreInput.value);
-    if (isNaN(score) || score < 0 || score > 180) {
-        alert("Ungültiger Score");
-        return;
-    }
-
-    // Statistiken berechnen
-    let xpGain = score; // Basis XP = geworfene Punkte
-    
-    // First Dart Statistik Logik (Beispiel)
-    let firstDartHit = 0;
-    if (state.currentDart === 1 && score > 0) {
-        firstDartHit = 1;
-        xpGain += 10; // Bonus für Treffer mit erstem Dart
-    }
-
-    // Neue Werte berechnen
-    const newXP = state.profile.xp + xpGain;
-    const newTotalThrows = state.profile.total_throws + 1;
-    const newFirstDartHits = state.profile.first_dart_hits + firstDartHit;
-    
-    // Level Berechnung (Entspricht SQL Funktion logic)
-    const newLevel = Math.floor(Math.sqrt(newXP / 100)) + 1;
-
-    // Optimistisches UI Update (Sofort anzeigen, dann speichern)
-    state.currentScore -= score;
-    el.scoreDisplay.textContent = state.currentScore;
-    el.scoreInput.value = '';
-
-    // Speichern in DB
-    const { error } = await supabase
-        .from('profiles')
-        .update({ 
-            xp: newXP, 
-            level: newLevel,
-            total_throws: newTotalThrows,
-            first_dart_hits: newFirstDartHits
-        })
-        .eq('id', state.user.id);
-
-    if (!error) {
-        // Lokalen State updaten
-        state.profile.xp = newXP;
-        state.profile.level = newLevel;
-        state.profile.total_throws = newTotalThrows;
-        state.profile.first_dart_hits = newFirstDartHits;
-        updateUI();
-    }
+// --- INIT & EVENTS ---
+function setupEventListeners() {
+    document.getElementById('btn-login').addEventListener('click', handleSignIn);
+    document.getElementById('btn-signup').addEventListener('click', handleSignUp);
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        supabaseClient.auth.signOut();
+        window.location.reload();
+    });
+    document.getElementById('submit-score').addEventListener('click', processScoreInput);
+    nodes.scoreInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') processScoreInput(); });
 }
 
-function showError(msg) {
-    el.authError.textContent = msg;
-    setTimeout(() => el.authError.textContent = '', 3000);
+async function init() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    setupEventListeners(); // Erst Events binden
+    if (session) setupAuthenticatedSession(session.user);
+    else showScreen('auth');
 }
 
-// --- EVENT LISTENERS ---
-el.loginBtn.addEventListener('click', signIn);
-el.signupBtn.addEventListener('click', signUp);
-el.logoutBtn.addEventListener('click', signOut);
-el.submitScoreBtn.addEventListener('click', submitThrow);
-
-// Spiel Helpers
-window.game = {
-    addThrow: (dartNum) => {
-        state.currentDart = dartNum;
-        // Visual Feedback für Button Selection könnte hier hin
-        console.log(`Dart ${dartNum} ausgewählt`);
-    }
-};
-
-// Start
 init();
