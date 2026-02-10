@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dart Pro Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <section id="auth-screen" class="glass-panel centered">
+        <h1>🎯 Dart Vision</h1>
+        <div class="input-group">
+            <input type="text" id="invite-code" placeholder="Invite Code" class="glass-input">
+            <input type="text" id="username" placeholder="Dein Name" class="glass-input">
+            <input type="email" id="email" placeholder="Email" class="glass-input">
+            <input type="password" id="password" placeholder="Passwort" class="glass-input">
+        </div>
+        <div class="button-row">
+            <button id="btn-login" class="glass-btn primary">Login</button>
+            <button id="btn-signup" class="glass-btn secondary">Registrieren</button>
+        </div>
+        <p id="auth-error" class="error-msg"></p>
+    </section>
+
+    <main id="app-screen" class="hidden">
+        
+        <header class="glass-header">
+            <div class="user-info">
+                <h2 id="display-name">Spieler</h2>
+                <div class="level-badge">Lvl <span id="display-level">1</span></div>
+            </div>
+            <div class="xp-bar-container">
+                <div class="xp-bar-fill" id="xp-bar"></div>
+            </div>
+        </header>
+
+        <section class="game-area">
+            <div class="score-display">
+                <span id="current-score">501</span>
+                <small>Rest</small>
+            </div>
+            
+            <div class="input-pad">
+                <input type="number" id="throw-input" placeholder="Wurf (0-180)" class="glass-input big">
+                <div class="controls">
+                    <button class="glass-btn" onclick="game.addThrow(1)">1. Dart</button>
+                    <button class="glass-btn" onclick="game.addThrow(2)">2. Dart</button>
+                    <button class="glass-btn" onclick="game.addThrow(3)">3. Dart</button>
+                </div>
+                <button id="submit-score" class="glass-btn primary full-width">Eingeben</button>
+            </div>
+        </section>
+
+        <nav class="bottom-dock">
+            <div class="dock-liquid-bg"></div> <ul class="dock-items">
+                <li class="dock-item active"><i class="ri-home-5-line"></i><span>Home</span></li>
+                <li class="dock-item"><i class="ri-bar-chart-box-line"></i><span>Stats</span></li>
+                <li class="dock-item"><i class="ri-user-settings-line"></i><span>Profil</span></li>
+                <li class="dock-item" id="btn-logout"><i class="ri-logout-box-r-line"></i><span>Exit</span></li>
+            </ul>
+        </nav>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
