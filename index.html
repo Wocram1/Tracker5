@@ -6,27 +6,27 @@
     <title>OCRAM Dart Tracker Pro</title>
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="css/game-x01.css">
+    <link rel="stylesheet" href="css/view-board-control.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="center-orb"></div>
 
     <main id="auth-screen" class="glass-panel">
         <div class="auth-header">
             <h1>OCRAM<span>DART</span></h1>
             <p>Next Gen Training Tracking</p>
         </div>
-        
-        <div id="auth-error" class="error-msg" style="color: #ff453a; text-align: center; margin-bottom: 10px; font-size: 0.8rem; height: 1rem;"></div>
-
+        <div id="auth-error" class="error-msg"></div>
         <div class="auth-fields">
             <input type="text" id="username" placeholder="Nutzername" class="glass-input">
-            <input type="email" id="email" placeholder="E-Mail (oder Name)" class="glass-input">
+            <input type="email" id="email" placeholder="E-Mail" class="glass-input">
             <input type="password" id="password" placeholder="Passwort" class="glass-input">
             <input type="text" id="invite-code" placeholder="Invite Code" class="glass-input">
         </div>
-
         <div class="auth-buttons">
             <button id="btn-login" class="primary-btn">Login</button>
             <button id="btn-signup" class="secondary-btn">Registrieren</button>
@@ -34,112 +34,207 @@
     </main>
 
     <main id="app-screen" class="hidden">
-        
-        <header class="gaming-header glass-panel">
-            <div class="user-meta">
-                <div class="user-info">
-                    <span id="display-name">...</span>
-                    <span class="level-pill">LVL <span id="display-level">1</span></span>
-                </div>
-                <button id="btn-logout" class="icon-btn"><i class="ri-logout-box-r-line"></i></button>
-            </div>
-            <div class="xp-container">
-                <div id="xp-bar" class="xp-fill"></div>
-            </div>
+        <header class="app-top-bar">
+            <div class="brand-logo">DART<span>PRO</span><div class="dot"></div></div>
+            <button id="btn-logout" class="icon-only-btn"><i class="ri-logout-box-r-line"></i></button>
         </header>
 
         <section id="content-area">
             
-            <div id="view-dashboard" class="view">
-                <h2 class="view-title">Dashboard</h2>
-                <div class="quick-play-card glass-panel" onclick="navigate('training')">
-                    <div class="qp-info">
-                        <h3>Training fortsetzen</h3>
-                        <p>Wähle einen Modus</p>
+            <div id="view-dashboard" class="view dashboard-layout animated-in">
+               <div id="user-profile-header" class="profile-container glass-panel">
+    <div class="profile-rank-zone">
+        <div class="user-meta">
+            <h2 id="display-name">Loading...</h2>
+            <span class="rank-title" id="rank-name">ROOKIE</span>
+        </div>
+        
+        <div class="counters-row">
+            <div class="stat-mini compact">
+                <i class="ri-send-plane-fill"></i>
+                <div class="stat-values">
+                    <span id="stat-total-darts">0</span>
+                    <label>DARTS</label>
+                </div>
+            </div>
+            <div class="stat-mini compact">
+                <i class="ri-trophy-line"></i>
+                <div class="stat-values">
+                    <span id="stat-total-games">0</span>
+                    <label>GAMES</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="xp-fusion-wrapper">
+        <div class="level-circle-hexagon">
+            <span id="display-level">1</span>
+        </div>
+        <div class="xp-bar-container">
+            <div id="xp-bar" class="xp-fill"></div>
+            <span id="xp-text">0 / 0 XP</span>
+        </div>
+    </div>
+
+    <div class="sr-badge-grid">
+        <div class="sr-card sco">
+            <label>SCO</label>
+            <span id="sr-scoring">0</span>
+        </div>
+        <div class="sr-card fin">
+            <label>FIN</label>
+            <span id="sr-finishing">0</span>
+        </div>
+        <div class="sr-card brd">
+            <label>BRD</label>
+            <span id="sr-boardcontrol">0</span>
+        </div>
+    </div>
+</div>
+                <div class="action-grid">
+                    <div class="square-card glass-card" onclick="navigate('training')">
+                        <div class="square-top"><i class="ri-target-line"></i><span class="square-title">Training</span></div>
+                        <div class="square-bottom"><span class="square-desc">eigene parameter</span></div>
                     </div>
-                    <i class="ri-play-circle-fill"></i>
+                    <div class="square-card glass-card" onclick="navigate('challenge')">
+                        <div class="square-top"><i class="ri-medal-line"></i><span class="square-title">Challenge</span></div>
+                        <div class="square-bottom"><span class="square-desc">Level up</span></div>
+                    </div>
+                </div>
+
+                <div class="wide-card glass-card" onclick="alert('Quickplay Logik folgt!')">
+                    <div class="wide-icon-left"><i class="ri-play-circle-line"></i></div>
+                    <div class="wide-content-center"><h3>Quickplay X01</h3></div>
+                    <div class="wide-info-right"><i class="ri-information-line"></i></div>
+                </div>
+
+                <div class="wide-card glass-card" onclick="navigate('stats')">
+                    <div class="wide-icon-left"><i class="ri-bar-chart-box-line"></i></div>
+                    <div class="wide-content-center"><h3>Statistics</h3></div>
+                    <div class="wide-info-right"><i class="ri-information-line"></i></div>
                 </div>
             </div>
 
             <div id="view-training" class="view hidden">
-                <h2 class="view-title">Training</h2>
-                <div class="category-grid animated-in">
-                    <div class="cat-card glass-panel" onclick="showGames('board')">
-                        <i class="ri-focus-3-line"></i>
-                        <span>Board Control</span>
+                <div class="sub-page-header">
+                    <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
+                    <h2>Training</h2>
+                </div>
+                <div class="category-list animated-in">
+                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('board')">
+                        <div class="wide-icon-left"><i class="ri-focus-3-line"></i></div>
+                        <div class="wide-content-center"><h3>Board Control</h3></div>
+                        <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
-                    <div class="cat-card glass-panel" onclick="showGames('finishing')">
-                        <i class="ri-check-double-line"></i>
-                        <span>Finishing</span>
+                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('finishing')">
+                        <div class="wide-icon-left"><i class="ri-check-double-line"></i></div>
+                        <div class="wide-content-center"><h3>Finishing</h3></div>
+                        <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
-                    <div class="cat-card glass-panel" onclick="showGames('scoring')">
-                        <i class="ri-numbers-line"></i>
-                        <span>Scoring</span>
+                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('scoring')">
+                        <div class="wide-icon-left"><i class="ri-numbers-line"></i></div>
+                        <div class="wide-content-center"><h3>Scoring</h3></div>
+                        <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
-                    <div class="cat-card glass-panel" onclick="showGames('warmup')">
-                        <i class="ri-fire-line"></i>
-                        <span>Warmup</span>
+                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('warmup')">
+                        <div class="wide-icon-left"><i class="ri-fire-line"></i></div>
+                        <div class="wide-content-center"><h3>Warmup</h3></div>
+                        <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
                 </div>
             </div>
 
-            <div id="view-games-list" class="view hidden"></div>
+            <div id="view-challenge" class="view hidden">
+                <div class="sub-page-header">
+                    <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
+                    <h2>Challenge Mode</h2>
+                </div>
+                <div class="category-list animated-in"></div>
+            </div>
 
-            <div id="view-challenge" class="view hidden"></div>
-
-            <div id="view-stats" class="view hidden"></div>
+            <div id="view-games-list" class="view hidden">
+                <div class="sub-page-header">
+                    <button class="back-nav-btn" onclick="navigate('training')"><i class="ri-arrow-left-s-line"></i></button>
+                    <h2 id="list-title">Spiele</h2>
+                </div>
+                <div id="games-container" class="category-list animated-in"></div>
+            </div>
 
             <div id="view-game-active" class="view hidden">
                 <div class="nav-header">
-                    <button class="back-btn" onclick="navigate('training')">
-                        <i class="ri-close-line"></i>
-                    </button>
-                    <h2 id="game-title">Game</h2>
+                    <button class="back-btn" onclick="navigate('training')"><i class="ri-close-line"></i></button>
+                    <div id="display-round">ROUND <span class="highlight">1</span></div>
+                    <div class="header-resources">
+                        <div id="bolt-container" class="icon-group"></div>
+                        <div id="heart-container" class="icon-group"></div>
+                    </div>
                 </div>
-                <div class="score-display-large" id="main-target">--</div>
-                <div id="game-info" class="game-info-box">Bereit?</div>
-                
-                <div class="hit-buttons">
-                    <button class="glass-btn hit" onclick="GameManager.handleInput(true)">HIT</button>
-                    <button class="glass-btn miss" onclick="GameManager.handleInput(false)">MISS</button>
+                <div class="score-main-container">
+                    <div id="display-points">0</div>
+                    <div class="malus-box">MALUS: <span id="display-malus">0</span></div>
+                </div>
+                <div class="target-area">
+                    <div class="score-display-large" id="main-target">--</div>
+                    <div id="game-info" class="game-info-box">Bereit?</div>
+                </div>
+                <div class="hit-buttons-grid">
+                    <button class="glass-btn triple" onclick="GameManager.handleBCInput(3)">TRIPLE</button>
+                    <button class="glass-btn double" onclick="GameManager.handleBCInput(2)">DOUBLE</button>
+                    <button class="glass-btn single" onclick="GameManager.handleBCInput(1)">SINGLE</button>
+                    <button class="glass-btn miss" onclick="GameManager.handleBCInput(0)">MISS</button>
+                </div>
+                <div class="action-footer">
+                    <button class="glass-btn action-btn undo" onclick="GameManager.undoBC()"><i class="ri-arrow-go-back-line"></i></button>
+                    <button class="glass-btn action-btn next" onclick="GameManager.nextRoundBC()">NÄCHSTE RUNDE</button>
                 </div>
             </div>
 
+            <div id="view-game-x01" class="view hidden"></div>
+            
+            <div id="view-stats" class="view hidden">
+                <div class="sub-page-header">
+                    <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
+                    <h2>Statistiken</h2>
+                </div>
+            </div>
+
+           <div id="modal-game-result" class="modal-overlay hidden">
+                <div class="modal-content glass-card animated-in result-card">
+                    <div id="modal-hud-placeholder"></div>
+
+                    <div class="result-header">
+                        <h2 id="res-title">MISSION COMPLETE</h2>
+                    </div>
+                    
+                    <div id="dynamic-stats-grid" class="dynamic-stats-grid"></div>
+
+                    <div class="xp-breakdown glass-panel">
+                        <div class="xp-row total">
+                            <span>GESAMT XP EARNED</span>
+                            <span id="xp-total" class="xp-glow-text">0 XP</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-actions" style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button id="btn-level-down" class="glass-btn hidden" onclick="GameManager.retryLowerLevel()">
+                            <i class="ri-arrow-down-circle-line"></i> Level -1
+                        </button>
+                        <button class="primary-btn flash-btn" style="flex: 1;" onclick="GameManager.closeResultModal()">
+                            WEITER <i class="ri-arrow-right-double-line"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="modal-game-setup" class="view hidden overlay-view"></div>
+            
         </section>
-
-        <nav class="bottom-dock">
-            <ul class="dock-items">
-                <li class="dock-item" onclick="navigate('dashboard')">
-                    <i class="ri-layout-grid-fill"></i>
-                    <span>Quickplay</span>
-                </li>
-                <li class="dock-item" onclick="navigate('challenge')">
-                    <i class="ri-medal-fill"></i>
-                    <span>Challenge</span>
-                </li>
-                <li class="dock-item active" onclick="navigate('training')">
-                    <i class="ri-target-fill"></i>
-                    <span>Training</span>
-                </li>
-                <li class="dock-item" onclick="navigate('stats')">
-                    <i class="ri-bar-chart-2-fill"></i>
-                    <span>Stats</span>
-                </li>
-            </ul>
-        </nav>
-
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script src="./js/ui-controller.js"></script>
-    
-    <script type="module">
-        import { GameManager } from './js/games/game-manager.js';
-        window.GameManager = GameManager; // Für onclick verfügbar machen
-    </script>
-    
-    <script src="app.js"></script>
-
+    <script type="module" src="./js/ui_controller.js"></script>
+    <script type="module" src="./js/games/game-manager.js"></script>
+    <script type="module" src="js/supabase_client.js"></script>
 </body>
 </html>

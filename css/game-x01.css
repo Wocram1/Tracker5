@@ -1,0 +1,318 @@
+/* --- FONT IMPORT & ROOT --- */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+    --glass-bg: rgba(15, 23, 42, 0.85);
+    --neon-cyan: #00f2ff;
+    --neon-purple: #bd00ff;
+    --neon-red: #ff3b30;
+    --neon-green: #34c759;
+    --neon-gold: #ffcc00;
+    --primary-accent: #00f2ff;
+    --font-main: 'Inter', sans-serif;
+}
+
+/* --- FULLSCREEN & APP-HEADER LOGIK --- */
+body.game-active .main-header, 
+body.game-active header,
+body.game-active .nav-bar,
+body.game-active .app-navigation {
+    display: none !important;
+}
+body.game-active {
+    background-color: #0f172a;
+    overflow: hidden;
+}
+
+/* --- X01 MAIN DISPLAY --- */
+.x01-main-display {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px !important;
+    background: var(--glass-bg);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    border-radius: 35px;
+    margin: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* TOP BAR (Exit links, Score absolut zentriert) */
+.x01-top-bar {
+    display: grid;
+    grid-template-columns: 40px 1fr 40px; /* Erzeugt ein stabiles Grid für die Zentrierung */
+    align-items: center;
+    width: 100%;
+    min-height: 60px;
+}
+
+.bc-exit-mini {
+    grid-column: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.bc-exit-mini:active { transform: scale(0.9); background: rgba(255,255,255,0.2); }
+
+/* ZENTRALE SPIELER- & SCORE-ANZEIGE */
+.player-info-center {
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#x01-player-name {
+    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--font-main);
+    font-weight: 800;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    margin-bottom: -4px;
+}
+
+.mini-score-display {
+    font-family: 'Orbitron', sans-serif !important;
+    font-size: 2.8rem !important; /* Groß und mittig */
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+    line-height: 1.1;
+}
+
+#x01-challenge-title {
+    color: var(--neon-cyan);
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* STATS UNTER DEM SCORE (Malus & Gesamtpunkte) */
+.score-sub-stats {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.sub-stat-item {
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-family: var(--font-main);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.stat-malus { color: var(--neon-red); }
+.stat-points { color: rgba(255, 255, 255, 0.5); }
+
+/* CENTER LAYOUT: Board & Throws */
+.x01-center-layout {
+    display: grid;
+    grid-template-columns: 1fr 45px; /* Target entfernt, Board nutzt Platz */
+    align-items: center;
+    gap: 15px;
+}
+
+/* BOARD CONTAINER */
+.board-visual-container {
+    width: 100%;
+    max-width: 225px; 
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    position: relative;
+    padding: 10px;
+}
+
+.dartboard-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 15px 35px rgba(0,0,0,0.5));
+    overflow: visible !important;
+}
+
+.dartboard-svg .segment-black { fill: #0f172a; stroke: #1e293b; }
+.dartboard-svg .segment-grey  { fill: #1e293b; stroke: #1e293b; }
+.dartboard-svg .segment-red   { fill: #4a0000; stroke: #000; }
+.dartboard-svg .segment-green { fill: #003311; stroke: #000; }
+
+.segment-text { 
+    fill: rgba(255,255,255,0.4) !important; 
+    font-family: var(--font-main); 
+    font-weight: 700; 
+    pointer-events: none;
+}
+
+/* THROW BOXEN (VERTIKAL) */
+.mini-throw-history-v {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.throw-box {
+    width: 38px !important;
+    height: 38px !important;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: var(--font-main);
+    font-size: 0.85rem !important;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* THROWBOX TARGET SYNC */
+.throw-box.target-dart-1:not(.active-dart-1) { background: rgba(224, 224, 224, 0.15) !important; border: 2px solid rgba(224, 224, 224, 0.5) !important; color: transparent; }
+.throw-box.target-dart-2:not(.active-dart-2) { background: rgba(189, 0, 255, 0.15) !important; border: 2px solid rgba(189, 0, 255, 0.5) !important; color: transparent; }
+.throw-box.target-dart-3:not(.active-dart-3) { background: rgba(255, 204, 0, 0.15) !important; border: 2px solid rgba(255, 204, 0, 0.5) !important; color: transparent; }
+
+.throw-box.active-dart-1, .throw-box.active-dart-2, .throw-box.active-dart-3 {
+    color: white !important;
+    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* HORIZONTALE STATUS BAR (BADGES) */
+.x01-status-bar-horizontal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px 12px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-main);
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: white;
+}
+
+/* MIN PTS BADGE IN DER LEISTE */
+.min-pts-badge {
+    background: rgba(255, 204, 0, 0.1);
+    color: var(--neon-gold);
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    padding: 2px 8px;
+    border-radius: 8px;
+}
+
+/* CHECKOUT BADGE */
+.mode-badge-compact {
+    font-family: var(--font-main);
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 6px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+.mode-badge-compact.mode-double { color: var(--neon-red); border: 1px solid var(--neon-red); animation: pulse-red 2s infinite; }
+.mode-badge-compact.mode-single { color: var(--neon-cyan); border: 1px solid var(--neon-cyan); }
+
+/* --- ANIMATIONEN & FLASH --- */
+path.segment-path.target-dart-1 { fill: rgba(224, 224, 224, 0.95) !important; filter: drop-shadow(0 0 15px #fff) brightness(1.2) !important; }
+path.segment-path.target-dart-2 { fill: rgba(189, 0, 255, 0.9) !important; filter: drop-shadow(0 0 15px var(--neon-purple)) brightness(1.2) !important; }
+path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filter: drop-shadow(0 0 15px var(--neon-gold)) brightness(1.2) !important; }
+
+#board-flash-overlay {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 100%; height: 100%; border-radius: 50%; opacity: 0; pointer-events: none; z-index: 10;
+}
+.flash-active { animation: flashBlue 0.3s ease-out; }
+@keyframes flashBlue {
+    0% { background: radial-gradient(circle, rgba(0, 150, 255, 0.5) 0%, transparent 70%); opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+}
+
+@keyframes pulse-red {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.burnout-active { animation: burnout-flash 0.5s ease-out; border: 2px solid #ff453a !important; }
+@keyframes burnout-flash {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(255, 69, 58, 0.2); }
+}
+
+/* --- CONTROLS --- */
+.x01-controls-container {
+    display: grid;
+    grid-template-columns: 1fr 75px;
+    gap: 10px;
+    padding: 10px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.numpad-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px;
+}
+
+.numpad-grid button {
+    height: 50px;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: white !important;
+    border-radius: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+}
+.numpad-grid button:active { background: rgba(255, 255, 255, 0.15) !important; transform: scale(0.95); }
+
+.side-action-stack { display: flex; flex-direction: column; gap: 8px; }
+.mod-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 12px;
+    font-weight: 900;
+    font-family: 'Orbitron';
+}
+.mod-btn.active { background: var(--neon-cyan) !important; color: black !important; }
+
+.next-btn-side {
+    flex: 1.5;
+    background: var(--neon-green) !important;
+    color: black !important;
+    border-radius: 12px;
+    font-size: 1.5rem;
+}
+
+.btn-highlight-blink { animation: pulse-ready 1.5s infinite !important; }
+@keyframes pulse-ready {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(0.98); }
+}
+
+/* UTILS */
+.hidden { display: none !important; }
+.miss-btn { color: var(--neon-red) !important; }

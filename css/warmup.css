@@ -1,0 +1,28 @@
+/* Board Highlights */
+.target-dart-1 { fill: #ff0000 !important; filter: drop-shadow(0 0 8px #00f2ff); } /* Cyan */
+.target-dart-2 { fill: #bd00ff !important; filter: drop-shadow(0 0 8px #bd00ff); } /* Lila */
+.target-dart-3 { fill: #ffcc00 !important; filter: drop-shadow(0 0 8px #ffcc00); } /* Gold */
+
+/* Interface Boxen */
+.throw-box.active-dart-1 { border: 2px solid #00f2ff; color: #00f2ff; }
+.throw-box.active-dart-2 { border: 2px solid #bd00ff; color: #bd00ff; }
+.throw-box.active-dart-3 { border: 2px solid #ffcc00; color: #ffcc00; }
+
+.throw-box.missed { opacity: 0.4; border-style: dashed; grayscale: 1; }
+.throw-box.next-up { background: rgba(255, 255, 255, 0.1); }
+
+.warmup-stats-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.stat-label { color: #aaa; font-size: 0.7rem; text-transform: uppercase; }
+.stat-value { font-weight: bold; }
+

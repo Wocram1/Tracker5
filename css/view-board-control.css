@@ -1,0 +1,361 @@
+/* --- BOARD CONTROL FULL PRO INTERFACE --- */
+:root {
+    --accent-energy: var(--neon-cyan);
+    --accent-health: var(--neon-red);
+    --accent-thunder: var(--neon-gold);
+    --accent-malus: var(--neon-red);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Board Grundfarben */
+    --board-black: #111827;
+    --board-white: #f3f4f6;
+    --board-red: #ef4444;
+    --board-green: #22c55e;
+
+    /* Neue Blau-Töne für die Ziele (Target 1 = S, Target 2 = D, Target 3 = T) */
+    --target-blue-1: #00d2ff; /* Hellblau */
+    --target-blue-2: #007bff; /* Mittelblau */
+    --target-blue-3: #0022aa; /* Dunkelblau */
+}
+
+/* HAUPT-CONTAINER: Erzwungene Anordnung der Reihen untereinander */
+.x01-controls {
+    display: flex !important;
+    flex-direction: column !important; 
+    gap: 10px;
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+/* REIHE 1: S, D, T, M (4 Spalten nebeneinander) */
+.bc-multi-row {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 8px;
+    width: 100%;
+}
+
+/* REIHE 2: UNDO & NEXT (2 Spalten nebeneinander, aber unter Reihe 1) */
+.bc-main-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1.5fr !important;
+    gap: 10px;
+    width: 100%;
+    margin-top: 5px; 
+}
+
+/* --- MINI EXIT BUTTON --- */
+.bc-exit-mini {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: rgba(255, 255, 255, 0.4);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    transition: all 0.2s ease;
+}
+
+.bc-exit-mini:hover {
+    background: var(--accent-health);
+    color: white;
+    border-color: var(--accent-health);
+}
+
+/* --- SIDEBAR & STATS --- */
+.sidebar-stat .icon-row {
+    display: flex;
+    gap: 4px;
+    font-size: 1.1rem;
+    margin-top: 2px;
+}
+
+.icon-empty { color: rgba(255, 255, 255, 0.1); transform: scale(0.8); }
+.icon-heart { color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red); }
+.icon-bolt { color: var(--neon-gold); text-shadow: 0 0 10px var(--neon-gold); }
+
+/* --- TARGET DISPLAY --- */
+.bc-target-display {
+    text-align: center;
+    padding: 20px 0;
+    background: linear-gradient(180deg, rgba(0, 242, 255, 0.05) 0%, transparent 100%);
+    border-radius: 0 0 20px 20px;
+}
+
+.bc-label {
+    font-size: 0.7rem;
+    color: var(--target-blue-1);
+    letter-spacing: 2px;
+    font-weight: 800;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.bc-target-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 0 20px rgba(0, 210, 255, 0.5);
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+/* --- SVG DARTBOARD & FLASH EFFECTS --- */
+.bc-svg-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    position: relative;
+}
+
+.dartboard-svg {
+    width: 210px;
+    height: 210px;
+    filter: drop-shadow(0 10px 25px rgba(0,0,0,0.6));
+    overflow: visible;
+}
+
+#board-flash-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--accent-energy);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.flash-active { animation: dartFlash 0.2s ease-out; }
+.flash-miss { animation: missFlash 0.25s ease-out; }
+
+@keyframes dartFlash {
+    0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.8); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes missFlash {
+    0% { opacity: 0.5; background: var(--accent-health); transform: translate(-50%, -50%) scale(0.8); }
+    100% { opacity: 0; background: var(--accent-health); transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* --- PROFESSIONELLE SEGMENT-OPTIK --- */
+.segment-path { 
+    stroke: #000;
+    stroke-width: 0.3;
+    transition: all 0.2s ease; 
+}
+
+.base-path.dark { fill: var(--board-black); }
+.base-path.light { fill: var(--board-white); }
+.double-path.red, .triple-path.red, .bull-inner.red { fill: var(--board-red); }
+.double-path.green, .triple-path.green, .bull-outer.green { fill: var(--board-green); }
+
+.segment-text { 
+    fill: #94a3b8;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    pointer-events: none; 
+    user-select: none; 
+}
+
+/* --- BUTTON STYLES (MASSIV AUFGEWERTET) --- */
+.bc-btn-small {
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 15px 0;
+    color: white;
+    font-weight: 800;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.bc-btn-small:hover {
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08));
+    transform: translateY(-2px);
+}
+
+.bc-btn-small:active { transform: scale(0.92); }
+
+/* Farbige Glow-Balken unten für Buttons */
+.bc-btn-small.single { border-bottom: 4px solid var(--board-green); box-shadow: 0 4px 20px rgba(34, 197, 94, 0.2); }
+.bc-btn-small.double { border-bottom: 4px solid #c0c0c0; box-shadow: 0 4px 20px rgba(192, 192, 192, 0.2); }
+.bc-btn-small.triple { border-bottom: 4px solid #ffd700; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2); }
+.bc-btn-small.miss   { border-bottom: 4px solid var(--accent-health); color: var(--accent-health); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2); }
+
+.bc-action-wide {
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    font-weight: 800;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+}
+
+.bc-action-wide.undo { color: #94a3b8; }
+.bc-action-wide.next { background: rgba(255, 255, 255, 0.1); border-bottom: 2px solid rgba(255,255,255,0.1); }
+
+.bc-action-wide.next.confirm-next {
+    background: rgba(52, 199, 89, 0.2);
+    border: 1px solid var(--neon-green);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(52, 199, 89, 0.2);
+    animation: pulse-next 1.5s infinite;
+}
+
+@keyframes pulse-next {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* --- DART PILLS STYLE --- */
+.dart-indicator-row { display: flex; justify-content: center; gap: 10px; margin-top: 5px; }
+
+.dart-dot { 
+    width: 45px; 
+    height: 24px; 
+    border-radius: 6px; 
+    background: rgba(255, 255, 255, 0.05); 
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: rgba(255,255,255,0.2);
+    transition: all 0.3s ease;
+}
+
+.dart-dot.filled.hit { 
+    background: linear-gradient(135deg, var(--target-blue-1), var(--target-blue-2)); 
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); 
+    color: white;
+    border-color: rgba(255,255,255,0.3);
+}
+
+.dart-dot.filled.miss { 
+    background: var(--accent-health); 
+    color: white;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.hidden { display: none !important; }
+
+/* --- ERZWUNGENE BLAUTÖNE FÜR BOARD-SEGMENTE --- */
+body svg g.board-segment .segment-path.target-dart-1 { fill: var(--target-blue-1) !important; stroke: #fff !important; filter: drop-shadow(0 0 5px var(--target-blue-1)); }
+body svg g.board-segment .segment-path.target-dart-2 { fill: var(--target-blue-2) !important; stroke: #fff !important; filter: drop-shadow(0 0 5px var(--target-blue-2)); }
+body svg g.board-segment .segment-path.target-dart-3 { fill: var(--target-blue-3) !important; stroke: #fff !important; filter: drop-shadow(0 0 5px var(--target-blue-3)); }
+/* MULTI-DART BLINK ANIMATIONEN */
+@keyframes blinkColor123 {
+    0%, 32% { fill: #00d2ff; stroke: #fff; }
+    33%, 65% { fill: #007bff; stroke: #fff; }
+    66%, 100% { fill: #0022aa; stroke: #fff; }
+}
+
+@keyframes blinkColor12 {
+    0%, 49% { fill: #00d2ff; stroke: #fff; }
+    50%, 100% { fill: #007bff; stroke: #fff; }
+}
+
+@keyframes blinkColor23 {
+    0%, 49% { fill: #007bff; stroke: #fff; }
+    50%, 100% { fill: #0022aa; stroke: #fff; }
+}
+body svg g.board-segment .segment-path.toggle-color-1-2-3 { animation: blinkColor123 1.5s infinite; opacity: 1; }
+body svg g.board-segment .segment-path.toggle-color-1-2   { animation: blinkColor12 1s infinite; opacity: 1; }
+body svg g.board-segment .segment-path.toggle-color-2-3   { animation: blinkColor23 1s infinite; opacity: 1; }
+
+/* --- ALLGEMEINE UI ZUSTÄNDE --- */
+body.hide-app-header .auth-header,
+body.hide-app-header .dashboard-header,
+body.hide-app-header .logout-section {
+    display: none !important;
+}
+
+body.hide-app-header main { padding-top: 10px; }
+body.game-active .app-top-bar { display: none !important; }
+.burnout-active { animation: burnout-flash 0.5s ease-out; border: 2px solid #ff453a !important; }
+
+@keyframes burnout-flash {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(255, 69, 58, 0.2); }
+    100% { background-color: transparent; }
+}
+
+/* --- ANIMATIONEN & MALUS --- */
+.bc-malus-display {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--accent-health);
+    font-weight: 700;
+    margin-top: -5px;
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ani-round-bounce {
+    display: inline-block;
+    animation: roundBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+@keyframes roundBounce {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); color: var(--target-blue-1); }
+    100% { transform: scale(1); }
+}
+
+.ani-undo {
+    animation: undoSpin 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+@keyframes undoSpin {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(0.9) rotate(-25deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+.ani-next-score {
+    animation: scorePop 0.5s ease-out !important;
+}
+
+@keyframes scorePop {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.bc-action-wide:active {
+    transform: scale(0.95);
+}
