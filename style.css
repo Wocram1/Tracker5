@@ -1,156 +1,197 @@
 :root {
-    --bg-dark: #0f0c29;
-    --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --primary-accent: #00f2ff; /* Neon Cyan */
+    --bg-dark: #07051a;
+    --bg-gradient: linear-gradient(135deg, #07051a 0%, #110d35 50%, #1a144d 100%);
+    --glass-bg: rgba(255, 255, 255, 0.04);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --primary-accent: #00f2ff; /* Cyber Cyan */
     --secondary-accent: #bd00ff; /* Neon Purple */
     --text-main: #ffffff;
-    --text-muted: #a0a0a0;
-    --dock-height: 80px;
+    --text-muted: #8e8e93;
+    --danger: #ff453a;
+    --success: #32d74b;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
 
 body {
     background: var(--bg-gradient);
+    background-attachment: fixed;
     color: var(--text-main);
     height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* App-Feeling: Kein Scrollen des Bodys */
     display: flex;
     justify-content: center;
-    align-items: center;
 }
 
-/* --- Utility Classes --- */
-.hidden { display: none !important; }
-.centered { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-/* --- Glassmorphism Base --- */
-.glass-panel, .glass-header, .glass-btn, .glass-input, .bottom-dock {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-}
-
-/* --- Auth Screen --- */
-#auth-screen {
-    width: 90%;
-    max-width: 400px;
-    padding: 2rem;
-    border-radius: 24px;
-    gap: 1.5rem;
-}
-
-.input-group { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-
-.glass-input {
+/* --- Layout Container --- */
+#app-screen {
     width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    color: white;
-    border: 1px solid rgba(255,255,255,0.1);
-    outline: none;
-    transition: 0.3s;
+    max-width: 500px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
-.glass-input:focus { border-color: var(--primary-accent); box-shadow: 0 0 10px var(--primary-accent); }
 
-/* --- Buttons --- */
-.glass-btn {
-    padding: 12px 24px;
-    border-radius: 16px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: transform 0.2s, box-shadow 0.2s;
-    color: white;
-}
-.glass-btn.primary { background: rgba(0, 242, 255, 0.2); border-color: var(--primary-accent); }
-.glass-btn:active { transform: scale(0.95); }
-
-/* --- App Interface --- */
-#app-screen { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
-
-.glass-header {
+.view {
+    flex: 1;
     padding: 20px;
-    margin: 20px;
-    border-radius: 20px;
+    overflow-y: auto;
+    padding-bottom: 120px; /* Platz für das Dock */
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.hidden { display: none !important; }
+
+/* --- Glassmorphism Elements --- */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Gaming Header --- */
+.gaming-header {
+    margin: 15px;
+    padding: 15px 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.user-info { display: flex; justify-content: space-between; align-items: center; }
-.xp-bar-container { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-.xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary-accent), var(--secondary-accent)); width: 0%; transition: width 0.5s ease; }
-
-/* Game Area */
-.game-area { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 20px; }
-.score-display {
-    font-size: 4rem; font-weight: 800; text-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
-    display: flex; flex-direction: column; align-items: center;
-}
-.score-display small { font-size: 1rem; color: var(--text-muted); font-weight: 400; }
-
-.input-pad { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
-.controls { display: flex; gap: 10px; justify-content: center; }
-
-/* --- Bottom Dock (iOS 26 Liquid Style) --- */
-.bottom-dock {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 400px;
-    height: var(--dock-height);
-    border-radius: 24px;
+.user-meta {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
-    overflow: hidden; /* Für den Liquid Effekt */
 }
 
-/* Liquid / Particle Effekt Hintergrund */
-.dock-liquid-bg {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 150%; height: 150%;
-    transform: translate(-50%, -50%);
-    background: radial-gradient(circle at center, rgba(189, 0, 255, 0.15) 0%, transparent 70%);
-    z-index: -1;
-    animation: pulseLiquid 4s infinite alternate;
+#display-name { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; }
+
+.level-pill {
+    background: linear-gradient(90deg, var(--secondary-accent), var(--primary-accent));
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 900;
+    box-shadow: 0 0 15px rgba(189, 0, 255, 0.4);
 }
 
-@keyframes pulseLiquid {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-    100% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+.xp-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-.dock-item {
+.xp-fill {
+    height: 100%;
+    width: 30%;
+    background: var(--primary-accent);
+    box-shadow: 0 0 10px var(--primary-accent);
+    transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* --- Menu & Cards --- */
+.view-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.cat-card {
+    height: 150px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    gap: 4px;
-    font-size: 0.7rem;
-    color: var(--text-muted);
+    gap: 12px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    z-index: 2;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dock-item i { font-size: 1.5rem; transition: color 0.3s; }
+.cat-card:active { transform: scale(0.95); }
+.cat-card i { font-size: 2.2rem; color: var(--primary-accent); }
+.cat-card span { font-weight: 700; font-size: 0.9rem; }
 
-/* Hover & Active States */
-.dock-item:hover, .dock-item.active {
-    transform: translateY(-5px) scale(1.1);
+/* --- Game View UI --- */
+.score-display-large {
+    font-size: 6rem;
+    font-weight: 900;
+    text-align: center;
+    margin: 40px 0;
     color: var(--text-main);
-}
-.dock-item:hover i, .dock-item.active i {
-    color: var(--primary-accent);
-    text-shadow: 0 0 10px var(--primary-accent);
+    text-shadow: 0 0 40px rgba(0, 242, 255, 0.3);
 }
 
-.error-msg { color: #ff4b4b; font-size: 0.9rem; text-align: center; margin-top: 10px; }
+.game-info-box {
+    padding: 15px;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+
+.hit-buttons {
+    display: flex;
+    gap: 15px;
+    padding: 10px;
+}
+
+.glass-btn {
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    color: white;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+}
+
+.glass-btn.hit { border-color: var(--success); background: rgba(50, 215, 75, 0.1); flex: 2; }
+.glass-btn.miss { border-color: var(--danger); background: rgba(255, 69, 58, 0.1); flex: 1; }
+
+/* Animationen */
+.animated-in { animation: slideUp 0.4s ease-out forwards; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Dock Fix */
+.bottom-dock {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 92%; max-width: 400px; height: 70px;
+    background: rgba(15, 12, 41, 0.9); backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 25px;
+    display: flex; justify-content: space-around; align-items: center; z-index: 9999;
+}
+.dock-items { display: flex; width: 100%; justify-content: space-around; list-style: none; }
+.dock-item { color: #8e8e93; font-size: 0.65rem; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.dock-item.active { color: #00f2ff; }
+.dock-item i { font-size: 1.5rem; }
+
+/* Game View */
+.score-display-large { font-size: 5rem; font-weight: 900; text-align: center; margin: 30px 0; color: #00f2ff; text-shadow: 0 0 20px rgba(0,242,255,0.4); }
+.nav-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+.back-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 12px; cursor: pointer; }

@@ -1,6 +1,6 @@
 /**
- * DART TRACKER PRO - VOLLSTÄNDIGE VERSION
- * Fixes: ReferenceErrors behoben, Auto-Email-Generierung für Namen-Login
+ * CORE APP - SUPABASE & AUTH CONNECTOR
+ * Fokus: Authentifizierung, Profil-Synchronisation und Datenbank-Kommunikation.
  */
 
 const SB_URL = 'https://ujccdnduolqyzjoeghrl.supabase.co';
@@ -9,188 +9,172 @@ const INVITE_REQUIRED = '123';
 
 const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
-// --- GLOBAL STATE ---
-let state = {
+// Zentraler Status der App
+window.appState = {
     user: null,
-    profile: null,
-    game: {
-        active: false,
-        mode: '501_classic',
-        startScore: 501,
-        currentScore: 501,
-        dartsInLeg: 0,
-        firstDartHits: 0
-    }
+    profile: null
 };
 
-// --- DOM NODES ---
-const nodes = {
-    auth: document.getElementById('auth-screen'),
-    app: document.getElementById('app-screen'),
-    email: document.getElementById('email'), // Wird für Login/Namen genutzt
-    pass: document.getElementById('password'),
-    invite: document.getElementById('invite-code'),
-    user: document.getElementById('username'),
-    scoreInput: document.getElementById('throw-input'),
-    displayName: document.getElementById('display-name'),
-    displayLevel: document.getElementById('display-level'),
-    xpBar: document.getElementById('xp-bar'),
-    currentScore: document.getElementById('current-score'),
-    errorMsg: document.getElementById('auth-error')
-};
+// --- INITIALISIERUNG ---
+async function init() {
+    console.log("App Initializing...");
+    
+    // FIX: Warten, bis der UIController window.navigate bereitgestellt hat
+    const checkNavigation = setInterval(async () => {
+        if (typeof window.navigate === "function") {
+            clearInterval(checkNavigation);
+            
+            // Erst wenn Navigation bereit ist, Session prüfen
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            setupAuthEventListeners();
 
-// --- HELPER FUNCTIONS ---
-function flashError(msg, type = "error") {
-    nodes.errorMsg.textContent = msg;
-    nodes.errorMsg.style.color = type === "error" ? "#ff4b4b" : "#00f2ff";
-    setTimeout(() => nodes.errorMsg.textContent = '', 4000);
+            if (session) {
+                await setupAuthenticatedSession(session.user);
+            } else {
+                // Falls nicht eingeloggt, Auth-Screen zeigen (indem wir app-screen verstecken)
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
+            }
+        }
+    }, 50); 
 }
 
-function showScreen(screen) {
-    if (screen === 'auth') {
-        nodes.auth.classList.remove('hidden');
-        nodes.app.classList.add('hidden');
-    } else {
-        nodes.auth.classList.add('hidden');
-        nodes.app.classList.remove('hidden');
-    }
+// --- AUTHENTIFIZIERUNG ---
+function setupAuthEventListeners() {
+    const btnLogin = document.getElementById('btn-login');
+    const btnSignup = document.getElementById('btn-signup');
+    const btnLogout = document.getElementById('btn-logout');
+
+    if (btnLogin) btnLogin.onclick = handleSignIn;
+    if (btnSignup) btnSignup.onclick = handleSignUp;
+    if (btnLogout) btnLogout.onclick = async () => {
+        await supabaseClient.auth.signOut();
+        window.location.reload();
+    };
 }
 
-// Erstellt aus einem Namen eine technische E-Mail (z.B. "max" -> "max@dart.app")
-function formatEmail(input) {
-    return input.includes('@') ? input : `${input.toLowerCase().trim()}@dart.app`;
-}
-
-// --- DATABASE ACTIONS ---
-async function fetchUserProfile() {
-    const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('id', state.user.id)
-        .single();
-    if (data) {
-        state.profile = data;
-        renderProfile();
-    }
-}
-
-async function syncMatchToDatabase(xpGained, matchStats) {
-    const { error } = await supabaseClient.rpc('finish_game', {
-        p_game_mode: state.game.mode,
-        p_stats: matchStats,
-        p_xp_gained: xpGained,
-        p_first_dart_hits: state.game.firstDartHits
-    });
-    if (!error) await fetchUserProfile();
-}
-
-// --- AUTH LOGIC (Vor dem Event-Setup definiert!) ---
 async function handleSignIn() {
-    const email = formatEmail(nodes.email.value);
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: nodes.pass.value
-    });
+    const emailInput = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
 
-    if (error) flashError("Login fehlgeschlagen: " + error.message);
-    else setupAuthenticatedSession(data.user);
+    if (!emailInput || !password) return flashError("E-Mail/Name und Passwort fehlen!");
+
+    const email = emailInput.includes('@') ? emailInput : `${emailInput.toLowerCase().trim()}@dart.app`;
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        flashError(error.message);
+    } else {
+        await setupAuthenticatedSession(data.user);
+    }
 }
 
 async function handleSignUp() {
-    const name = nodes.user.value;
-    const email = formatEmail(name);
-    const password = nodes.pass.value;
-    const invite = nodes.invite.value;
+    const username = document.getElementById('username').value;
+    const emailInput = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const invite = document.getElementById('invite-code').value;
 
     if (invite !== INVITE_REQUIRED) return flashError("Falscher Invite-Code!");
-    if (!name || !password) return flashError("Name und Passwort nötig!");
+    if (!username || !password) return flashError("Name und Passwort fehlen!");
+
+    const email = emailInput.includes('@') ? emailInput : `${username.toLowerCase().trim()}@dart.app`;
 
     const { data, error } = await supabaseClient.auth.signUp({
-        email, password,
-        options: { data: { username: name, invite_code: invite } }
+        email, 
+        password,
+        options: { data: { username, invite_code: invite } }
     });
 
-    if (error) flashError(error.message);
-    else if (data.user) {
-        setupAuthenticatedSession(data.user);
-        flashError("Konto erstellt & eingeloggt!", "info");
+    if (error) {
+        flashError(error.message);
+    } else {
+        if (data.user) await setupAuthenticatedSession(data.user);
     }
 }
 
 async function setupAuthenticatedSession(user) {
-    state.user = user;
+    window.appState.user = user;
     await fetchUserProfile();
-    showScreen('app');
+    
+    // UI-Wechsel
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    
+    // Sicherstellen, dass wir auf dem Dashboard landen
+    window.navigate('dashboard');
 }
 
-// --- GAME ENGINE ---
-function updateGameUI() {
-    nodes.currentScore.textContent = state.game.currentScore;
-}
+// --- DATENBANK SYNCHRONISATION ---
+async function fetchUserProfile() {
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', window.appState.user.id)
+        .single();
 
-function processScoreInput() {
-    const value = parseInt(nodes.scoreInput.value);
-    if (isNaN(value) || value < 0 || value > 180) return flashError("0-180 eingeben");
-
-    // Statistik: Traf der erste Dart?
-    if (state.game.dartsInLeg === 0 && value > 0) state.game.firstDartHits++;
-
-    const remaining = state.game.currentScore - value;
-    if (remaining === 0) {
-        finishLeg(value);
-    } else if (remaining < 2) {
-        flashError("Bust!");
-    } else {
-        state.game.currentScore = remaining;
-        state.game.dartsInLeg += 3;
-        updateGameUI();
+    if (data) {
+        window.appState.profile = data;
+        renderProfile();
     }
-    nodes.scoreInput.value = '';
 }
 
-function finishLeg(finalScore) {
-    const xp = 50 + Math.max(0, 100 - state.game.dartsInLeg);
-    const stats = { darts: state.game.dartsInLeg + 3, avg: ((501/(state.game.dartsInLeg+3))*3).toFixed(1) };
-    
-    syncMatchToDatabase(xp, stats);
-    state.game.currentScore = 501;
-    state.game.dartsInLeg = 0;
-    state.game.firstDartHits = 0;
-    updateGameUI();
-    alert(`Sieg! +${xp} XP`);
-}
+// --- PROFIL RENDERING ---
+window.renderProfile = function() {
+    const profile = window.appState.profile;
+    if (!profile) return;
 
-// --- UI RENDERING ---
-function renderProfile() {
-    if (!state.profile) return;
-    nodes.displayName.textContent = state.profile.username;
-    nodes.displayLevel.textContent = state.profile.level;
-    
-    const currentLevelBaseXP = Math.pow(state.profile.level - 1, 2) * 50;
-    const nextLevelXP = Math.pow(state.profile.level, 2) * 50;
-    const progress = state.profile.xp - currentLevelBaseXP;
-    const totalNeeded = nextLevelXP - currentLevelBaseXP;
-    
-    nodes.xpBar.style.width = `${Math.max(5, (progress / totalNeeded) * 100)}%`;
-}
+    const nameEl = document.getElementById('display-name');
+    const levelEl = document.getElementById('display-level');
+    const xpBarEl = document.getElementById('xp-bar');
 
-// --- INIT & EVENTS ---
-function setupEventListeners() {
-    document.getElementById('btn-login').addEventListener('click', handleSignIn);
-    document.getElementById('btn-signup').addEventListener('click', handleSignUp);
-    document.getElementById('btn-logout').addEventListener('click', () => {
-        supabaseClient.auth.signOut();
-        window.location.reload();
+    if (nameEl) nameEl.textContent = profile.username || "Spieler";
+    if (levelEl) levelEl.textContent = profile.level || "1";
+
+    if (xpBarEl) {
+        const currentLevel = profile.level || 1;
+        const currentXP = profile.xp || 0;
+        
+        // XP Formel (muss mit deinem SQL Trigger übereinstimmen)
+        const currentLevelBaseXP = Math.pow(currentLevel - 1, 2) * 50;
+        const nextLevelXP = Math.pow(currentLevel, 2) * 50;
+        
+        const progressInLevel = currentXP - currentLevelBaseXP;
+        const totalNeededInLevel = nextLevelXP - currentLevelBaseXP;
+        
+        const percentage = Math.max(5, (progressInLevel / totalNeededInLevel) * 100);
+        xpBarEl.style.width = `${percentage}%`;
+    }
+};
+
+/**
+ * Globale Funktion zum Speichern von Spielergebnissen
+ * Wird vom GameManager aufgerufen
+ */
+window.syncMatchToDatabase = async function(xpGained, matchStats) {
+    const { error } = await supabaseClient.rpc('finish_game', {
+        p_game_mode: matchStats.mode || 'unknown',
+        p_stats: matchStats,
+        p_xp_gained: xpGained,
+        p_first_dart_hits: matchStats.first_dart_hits || 0
     });
-    document.getElementById('submit-score').addEventListener('click', processScoreInput);
-    nodes.scoreInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') processScoreInput(); });
+
+    if (error) {
+        console.error("Datenbank-Fehler:", error);
+    } else {
+        await fetchUserProfile();
+    }
+};
+
+// Hilfsfunktion für Fehlermeldungen
+function flashError(msg) {
+    const errNode = document.getElementById('auth-error');
+    if (errNode) {
+        errNode.textContent = msg;
+        setTimeout(() => errNode.textContent = '', 4000);
+    }
 }
 
-async function init() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    setupEventListeners(); // Erst Events binden
-    if (session) setupAuthenticatedSession(session.user);
-    else showScreen('auth');
-}
-
+// Start der App
 init();

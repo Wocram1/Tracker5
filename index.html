@@ -3,70 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dart Pro Tracker</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <title>OCRAM Dart Tracker Pro</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <section id="auth-screen" class="glass-panel centered">
-        <h1>🎯 Dart Vision</h1>
-        <div class="input-group">
-            <input type="text" id="invite-code" placeholder="Invite Code" class="glass-input">
-            <input type="text" id="username" placeholder="Dein Name" class="glass-input">
-            <input type="email" id="email" placeholder="Email" class="glass-input">
+    <main id="auth-screen" class="glass-panel">
+        <div class="auth-header">
+            <h1>OCRAM<span>DART</span></h1>
+            <p>Next Gen Training Tracking</p>
+        </div>
+        
+        <div id="auth-error" class="error-msg" style="color: #ff453a; text-align: center; margin-bottom: 10px; font-size: 0.8rem; height: 1rem;"></div>
+
+        <div class="auth-fields">
+            <input type="text" id="username" placeholder="Nutzername" class="glass-input">
+            <input type="email" id="email" placeholder="E-Mail (oder Name)" class="glass-input">
             <input type="password" id="password" placeholder="Passwort" class="glass-input">
+            <input type="text" id="invite-code" placeholder="Invite Code" class="glass-input">
         </div>
-        <div class="button-row">
-            <button id="btn-login" class="glass-btn primary">Login</button>
-            <button id="btn-signup" class="glass-btn secondary">Registrieren</button>
+
+        <div class="auth-buttons">
+            <button id="btn-login" class="primary-btn">Login</button>
+            <button id="btn-signup" class="secondary-btn">Registrieren</button>
         </div>
-        <p id="auth-error" class="error-msg"></p>
-    </section>
+    </main>
 
     <main id="app-screen" class="hidden">
         
-        <header class="glass-header">
-            <div class="user-info">
-                <h2 id="display-name">Spieler</h2>
-                <div class="level-badge">Lvl <span id="display-level">1</span></div>
+        <header class="gaming-header glass-panel">
+            <div class="user-meta">
+                <div class="user-info">
+                    <span id="display-name">...</span>
+                    <span class="level-pill">LVL <span id="display-level">1</span></span>
+                </div>
+                <button id="btn-logout" class="icon-btn"><i class="ri-logout-box-r-line"></i></button>
             </div>
-            <div class="xp-bar-container">
-                <div class="xp-bar-fill" id="xp-bar"></div>
+            <div class="xp-container">
+                <div id="xp-bar" class="xp-fill"></div>
             </div>
         </header>
 
-        <section class="game-area">
-            <div class="score-display">
-                <span id="current-score">501</span>
-                <small>Rest</small>
-            </div>
+        <section id="content-area">
             
-            <div class="input-pad">
-                <input type="number" id="throw-input" placeholder="Wurf (0-180)" class="glass-input big">
-                <div class="controls">
-                    <button class="glass-btn" onclick="game.addThrow(1)">1. Dart</button>
-                    <button class="glass-btn" onclick="game.addThrow(2)">2. Dart</button>
-                    <button class="glass-btn" onclick="game.addThrow(3)">3. Dart</button>
+            <div id="view-dashboard" class="view">
+                <h2 class="view-title">Dashboard</h2>
+                <div class="quick-play-card glass-panel" onclick="navigate('training')">
+                    <div class="qp-info">
+                        <h3>Training fortsetzen</h3>
+                        <p>Wähle einen Modus</p>
+                    </div>
+                    <i class="ri-play-circle-fill"></i>
                 </div>
-                <button id="submit-score" class="glass-btn primary full-width">Eingeben</button>
             </div>
+
+            <div id="view-training" class="view hidden">
+                <h2 class="view-title">Training</h2>
+                <div class="category-grid animated-in">
+                    <div class="cat-card glass-panel" onclick="showGames('board')">
+                        <i class="ri-focus-3-line"></i>
+                        <span>Board Control</span>
+                    </div>
+                    <div class="cat-card glass-panel" onclick="showGames('finishing')">
+                        <i class="ri-check-double-line"></i>
+                        <span>Finishing</span>
+                    </div>
+                    <div class="cat-card glass-panel" onclick="showGames('scoring')">
+                        <i class="ri-numbers-line"></i>
+                        <span>Scoring</span>
+                    </div>
+                    <div class="cat-card glass-panel" onclick="showGames('warmup')">
+                        <i class="ri-fire-line"></i>
+                        <span>Warmup</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-games-list" class="view hidden"></div>
+
+            <div id="view-challenge" class="view hidden"></div>
+
+            <div id="view-stats" class="view hidden"></div>
+
+            <div id="view-game-active" class="view hidden">
+                <div class="nav-header">
+                    <button class="back-btn" onclick="navigate('training')">
+                        <i class="ri-close-line"></i>
+                    </button>
+                    <h2 id="game-title">Game</h2>
+                </div>
+                <div class="score-display-large" id="main-target">--</div>
+                <div id="game-info" class="game-info-box">Bereit?</div>
+                
+                <div class="hit-buttons">
+                    <button class="glass-btn hit" onclick="GameManager.handleInput(true)">HIT</button>
+                    <button class="glass-btn miss" onclick="GameManager.handleInput(false)">MISS</button>
+                </div>
+            </div>
+
         </section>
 
         <nav class="bottom-dock">
-            <div class="dock-liquid-bg"></div> <ul class="dock-items">
-                <li class="dock-item active"><i class="ri-home-5-line"></i><span>Home</span></li>
-                <li class="dock-item"><i class="ri-bar-chart-box-line"></i><span>Stats</span></li>
-                <li class="dock-item"><i class="ri-user-settings-line"></i><span>Profil</span></li>
-                <li class="dock-item" id="btn-logout"><i class="ri-logout-box-r-line"></i><span>Exit</span></li>
+            <ul class="dock-items">
+                <li class="dock-item" onclick="navigate('dashboard')">
+                    <i class="ri-layout-grid-fill"></i>
+                    <span>Quickplay</span>
+                </li>
+                <li class="dock-item" onclick="navigate('challenge')">
+                    <i class="ri-medal-fill"></i>
+                    <span>Challenge</span>
+                </li>
+                <li class="dock-item active" onclick="navigate('training')">
+                    <i class="ri-target-fill"></i>
+                    <span>Training</span>
+                </li>
+                <li class="dock-item" onclick="navigate('stats')">
+                    <i class="ri-bar-chart-2-fill"></i>
+                    <span>Stats</span>
+                </li>
             </ul>
         </nav>
 
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="./js/ui-controller.js"></script>
+    
+    <script type="module">
+        import { GameManager } from './js/games/game-manager.js';
+        window.GameManager = GameManager; // Für onclick verfügbar machen
+    </script>
+    
     <script src="app.js"></script>
+
 </body>
 </html>
