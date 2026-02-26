@@ -6,20 +6,39 @@ export class ScoringX01Control {
         this.game = gameInstance; 
         this.appContainer = document.getElementById('view-game-x01');
         this.modifier = 1;
+        // Cache für UI Elemente
+        this.ui = {};
     }
 
     async init() {
         document.body.classList.add('game-active');
         if (this.appContainer) {
+            // Grundgerüst nur einmalig setzen
             this.appContainer.innerHTML = htmlX01;
             this.appContainer.classList.remove('hidden');
+            
+            // DOM-Elemente einmalig suchen und "cachen"
+            this.ui = {
+                score: document.getElementById('x01-score'),
+                avg: document.getElementById('x01-avg-val'),
+                last: document.getElementById('x01-last-val'),
+                round: document.getElementById('x01-round'),
+                playerName: document.getElementById('x01-player-name'),
+                challengeTitle: document.getElementById('x01-challenge-title'),
+                scoringStats: document.getElementById('x01-scoring-stats'),
+                // Throw-Boxes als Array für schnellen Zugriff
+                throws: [
+                    document.getElementById('th-1'),
+                    document.getElementById('th-2'),
+                    document.getElementById('th-3')
+                ]
+            };
         }
         
         // Stats einblenden
-        const scoringStats = document.getElementById('x01-scoring-stats');
-        if (scoringStats) scoringStats.classList.remove('hidden');
+        if (this.ui.scoringStats) this.ui.scoringStats.classList.remove('hidden');
 
-        // Header mit Name und Spiel-Schwierigkeit setzen (wie in Warmup)
+        // Header initialisieren
         await this.updateHeaderInfo();
 
         this.updateUI();
@@ -29,24 +48,20 @@ export class ScoringX01Control {
      * Lädt den Spielernamen aus dem LevelSystem und setzt den Challenge-Titel
      */
     async updateHeaderInfo() {
-        const nameEl = document.getElementById('x01-player-name');
-        const titleEl = document.getElementById('x01-challenge-title');
-        
         try {
-            // Versuche echten Namen aus dem Profil zu laden
             await LevelSystem.getUserStats();
-            if (nameEl) nameEl.textContent = window.appState?.profile?.username || "Player 1";
+            if (this.ui.playerName) {
+                this.ui.playerName.textContent = window.appState?.profile?.username || "Player 1";
+            }
         } catch (e) {
-            if (nameEl) nameEl.textContent = "Player 1";
+            if (this.ui.playerName) this.ui.playerName.textContent = "Player 1";
         }
 
-        if (titleEl) {
-            // Zeigt "Training Mode" oder das aktuelle Level des Spiels
-            titleEl.textContent = this.game.isTraining ? "Training Mode" : `Level ${this.game.level || 1}`;
+        if (this.ui.challengeTitle) {
+            this.ui.challengeTitle.textContent = this.game.isTraining ? "Training Mode" : `Level ${this.game.level || 1}`;
         }
     }
 
-    // Durchreiche an die Logik-Datei
     nextRound() {
         if (this.game.nextRound) {
             this.game.nextRound();
@@ -54,7 +69,6 @@ export class ScoringX01Control {
         }
     }
 
-    // Durchreiche an die Logik-Datei
     undo() {
         if (this.game.undo) {
             this.game.undo();
@@ -76,41 +90,41 @@ export class ScoringX01Control {
     }
 
     updateUI() {
-        const scoreEl = document.getElementById('x01-score');
-        const avgValEl = document.getElementById('x01-avg-val');
-        const lastValEl = document.getElementById('x01-last-val');
-        const roundEl = document.getElementById('x01-round');
-
-        if (scoreEl) scoreEl.textContent = this.game.currentScore;
-        if (roundEl) roundEl.textContent = `R${this.game.round}`;
+        // Direkter Zugriff auf den Cache statt document.getElementById
+        if (this.ui.score) this.ui.score.textContent = this.game.currentScore;
+        if (this.ui.round) this.ui.round.textContent = `R${this.game.round}`;
         
-        if (avgValEl) {
+        if (this.ui.avg) {
             const avg = this.game.totalDarts > 0 
                 ? ((this.game.stats.totalPoints / this.game.totalDarts) * 3).toFixed(1) 
                 : "0.0";
-            avgValEl.textContent = avg;
+            this.ui.avg.textContent = avg;
         }
-        if (lastValEl) lastValEl.textContent = this.game.lastScore || 0;
+        
+        if (this.ui.last) {
+            this.ui.last.textContent = this.game.lastScore || 0;
+        }
 
-        // Throw Boxes Logik aktualisieren
+        // Throw Boxes effizient aktualisieren
         const throws = this.game.currentRoundThrows || [];
-        for (let i = 1; i <= 3; i++) {
-            const box = document.getElementById(`th-${i}`);
+        this.ui.throws.forEach((box, index) => {
             if (box) {
-                const t = throws[i - 1];
+                const t = throws[index];
+                // Nur textContent ändern - minimaler Rechenaufwand
                 box.textContent = t ? (t.isBust ? "BST" : `${t.mult > 1 ? (t.mult === 3 ? 'T' : 'D') : ''}${t.base}`) : "-";
             }
-        }
+        });
 
         this.updateModifierUI();
         
-        // SPIELENDE: Triggert das Resultat-Modal im GameManager
         if (this.game.isFinished && window.GameManager) {
             window.GameManager.completeGame();
         }
     }
 
     updateModifierUI() {
+        // Hier nutzen wir weiterhin querySelectorAll, da die Buttons im Template 
+        // oft als Liste vorliegen, aber das CSS sorgt für Performance (touch-action)
         document.querySelectorAll('.modifier-btn, .mod-btn').forEach(btn => {
             const m = parseInt(btn.dataset.mult);
             btn.classList.toggle('active', m === this.modifier && this.modifier !== 1);

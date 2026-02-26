@@ -8,6 +8,9 @@ export class ScoringBoardControl {
         this.frozenTargetDisplay = null;
         this.playerName = "PLAYER";
         this.displayLevel = "CHALLENGE ACTIVE";
+        
+        // Cache für DOM-Elemente
+        this.elements = {};
     }
 
     async init() {
@@ -19,8 +22,6 @@ export class ScoringBoardControl {
         if (appHeader) appHeader.classList.add('hidden');
 
         document.body.classList.add('game-active');
-        this.appContainer.classList.remove('hidden');
-        this.frozenTargetDisplay = null;
 
         const profile = LevelSystem.lastProfileData;
         if (profile && profile.username) {
@@ -37,102 +38,154 @@ export class ScoringBoardControl {
             this.displayLevel = this.game.name || "CHALLENGE ACTIVE";
         }
 
+        // Initiales Rendern des Grundgerüsts
+        this.renderInitialLayout();
         this.updateView();
     }
 
-   updateView() {
-    const target = (this.game.roundDarts.length === 3 && this.frozenTargetDisplay !== null)
-        ? this.frozenTargetDisplay
-        : (this.game.targetDisplay || this.game.currentTargetNumber);
+    renderInitialLayout() {
+        // Rendert das HTML einmalig, um die Struktur zu schaffen
+        this.appContainer.innerHTML = htmlBoardControl(
+            "", [], 0, 0, 0, 0, 1, 10, 0, 
+            this.playerName, this.displayLevel
+        );
 
-    const roundDarts = this.game.roundDarts || [];
-    const score = this.game.points || 0;
-    const lives = this.game.lives;
-    const bolts = this.game.bolts;
-    const malus = this.game.malusScore || 0;
-    const round = this.game.currentRound || this.game.round || 1;
-    const maxRounds = this.game.config?.maxRounds || 10;
-    const minPoints = this.game.config?.minPoints || 0;
+        // Cache alle wichtigen Update-Elemente basierend auf den IDs in view-board-control.js
+        const ids = [
+            'main-target', 'bc-points-display', 'x01-round', 
+            'bc-heart-container', 'bc-bolt-container',
+            'bc-dart-1', 'bc-dart-2', 'bc-dart-3'
+        ];
+        
+        ids.forEach(id => {
+            this.elements[id] = document.getElementById(id);
+        });
+    }
 
-    // Board neu zeichnen
-    this.appContainer.innerHTML = htmlBoardControl(
-        target, 
-        roundDarts, 
-        score,
-        lives, 
-        bolts,
-        malus,
-        round,
-        maxRounds,
-        minPoints,
-        this.playerName,
-        this.displayLevel
-    );
+    updateView() {
+        // 1. TARGET LOGIK
+        const currentTarget = this.game.targets ? this.game.targets[this.game.currentIndex] : (this.game.targetDisplay || "FIN");
+        
+        const target = (this.game.roundDarts.length === 3 && this.frozenTargetDisplay !== null)
+            ? this.frozenTargetDisplay
+            : currentTarget;
 
-    // WICHTIG: Erst jetzt existieren die Elemente im DOM wieder!
-    requestAnimationFrame(() => {
-    this.highlightBoard(); 
-});
- if (this.game.isFinished && window.GameManager?.completeGame) {
-            // Leicht verzögert, damit man den letzten Treffer noch kurz aufblinken sieht
+        // 2. DATEN AUS GAME-INSTANZ
+        const roundDarts = this.game.roundDarts || []; 
+        const score = this.game.points || 0;
+        const malus = this.game.malusScore || 0;
+        const lives = this.game.lives !== undefined ? this.game.lives : 0;
+        const bolts = this.game.bolts !== undefined ? this.game.bolts : 0;
+        const round = this.game.round || 1;
+        const maxRounds = this.game.maxRounds || 10;
+
+        // 3. DOM UPDATES
+        if (this.elements['main-target']) {
+            this.elements['main-target'].textContent = target === 25 ? 'BULL' : target;
+        }
+
+        if (this.elements['bc-points-display']) {
+            const pointsDisplay = this.game.minPoints > 0 ? `${score} / ${this.game.minPoints}` : `${score}`;
+            this.elements['bc-points-display'].innerHTML = `
+                <span class="ani-next-score" style="font-weight: 900; font-size: 0.9rem; color: var(--target-blue-1);">${pointsDisplay}</span>
+                ${malus > 0 ? `<span style="color: var(--neon-red); font-size: 0.75rem; font-weight: 800;">(-${malus})</span>` : ''}
+            `;
+        }
+
+        if (this.elements['x01-round']) {
+            this.elements['x01-round'].textContent = `${round}/${maxRounds}`;
+        }
+
+        // 4. DART PILLS (S-X / D-X / T-X Anzeige)
+        for (let i = 0; i < 3; i++) {
+            const el = this.elements[`bc-dart-${i+1}`];
+            if (el) {
+                const val = roundDarts[i]; // ATC liefert hier oft den Multiplikator als Zahl (0, 1, 2, 3)
+                if (val !== undefined) {
+                    let text = 'M';
+                    if (val > 0) {
+                        const prefix = val === 1 ? 'S' : (val === 2 ? 'D' : 'T');
+                        const tNum = target === 25 ? 'BULL' : target;
+                        text = `${prefix}-${tNum}`;
+                    }
+                    el.textContent = text;
+                    el.className = `dart-dot filled ${val > 0 ? 'hit' : 'miss'}`;
+                    // Hintergrundfarbe analog zur View setzen
+                    const bgColors = ['var(--target-blue-1)', 'var(--target-blue-2)', 'var(--target-blue-3)'];
+                    if (val > 0) el.style.background = bgColors[i];
+                } else {
+                    el.textContent = '-';
+                    el.className = 'dart-dot empty';
+                    el.style.background = '';
+                }
+            }
+        }
+
+        // 5. ICONS (HERZEN & BLITZE)
+        if (this.elements['bc-heart-container']) {
+            this.elements['bc-heart-container'].innerHTML = this.generateIconHtml(lives, 'ri-heart-fill', 'icon-heart');
+        }
+        if (this.elements['bc-bolt-container']) {
+            this.elements['bc-bolt-container'].innerHTML = this.generateIconHtml(bolts, 'ri-flashlight-fill', 'icon-bolt');
+        }
+
+        // Highlights & Effekte
+        requestAnimationFrame(() => {
+            this.highlightBoard();
+            this.highlightNextButton(roundDarts.length >= 3);
+        });
+
+        if (this.game.isFinished && window.GameManager?.completeGame) {
             setTimeout(() => {
                 window.GameManager.completeGame();
             }, 600);
         }
     }
 
- highlightBoard() {
-    // 1. Alle alten Highlights sicher entfernen
-    document.querySelectorAll('.segment-path').forEach(path => {
-        path.classList.remove(
-            'target-dart-1', 'target-dart-2', 'target-dart-3',
-            'toggle-color-1-2', 'toggle-color-2-3', 'toggle-color-1-3', 'toggle-color-1-2-3'
-        );
-    });
-
-    // Wieviele Darts wurden diese Runde schon geworfen?
-    const throwsCount = (this.game.roundDarts || []).length;
-    
-    // Wenn 3 Darts geworfen wurden, blenden wir die Ziele aus, bis Next gedrückt wird
-    if (throwsCount >= 3 || this.frozenTargetDisplay !== null) return;
-
-    // Vorausschauende Ziele (ATC: [18,19,20] oder Shanghai: [20,20,20])
-    const targets = this.game.currentTargets || [];
-    if (targets.length === 0) return;
-
-    // 2. Wir ordnen nur die noch NICHT geworfenen Darts den Zahlen zu
-    const segmentMap = {};
-    for (let i = throwsCount; i < 3; i++) {
-        const num = targets[i];
-        if (num === undefined) continue;
-        if (!segmentMap[num]) segmentMap[num] = [];
-        
-        // i + 1 ist der Dart-Index (1 = Hellblau, 2 = Mittelblau, 3 = Dunkelblau)
-        segmentMap[num].push(i + 1); 
+    generateIconHtml(count, iconClass, activeClass) {
+        let html = '';
+        for (let i = 0; i < 3; i++) {
+            const isActive = i < count;
+            html += `<i class="${iconClass} ${isActive ? activeClass : 'icon-empty'}"></i>`;
+        }
+        return html;
     }
 
-    // 3. CSS Klassen gezielt anwenden
-    for (const [num, dartIndices] of Object.entries(segmentMap)) {
-        const segmentGroup = document.getElementById(`segment-${num}`);
-        if (!segmentGroup) continue;
-
-        const paths = segmentGroup.querySelectorAll('.segment-path');
-        paths.forEach(path => {
-            const sorted = dartIndices.sort((a, b) => a - b);
-            
-            // Wenn mehrere Darts auf dieselbe Zahl gehen -> Blinken
-            if (sorted.length === 3) {
-                path.classList.add('toggle-color-1-2-3');
-            } else if (sorted.length === 2) {
-                path.classList.add(`toggle-color-${sorted[0]}-${sorted[1]}`);
-            } 
-            // Wenn nur 1 Dart auf diese Zahl geht -> Statische Farbe
-            else if (sorted.length === 1) {
-                path.classList.add(`target-dart-${sorted[0]}`);
-            }
+    highlightBoard() {
+        document.querySelectorAll('.segment-path').forEach(path => {
+            path.classList.remove(
+                'target-dart-1', 'target-dart-2', 'target-dart-3',
+                'toggle-color-1-2', 'toggle-color-2-3', 'toggle-color-1-3', 'toggle-color-1-2-3'
+            );
         });
+
+        const throwsCount = (this.game.roundDarts || []).length;
+        if (throwsCount >= 3 || this.frozenTargetDisplay !== null) return;
+
+        const targets = this.game.currentTargets || [];
+        if (targets.length === 0) return;
+
+        const segmentMap = {};
+        for (let i = throwsCount; i < 3; i++) {
+            const num = targets[i];
+            if (num === undefined) continue;
+            if (!segmentMap[num]) segmentMap[num] = [];
+            segmentMap[num].push(i + 1); 
+        }
+
+        for (const [num, dartIndices] of Object.entries(segmentMap)) {
+            const segmentGroup = document.getElementById(`segment-${num}`);
+            if (!segmentGroup) continue;
+
+            const paths = segmentGroup.querySelectorAll('.segment-path');
+            paths.forEach(path => {
+                const sorted = dartIndices.sort((a, b) => a - b);
+                if (sorted.length === 3) path.classList.add('toggle-color-1-2-3');
+                else if (sorted.length === 2) path.classList.add(`toggle-color-${sorted[0]}-${sorted[1]}`);
+                else if (sorted.length === 1) path.classList.add(`target-dart-${sorted[0]}`);
+            });
+        }
     }
-}
 
     handleInput(multiplier) {
         if (this.game.roundDarts.length < 3 && !this.game.isFinished) {
@@ -146,8 +199,7 @@ export class ScoringBoardControl {
             }
 
             if (this.game.round > roundBefore && this.game.bolts === 0) {
-                this.game.bolts = this.game.config.startBlitz;
-                this.game.roundDarts = [];
+                this.game.bolts = this.game.config?.startBlitz || 0;
                 this.triggerBurnoutEffect();
             }
 
@@ -156,43 +208,28 @@ export class ScoringBoardControl {
         }
     }
 
-   nextRound() {
+    nextRound() {
+        if (!this.game) return;
         const btn = document.getElementById('bc-next-btn');
-        if (btn) btn.classList.add('ani-next-score'); // Button Animation
+        if (btn) btn.classList.add('ani-next-score');
 
+        this.game.nextRound();
         this.frozenTargetDisplay = null;
-        this.game.nextRound(); 
-        
-        if (this.game.bolts === 0 && this.game.config.startBlitz > 0) {
+
+        if (this.game.bolts === 0 && this.game.config?.startBlitz > 0) {
             this.game.bolts = this.game.config.startBlitz;
             this.triggerBurnoutEffect();
         }
-        
-        this.highlightNextButton(false);
+
         this.updateView();
         
-        // Animation nach 500ms entfernen für den nächsten Loop
         setTimeout(() => {
             const scoreDisplay = document.getElementById('bc-points-display');
             if(scoreDisplay) scoreDisplay.classList.remove('ani-next-score');
         }, 500);
     }
 
-    nextRound() {
-        if (!this.game) return;
-
-        // 1. Die Logik im Hintergrund eine Runde weiterschalten (hier wird der Counter erhöht!)
-        this.game.nextRound();
-
-        // 2. Eingefrorenes Display (von der Vorrunde) lösen
-        this.frozenTargetDisplay = null;
-
-        // 3. UI updaten und Next-Button verstecken
-        this.highlightNextButton(false);
-        this.updateView();
-    }
-
-   undo() {
+    undo() {
         const btn = document.getElementById('bc-undo-btn');
         if (btn) btn.classList.add('ani-undo');
 
@@ -200,7 +237,6 @@ export class ScoringBoardControl {
         if (this.game.undo) this.game.undo();
         else if (this.game.roundDarts.length > 0) this.game.roundDarts.pop();
         
-        this.highlightNextButton(false);
         this.updateView();
 
         setTimeout(() => {
@@ -209,9 +245,8 @@ export class ScoringBoardControl {
     }
 
     highlightNextButton(active) {
-        const btn = this.appContainer.querySelector('.bc-action-wide.next');
-        if (!btn) return;
-        btn.classList.toggle('confirm-next', active);
+        const btn = document.getElementById('bc-next-btn');
+        if (btn) btn.classList.toggle('confirm-next', active);
     }
 
     triggerBurnoutEffect() {

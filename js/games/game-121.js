@@ -24,7 +24,7 @@ export class Game121 {
             2:  { start: 61,  rounds: 3, check: 'double', totalTargets: 5,  minPoints: 25, resetToStart: true,  malus: 5 },
             3:  { start: 71,  rounds: 3, check: 'single', totalTargets: 6,  minPoints: 30, resetToStart: true,  malus: 5 },
             4:  { start: 71,  rounds: 3, check: 'double', totalTargets: 6,  minPoints: 35, resetToStart: true,  malus: 5 },
-            5:  { start: 81,  rounds: 3, check: 'double', totalTargets: 6,  minPoints: 35, resetToStart: true,  malus: 5 },
+            5:  { start: 81,  rounds: 3, check: 'single-double', switchTarget: 82, totalTargets: 6,  minPoints: 35, resetToStart: true,  malus: 5 },
             // Beispiel für Hybrid-Modus: Bis 122 Single Out, ab 123 Double Out
             10: { start: 121, rounds: 9, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
             20: { start: 121, rounds: 2, check: 'double', totalTargets: 10, minPoints: 60, resetToStart: true,  malus: 10, minTargetToReach: 125 }

@@ -6,20 +6,48 @@ export class WarmupController {
         this.game = gameInstance;
         this.modifier = 1;
         this.appContainer = document.getElementById('view-game-x01');
+        this.ui = {}; // Cache für DOM-Elemente
     }
 
     async init() {
         document.body.classList.add('game-active');
         
         if (this.appContainer) {
+            // Grundgerüst nur einmalig setzen
             this.appContainer.innerHTML = htmlX01;
             this.appContainer.classList.remove('hidden');
+
+            // DOM-Elemente einmalig suchen und "cachen"
+            this.ui = {
+                score: document.getElementById('x01-score'),
+                round: document.getElementById('x01-round'),
+                playerName: document.getElementById('x01-player-name'),
+                challengeTitle: document.getElementById('x01-challenge-title'),
+                scoringStats: document.getElementById('x01-scoring-stats'),
+                targetContainer: document.getElementById('x01-target-progress-container'),
+                statsBar: document.getElementById('x01-stats-bar'),
+                points: document.getElementById('x01-points'),
+                malus: document.getElementById('x01-malus'),
+                pointsContainer: document.getElementById('x01-points-container'),
+                malusContainer: document.getElementById('x01-malus-container'),
+                flashOverlay: document.getElementById('board-flash-overlay'),
+                // Throw-Boxes als Array
+                throws: [
+                    document.getElementById('th-1'),
+                    document.getElementById('th-2'),
+                    document.getElementById('th-3')
+                ],
+                // Dart-Icons (3 Darts Anzeige)
+                dartIcons: [
+                    document.getElementById('dart-1'),
+                    document.getElementById('dart-2'),
+                    document.getElementById('dart-3')
+                ]
+            };
         }
-        const scoringStats = document.getElementById('x01-scoring-stats');
-        const targetContainer = document.getElementById('x01-target-progress-container');
         
-        if (scoringStats) scoringStats.classList.add('hidden'); // Verstecke AVG/LAST
-        if (targetContainer) targetContainer.classList.remove('hidden'); // Zeige 0/15 etc.
+        if (this.ui.scoringStats) this.ui.scoringStats.classList.add('hidden'); // Verstecke AVG/LAST
+        if (this.ui.targetContainer) this.ui.targetContainer.classList.remove('hidden'); // Zeige 0/15 etc.
 
         // Header mit Name und Spiel-Schwierigkeit setzen
         await this.updateHeaderInfo();
@@ -31,12 +59,8 @@ export class WarmupController {
      * Aktualisiert den Header: Echter Name + Aktuelles Spiel-Level
      */
     async updateHeaderInfo() {
-        const nameEl = document.getElementById('x01-player-name');
-        const titleEl = document.getElementById('x01-challenge-title');
-        
-        if (!nameEl && !titleEl) return;
+        if (!this.ui.playerName && !this.ui.challengeTitle) return;
 
-        // --- 1. NAME ERMITTELN ---
         let displayName = "PLAYER";
         const profile = LevelSystem.lastProfileData;
         
@@ -46,37 +70,34 @@ export class WarmupController {
             displayName = window.appState.profile.username;
         }
 
-        // --- 2. SPIEL-LEVEL ERMITTELN ---
-        // Wir nehmen das Level, das die gameInstance vom GameManager erhalten hat
         let displayLevel = "CHALLENGE ACTIVE";
-        
         if (this.game && this.game.level) {
             displayLevel = `LEVEL ${this.game.level}`;
         } else if (this.game && this.game.difficulty) {
             displayLevel = `LEVEL ${this.game.difficulty}`;
         }
 
-        // Werte ins UI schreiben
-        if (nameEl) nameEl.textContent = displayName.toUpperCase();
-        if (titleEl) titleEl.textContent = displayLevel;
+        if (this.ui.playerName) this.ui.playerName.textContent = displayName.toUpperCase();
+        if (this.ui.challengeTitle) this.ui.challengeTitle.textContent = displayLevel;
     }
 
     handleInput(val, mult) {
         if (this.game.currentRoundThrows.length >= 3) return;
         const safeVal = parseInt(val) || 0;
         const finalMult = this.modifier !== 1 ? this.modifier : (parseInt(mult) || 1);
+        
         this.triggerFlash(safeVal, finalMult);
         this.game.registerHit(safeVal, finalMult);
+        
         this.modifier = 1; 
         this.updateUI();
     }
 
     triggerFlash(val, mult) {
-        const overlay = document.getElementById('board-flash-overlay');
-        if (!overlay) return;
+        if (!this.ui.flashOverlay) return;
         let flashClass = mult === 3 ? 'flash-triple' : (val === 0 ? 'flash-miss' : 'flash-active');
-        overlay.classList.add(flashClass);
-        setTimeout(() => overlay.classList.remove(flashClass), 400);
+        this.ui.flashOverlay.classList.add(flashClass);
+        setTimeout(() => this.ui.flashOverlay.classList.remove(flashClass), 400);
         
         const segment = document.getElementById(`segment-${val}`);
         if (segment) {
@@ -85,32 +106,49 @@ export class WarmupController {
         }
     }
 
-    setModifier(m) { this.modifier = this.modifier === m ? 1 : m; this.updateModifierUI(); }
-    nextRound() { if (this.game.nextRound) this.game.nextRound(); this.modifier = 1; this.updateUI(); }
-    undo() { if (this.game.undo) this.game.undo(); this.modifier = 1; this.updateUI(); }
+    setModifier(m) { 
+        this.modifier = this.modifier === m ? 1 : m; 
+        this.updateModifierUI(); 
+    }
+
+    nextRound() { 
+        if (this.game.nextRound) this.game.nextRound(); 
+        this.modifier = 1; 
+        this.updateUI(); 
+    }
+
+    undo() { 
+        if (this.game.undo) this.game.undo(); 
+        this.modifier = 1; 
+        this.updateUI(); 
+    }
 
     updateUI() {
-        const scoreEl = document.getElementById('x01-score');
-        const roundEl = document.getElementById('x01-round');
+        if (!this.game) return;
+
         const throws = this.game.currentRoundThrows || [];
         const targets = this.game.currentTargets || [];
         const currentTarget = targets[throws.length];
 
-        if (scoreEl) {
-            scoreEl.textContent = currentTarget ?? "-";
-            scoreEl.style.color = "#00f2ff"; 
+        // 1. Haupt-Target Anzeige (z.B. "20")
+        if (this.ui.score) {
+            this.ui.score.textContent = currentTarget ?? "-";
+            this.ui.score.style.color = "#00f2ff"; 
         }
-        if (roundEl) roundEl.textContent = `Runde ${this.game.round ?? 1}`;
 
+        // 2. Runde
+        if (this.ui.round) this.ui.round.textContent = `Runde ${this.game.round ?? 1}`;
+
+        // 3. Stats (Punkte, Malus, Ziel)
         this.renderDisplayStats();
 
-        // THROW BOXES LOGIK
-        for (let i = 1; i <= 3; i++) {
-            const box = document.getElementById(`th-${i}`);
-            if (!box) continue;
+        // 4. Throw Boxes
+        this.ui.throws.forEach((box, index) => {
+            if (!box) return;
             
             box.className = 'throw-box';
-            const dartData = throws[i - 1];
+            const dartData = throws[index];
+            const i = index + 1;
             
             if (dartData) {
                 box.classList.add(`target-dart-${i}`, `active-dart-${i}`); 
@@ -122,49 +160,56 @@ export class WarmupController {
                 box.textContent = ""; 
                 if (i === throws.length + 1) box.classList.add('next-up');
             }
-        }
+        });
 
-        for (let i = 1; i <= 3; i++) {
-            const icon = document.getElementById(`dart-${i}`);
-            if (icon) icon.style.opacity = i <= (3 - throws.length) ? '1' : '0.2';
-        }
+        // 5. Dart-Icons (Verfügbare Darts Anzeige)
+        this.ui.dartIcons.forEach((icon, index) => {
+            if (icon) {
+                const i = index + 1;
+                icon.style.opacity = i <= (3 - throws.length) ? '1' : '0.2';
+            }
+        });
 
+        // 6. Board Highlighting & Modifier
         this.highlightBoard();
         this.updateModifierUI();
-        if (this.game.isFinished && window.GameManager?.completeGame) window.GameManager.completeGame();
+
+        if (this.game.isFinished && window.GameManager?.completeGame) {
+            window.GameManager.completeGame();
+        }
     }
 
     renderDisplayStats() {
-        const statsBar = document.getElementById('x01-stats-bar');
-        if (statsBar) statsBar.style.display = 'flex';
-        const pVal = document.getElementById('x01-points');
-        if (pVal) pVal.textContent = this.game.points;
-        const mVal = document.getElementById('x01-malus');
-        if (mVal) mVal.textContent = `-${this.game.malusTotal || 0}`;
+        if (this.ui.statsBar) this.ui.statsBar.style.display = 'flex';
+        if (this.ui.points) this.ui.points.textContent = this.game.points;
+        if (this.ui.malus) this.ui.malus.textContent = `-${this.game.malusTotal || 0}`;
         
+        // Ziel-Anzeige (Dynamisches Element erhalten)
         let goalDisplay = document.getElementById('warmup-goal-display');
         if (!goalDisplay) {
             goalDisplay = document.createElement('div');
             goalDisplay.id = 'warmup-goal-display';
             goalDisplay.style.marginLeft = "15px";
             goalDisplay.innerHTML = `<span class="label">ZIEL</span> <span class="value" style="color:#f1c40f; font-weight:bold; margin-left:5px;">${this.game.minPointsRequired}</span>`;
-            document.getElementById('x01-malus-container')?.parentElement.appendChild(goalDisplay);
+            this.ui.malusContainer?.parentElement.appendChild(goalDisplay);
         } else {
             const valEl = goalDisplay.querySelector('.value');
             if (valEl) valEl.textContent = this.game.minPointsRequired;
         }
-        document.getElementById('x01-points-container')?.classList.remove('hidden');
-        document.getElementById('x01-malus-container')?.classList.remove('hidden');
+
+        if (this.ui.pointsContainer) this.ui.pointsContainer.classList.remove('hidden');
+        if (this.ui.malusContainer) this.ui.malusContainer.classList.remove('hidden');
     }
 
     highlightBoard() {
-        document.querySelectorAll('.segment-path').forEach(path => {
-            path.classList.remove(
-                'target-dart-1', 'target-dart-2', 'target-dart-3',
-                'toggle-color-1-2', 'toggle-color-2-3', 'toggle-color-1-3', 'toggle-color-1-2-3'
-            );
-            path.style.fill = ''; 
-        });
+        // Performance-Optimierung: Alle aktiven Klassen auf einmal entfernen
+        document.querySelectorAll('.segment-path.target-dart-1, .segment-path.target-dart-2, .segment-path.target-dart-3, .segment-path.toggle-color-1-2, .segment-path.toggle-color-2-3, .segment-path.toggle-color-1-3, .segment-path.toggle-color-1-2-3')
+            .forEach(path => {
+                path.classList.remove(
+                    'target-dart-1', 'target-dart-2', 'target-dart-3',
+                    'toggle-color-1-2', 'toggle-color-2-3', 'toggle-color-1-3', 'toggle-color-1-2-3'
+                );
+            });
 
         const targets = this.game.currentTargets || []; 
         const throwsCount = (this.game.currentRoundThrows || []).length;
@@ -199,7 +244,8 @@ export class WarmupController {
 
     updateModifierUI() {
         document.querySelectorAll('.modifier-btn').forEach(btn => {
-            btn.classList.toggle('active', parseInt(btn.dataset.mult) === this.modifier && this.modifier !== 1);
+            const btnMult = parseInt(btn.dataset.mult);
+            btn.classList.toggle('active', btnMult === this.modifier && this.modifier !== 1);
         });
     }
 }

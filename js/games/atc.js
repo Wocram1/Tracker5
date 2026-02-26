@@ -60,6 +60,7 @@ export class AroundTheClock {
         this.isFinished = false;
         this.roundDarts = [];
         this.history = [];
+        
 
         this.roundStartIndex = 0;
         this.roundStartHits = 0;

@@ -4,12 +4,14 @@ import { LevelSystem } from '../supabase_client.js';
 /**
  * FinishingController
  * Steuert 121, Checkout Challenge etc. im X01-Layout
+ * Optimiert für Performance durch DOM-Caching
  */
 export class FinishingController {
     constructor(gameInstance) {
         this.game = gameInstance;
         this.modifier = 1;
         this.appContainer = document.getElementById('view-game-x01');
+        this.ui = {}; // Cache für DOM-Elemente
     }
 
     async init() {
@@ -18,8 +20,30 @@ export class FinishingController {
         document.body.classList.add('hide-app-header'); 
         
         if (this.appContainer) {
+            // Grundgerüst nur einmalig setzen
             this.appContainer.innerHTML = htmlX01;
             this.appContainer.classList.remove('hidden');
+
+            // DOM-Elemente einmalig suchen und "cachen"
+            this.ui = {
+                score: document.getElementById('x01-score'),
+                round: document.getElementById('x01-round'),
+                progress: document.getElementById('x01-target-progress'),
+                totalPoints: document.getElementById('x01-total-points'),
+                malus: document.getElementById('x01-malus-val'),
+                minPts: document.getElementById('x01-min-pts-val'),
+                modeBadge: document.getElementById('x01-checkout-badge'),
+                hint: document.getElementById('x01-checkout-hint'),
+                livesContainer: document.getElementById('x01-lives-container'),
+                playerName: document.getElementById('x01-player-name'),
+                challengeTitle: document.getElementById('x01-challenge-title'),
+                // Throw-Boxes als Array für schnellen Zugriff
+                throws: [
+                    document.getElementById('th-1'),
+                    document.getElementById('th-2'),
+                    document.getElementById('th-3')
+                ]
+            };
         }
 
         // Header initialisieren
@@ -30,18 +54,17 @@ export class FinishingController {
     }
 
     async updateHeaderInfo() {
-        const nameEl = document.getElementById('x01-player-name');
-        const titleEl = document.getElementById('x01-challenge-title');
-        
         try {
             await LevelSystem.getUserStats();
-            if (nameEl) nameEl.textContent = window.appState?.profile?.username || "Player 1";
+            if (this.ui.playerName) {
+                this.ui.playerName.textContent = window.appState?.profile?.username?.toUpperCase() || "PLAYER 1";
+            }
         } catch (e) {
-            if (nameEl) nameEl.textContent = "Player 1";
+            if (this.ui.playerName) this.ui.playerName.textContent = "PLAYER 1";
         }
 
-        if (titleEl) {
-            titleEl.textContent = this.game.isTraining ? "Training Mode" : `Level ${this.game.level || 1}`;
+        if (this.ui.challengeTitle) {
+            this.ui.challengeTitle.textContent = this.game.isTraining ? "TRAINING MODE" : `LEVEL ${this.game.level || 1}`;
         }
     }
 
@@ -80,46 +103,35 @@ export class FinishingController {
     }
 
     updateUI() {
+        if (!this.game) return;
+
         // 1. Haupt-Score (Restscore für das aktuelle Target)
-        const scoreEl = document.getElementById('x01-score');
-        if (scoreEl) scoreEl.textContent = this.game.currentScore; 
+        if (this.ui.score) this.ui.score.textContent = this.game.currentScore; 
 
         // 2. Runden-Zähler (R 1/3)
-        const roundEl = document.getElementById('x01-round');
-        if (roundEl) {
+        if (this.ui.round) {
             const currentRound = (this.game.roundsUsedForTarget || 0) + 1;
             const maxRounds = this.game.maxRoundsPerTarget || 3;
-            roundEl.textContent = `R ${currentRound}/${maxRounds}`;
+            this.ui.round.textContent = `R ${currentRound}/${maxRounds}`;
         }
 
         // 3. Target-Fortschritt (z.B. 2/5)
-        const progressEl = document.getElementById('x01-target-progress');
-        if (progressEl) {
-            progressEl.textContent = `${this.game.targetsPlayed}/${this.game.totalTargetsToPlay}`;
+        if (this.ui.progress) {
+            this.ui.progress.textContent = `${this.game.targetsPlayed}/${this.game.totalTargetsToPlay}`;
         }
 
-        // 4. Punkte & Malus (Nutzt IDs aus dem neuen Template)
-        const totalPointsEl = document.getElementById('x01-total-points');
-        if (totalPointsEl) totalPointsEl.textContent = this.game.points || 0;
+        // 4. Punkte & Malus
+        if (this.ui.totalPoints) this.ui.totalPoints.textContent = this.game.points || 0;
+        if (this.ui.malus) this.ui.malus.textContent = this.game.malusAmount || 0;
 
-        const malusEl = document.getElementById('x01-malus-val');
-        if (malusEl) {
-            // Zeigt entweder den aktuellen Malus-Score oder den Strafbetrag pro Fail
-            malusEl.textContent = this.game.malusAmount || 0;
-        }
-
-        // 5. Mindestpunkte Anzeige (unten in der Status-Bar)
-        const minPtsVal = document.getElementById('x01-min-pts-val');
-        if (minPtsVal) {
-            minPtsVal.textContent = this.game.minPointsRequired || 0;
-        }
+        // 5. Mindestpunkte Anzeige
+        if (this.ui.minPts) this.ui.minPts.textContent = this.game.minPointsRequired || 0;
 
         // 6. Checkout-Modus Badge (S/O oder D/O)
-        const modeBadge = document.getElementById('x01-checkout-badge');
-        if (modeBadge) {
+        if (this.ui.modeBadge) {
             const activeMode = this.game.getCurrentCheckMode(); 
-            modeBadge.textContent = activeMode === 'double' ? 'D/O' : 'S/O';
-            modeBadge.className = `mode-badge-compact ${activeMode === 'double' ? 'mode-double' : 'mode-single'}`;
+            this.ui.modeBadge.textContent = activeMode === 'double' ? 'D/O' : 'S/O';
+            this.ui.modeBadge.className = `mode-badge-compact ${activeMode === 'double' ? 'mode-double' : 'mode-single'}`;
         }
 
         // 7. Wurf-Historie (Throw Boxes)
@@ -129,8 +141,7 @@ export class FinishingController {
         this.updateStatsBar();
 
         // 9. Checkout-Hilfe (Weg-Vorschlag)
-        const hintEl = document.getElementById('x01-checkout-hint');
-        if (hintEl) hintEl.textContent = this.game.checkoutPath || "";
+        if (this.ui.hint) this.ui.hint.textContent = this.game.checkoutPath || "";
 
         // 10. Modifier UI Update
         this.updateModifierUI();
@@ -143,12 +154,12 @@ export class FinishingController {
 
     renderThrowBoxes() {
         const throws = this.game.currentRoundThrows || [];
-        for (let i = 1; i <= 3; i++) {
-            const box = document.getElementById(`th-${i}`);
-            if (!box) continue;
+        this.ui.throws.forEach((box, index) => {
+            if (!box) return;
             
+            const i = index + 1; // 1-based index für IDs/Logik
             box.className = 'throw-box'; 
-            const t = throws[i-1];
+            const t = throws[index];
             
             if (t) {
                 if (t.isDummy) {
@@ -161,18 +172,26 @@ export class FinishingController {
                 }
             } else {
                 box.textContent = "-";
-                // Markiere das nächste Feld, das befüllt wird
                 const currentRealDarts = throws.filter(d => !d.isDummy).length;
                 if (i === currentRealDarts + 1) box.classList.add('next-up');
             }
-        }
+        });
     }
 
     updateStatsBar() {
-        const livesContainer = document.getElementById('x01-lives-container');
-        if (livesContainer && this.game.lives !== undefined) {
-            livesContainer.classList.remove('hidden');
-            livesContainer.innerHTML = this.generateIcons(this.game.lives, 'icon-heart', 'ri-heart-fill');
+        if (this.ui.livesContainer && this.game.lives !== undefined) {
+            this.ui.livesContainer.classList.remove('hidden');
+            
+            // Optimiert: Nur Icons updaten, wenn nötig
+            const icons = this.ui.livesContainer.querySelectorAll('i');
+            if (icons.length === 0) {
+                this.ui.livesContainer.innerHTML = this.generateIcons(this.game.lives, 'icon-heart', 'ri-heart-fill');
+            } else {
+                icons.forEach((icon, i) => {
+                    const isActive = i < this.game.lives;
+                    icon.className = `ri-heart-fill ${isActive ? 'icon-heart' : 'icon-empty'}`;
+                });
+            }
         }
     }
 
@@ -187,14 +206,9 @@ export class FinishingController {
     }
 
     updateModifierUI() {
-        // Unterstützt sowohl .modifier-btn als auch .mod-btn aus dem neuen SVG Template
         document.querySelectorAll('.modifier-btn, .mod-btn').forEach(btn => {
             const btnMult = parseInt(btn.dataset.mult);
-            if (btnMult === this.modifier && this.modifier !== 1) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
+            btn.classList.toggle('active', btnMult === this.modifier && this.modifier !== 1);
         });
     }
 }

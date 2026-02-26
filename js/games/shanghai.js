@@ -40,7 +40,7 @@ export class Shanghai {
             2: { rounds: 12, targets: [15,16,17,18,19,20], startBlitz: 3, startHerz: 0, bM: 1, bH: 1, minPoints: 105 },
             3: { rounds: 11, targets: [15,16,17,18,19,20], startBlitz: 3, startHerz: 0, bM: 1, bH: 1, minPoints: 130 },
             4: { rounds: 9,  targets: [15,16,17,18,19,20], startBlitz: 3, startHerz: 0, bM: 2, bH: 2, minPoints: 160 },
-            5: { rounds: 29, targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25], startBlitz: 3, startHerz: 0, bM: 1, bH: 1, minPoints: 300 },
+            5: { rounds: 29, targets: [15,16,17,18,19,20,25], startBlitz: 3, startHerz: 0, bM: 1, bH: 1, minPoints: 300 },
             6: { rounds: 27, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 3, startHerz: 0, bM: 2, bH: 2, minPoints: 360 },
             7: { rounds: 24, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 3, startHerz: 0, bM: 3, bH: 3, minPoints: 400 },
             8: { rounds: 22, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 3, startHerz: 0, bM: 3, bH: 3, minPoints: 450 },

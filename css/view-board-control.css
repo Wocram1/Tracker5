@@ -359,3 +359,12 @@ body.game-active .app-top-bar { display: none !important; }
 .bc-action-wide:active {
     transform: scale(0.95);
 }
+/* Optimierung für Board-Control Eingaben (S, D, T, Miss, Undo, Next) */
+.bc-btn-small, 
+.bc-action-wide,
+.mod-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    /* Verhindert, dass Text markiert wird, wenn man schnell tippt */
+    user-select: none; 
+}

@@ -17,11 +17,12 @@ export const htmlBoardControl = (target, roundDarts, score, lives, bolts, malus,
     };
 
     // Dart-Punkte (Pills Style) Anzeige mit S-X, D-X, T-X
-   const dartDots = [0, 1, 2].map(i => {
+    // UPDATE: IDs bc-dart-1 bis bc-dart-3 hinzugefügt
+    const dartDots = [0, 1, 2].map(i => {
         const val = roundDarts[i];
         const bgColors = ['var(--target-blue-1)', 'var(--target-blue-2)', 'var(--target-blue-3)'];
         
-        if (val === undefined) return '<div class="dart-dot empty" style="width: auto; padding: 0 12px;">-</div>';
+        if (val === undefined) return `<div id="bc-dart-${i+1}" class="dart-dot empty" style="width: auto; padding: 0 12px;">-</div>`;
         
         let text = 'M';
         if (val > 0) {
@@ -30,10 +31,9 @@ export const htmlBoardControl = (target, roundDarts, score, lives, bolts, malus,
             text = `${prefix}-${tNum}`;
         }
         
-        // Dynamischer Hintergrund je nach Dart-Index (0, 1, oder 2)
         const bgColorStyle = val > 0 ? `background: ${bgColors[i]}; border-color: rgba(255,255,255,0.4);` : '';
         
-        return `<div class="dart-dot filled ${val > 0 ? 'hit' : 'miss'}" style="width: auto; padding: 0 12px; ${bgColorStyle}">${text}</div>`;
+        return `<div id="bc-dart-${i+1}" class="dart-dot filled ${val > 0 ? 'hit' : 'miss'}" style="width: auto; padding: 0 12px; ${bgColorStyle}">${text}</div>`;
     }).join('');
 
     // --- SVG Helper ---
@@ -81,20 +81,20 @@ export const htmlBoardControl = (target, roundDarts, score, lives, bolts, malus,
                 
                 <div class="sidebar-stat" style="display: flex; flex-direction: column; align-items: center;" title="Points">
                     <span style="font-size: 0.6rem; color: #94a3b8; font-weight: 700;">PTS</span>
-                    <div style="display: flex; align-items: center; gap: 4px;">
-                        <span id="bc-points-display" class="ani-next-score" style="font-weight: 900; font-size: 0.9rem; color: var(--target-blue-1);">${pointsDisplay}</span>
+                    <div id="bc-points-display" style="display: flex; align-items: center; gap: 4px;">
+                        <span class="ani-next-score" style="font-weight: 900; font-size: 0.9rem; color: var(--target-blue-1);">${pointsDisplay}</span>
                         ${malus > 0 ? `<span style="color: var(--neon-red); font-size: 0.75rem; font-weight: 800;">(-${malus})</span>` : ''}
                     </div>
                 </div>
 
                 <div class="sidebar-stat" style="display: flex; flex-direction: column; align-items: center;" title="Lives">
                     <span style="font-size: 0.6rem; color: #94a3b8; font-weight: 700;">LIVES</span>
-                    <div class="icon-row" style="display: flex; gap: 2px;">${generateIcons(lives, 3, 'icon-heart', 'ri-heart-fill')}</div>
+                    <div id="bc-heart-container" class="icon-row" style="display: flex; gap: 2px;">${generateIcons(lives, 3, 'icon-heart', 'ri-heart-fill')}</div>
                 </div>
 
                 <div class="sidebar-stat" style="display: flex; flex-direction: column; align-items: center;" title="Energy">
                     <span style="font-size: 0.6rem; color: #94a3b8; font-weight: 700;">ENGY</span>
-                    <div class="icon-row" style="display: flex; gap: 2px;">${generateIcons(bolts, 3, 'icon-bolt', 'ri-flashlight-fill')}</div>
+                    <div id="bc-bolt-container" class="icon-row" style="display: flex; gap: 2px;">${generateIcons(bolts, 3, 'icon-bolt', 'ri-flashlight-fill')}</div>
                 </div>
             </div>
         </div>

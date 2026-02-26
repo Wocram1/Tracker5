@@ -284,6 +284,9 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
     font-size: 1rem;
+    touch-action: manipulation;
+    /* NEU: Verhindert das graue Flackern beim Tippen auf iOS */
+    -webkit-tap-highlight-color: transparent;
 }
 .numpad-grid button:active { background: rgba(255, 255, 255, 0.15) !important; transform: scale(0.95); }
 
