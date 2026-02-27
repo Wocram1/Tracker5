@@ -56,6 +56,12 @@ export class SectionHit {
         this.hitsOnTarget = 0; 
         this.REQUIRED_HITS = this.config.requiredHits || 3; 
 
+        // Tracking für korrekte Highlight-Vorschau (Simulation ab Rundenbeginn)
+        this.roundStartIndex = 0;
+        this.roundStartHits = 0;
+        this.burnoutInCurrentRound = false;
+        this._isProcessingNextRound = false;
+
         this.stats = {
             hits: 0, misses: 0, totalDarts: 0,
             singles: 0, doubles: 0, triples: 0,
@@ -85,27 +91,41 @@ export class SectionHit {
         return this.targets[this.currentIndex];
     }
 
-    // FIX: Liefert eine vorausschauende Liste von Targets für die Board-Hervorhebung
     get currentTargets() {
         if (this.isFinished) return [];
         
-        let displayTargets = [];
-        let tempIndex = this.currentIndex;
-        let tempHits = this.hitsOnTarget;
+        const result = [];
+        // Wir simulieren den Verlauf ab dem Stand, mit dem die Runde begonnen hat
+        let tempIndex = this.roundStartIndex;
+        let tempHits = this.roundStartHits;
 
-        // Wir füllen das Array auf, bis wir genug Ziele für 3 Darts haben
-        while (displayTargets.length < 3 && tempIndex < this.targets.length) {
-            const needed = this.REQUIRED_HITS - tempHits;
-            const toAdd = Math.min(needed, 3 - displayTargets.length);
-            
-            for (let i = 0; i < toAdd; i++) {
-                displayTargets.push(this.targets[tempIndex]);
+        for (let i = 0; i < 3; i++) {
+            if (tempIndex < this.targets.length) {
+                result.push(this.targets[tempIndex]);
+            } else {
+                result.push(this.targets[this.targets.length - 1] || 25);
             }
             
-            tempIndex++;
-            tempHits = 0; // Für das nächste Segment fangen wir bei 0 Hits an
+            // Wenn der Dart in dieser Runde schon geworfen wurde
+            if (i < this.roundDarts.length) {
+                if (this.roundDarts[i] > 0) {
+                    tempHits++;
+                    if (tempHits >= this.REQUIRED_HITS) { 
+                        tempIndex++; 
+                        tempHits = 0; 
+                    }
+                }
+            } else {
+                // Für noch nicht geworfene Darts: Wir nehmen einen Treffer an,
+                // um dem Spieler das nächste Ziel vorausschauend anzuzeigen
+                tempHits++;
+                if (tempHits >= this.REQUIRED_HITS) { 
+                    tempIndex++; 
+                    tempHits = 0; 
+                }
+            }
         }
-        return displayTargets;
+        return result;
     }
 
     get targetDisplay() {
@@ -152,7 +172,11 @@ export class SectionHit {
         if (multiplier === 2) this.stats.doubles++;
         if (multiplier === 3) this.stats.triples++;
 
-        this.bolts = Math.min(this.isTraining ? 20 : 10, this.bolts + 1);
+        // Regeneration (Maximalwert beachten)
+        const maxB = this.isTraining ? 20 : (this.config.startBlitz || 3);
+        const maxH = this.isTraining ? 10 : (this.config.startHerz || 3);
+        this.bolts = Math.min(maxB, this.bolts + 1);
+        this.lives = Math.min(maxH, this.lives + 1);
     }
 
     handleMiss() {
@@ -161,6 +185,9 @@ export class SectionHit {
 
         if (this.bolts > 0) {
             this.bolts--;
+            if (this.bolts === 0 && !this.burnoutInCurrentRound) {
+                this.triggerBurnout();
+            }
         } else if (this.lives > 0) {
             this.lives--;
             this.malusScore += 10; 
@@ -170,16 +197,59 @@ export class SectionHit {
         }
     }
 
+    triggerBurnout() {
+        this.burnoutInCurrentRound = true;
+        this.malusScore += 10;
+        
+        while (this.roundDarts.length < 3) {
+            this.roundDarts.push(0);
+            this.stats.totalDarts++;
+            this.stats.misses++;
+        }
+
+        if (!this._isProcessingNextRound) {
+            this.nextRound();
+        }
+    }
+
     nextRound() {
-        if (this.isFinished) return;
-        this.round++;
-        this.roundDarts = [];
-        if (this.round > this.maxRounds) this.isFinished = true;
+        if (this.isFinished || this._isProcessingNextRound) return;
+        this._isProcessingNextRound = true;
+
+        // Runde mit Misses auffüllen, falls vorzeitig beendet
+        while (this.roundDarts.length < 3 && !this.isFinished && !this.burnoutInCurrentRound) {
+            this.registerThrow(0);
+        }
+
+        this._isProcessingNextRound = false;
+
+        if (!this.isFinished) {
+            // Rundenlimit Check
+            if (this.round >= this.maxRounds) {
+                this.isFinished = true;
+            } else {
+                this.round++;
+                if (this.burnoutInCurrentRound) this.round++;
+            }
+
+            this.roundDarts = [];
+            this.burnoutInCurrentRound = false;
+            
+            // Wichtig: Snapshot für die Highlight-Simulation der nächsten Runde
+            this.roundStartIndex = this.currentIndex;
+            this.roundStartHits = this.hitsOnTarget;
+
+            if (this.round > this.maxRounds) {
+                this.round = this.maxRounds;
+                this.isFinished = true;
+            }
+        }
     }
 
     getFinalStats() {
         const finalNetPoints = Math.max(0, this.points - this.malusScore);
         const allTargetsCleared = this.currentIndex >= this.targets.length;
+        // Win Condition: Alle Ziele, Mindestpunkte UND innerhalb des Rundenlimits
         const won = allTargetsCleared && finalNetPoints >= this.config.minPoints && this.round <= this.maxRounds;
 
         if (this.isTraining) {
@@ -221,11 +291,18 @@ export class SectionHit {
 
     saveHistory() {
         this.history.push(JSON.stringify({
-            points: this.points, malusScore: this.malusScore, 
-            lives: this.lives, bolts: this.bolts,
-            currentIndex: this.currentIndex, round: this.round,
+            points: this.points, 
+            malusScore: this.malusScore, 
+            lives: this.lives, 
+            bolts: this.bolts,
+            currentIndex: this.currentIndex, 
+            round: this.round,
             hitsOnTarget: this.hitsOnTarget, 
-            stats: { ...this.stats }, roundDarts: [...this.roundDarts]
+            roundStartIndex: this.roundStartIndex,
+            roundStartHits: this.roundStartHits,
+            burnoutInCurrentRound: this.burnoutInCurrentRound,
+            stats: { ...this.stats }, 
+            roundDarts: [...this.roundDarts]
         }));
     }
 

@@ -152,8 +152,8 @@ export class Bermuda {
         if (multiplier === 3) this.stats.triples++;
 
         // Regeneration (ATC Style)
-        if (this.config.startBlitz > 0) this.bolts = Math.min(3, this.bolts + 1);
-        if (this.config.startHerz > 0) this.lives = Math.min(3, this.lives + 1);
+        if (this.config.startBlitz > 0) this.bolts = Math.min(this.config.startBlitz, this.bolts + 1);
+        if (this.config.startHerz > 0) this.lives = Math.min(this.config.startHerz, this.lives + 1);
 
         // Bei Bermuda rückt man erst am Rundenende vor (Bermuda Core)
         // Aber wir markieren, dass das Ziel "erledigt" ist
@@ -190,7 +190,7 @@ export class Bermuda {
         }
     }
 
-    nextRound() {
+   nextRound() {
         if (this.isFinished || this._isProcessingNextRound) return;
         this._isProcessingNextRound = true;
 
@@ -201,26 +201,28 @@ export class Bermuda {
         this._isProcessingNextRound = false;
 
         if (!this.isFinished) {
-            // Wenn Ziel getroffen wurde -> Weiterschalten
-            if (this.hitInRound) {
-                this.currentIndex++;
-            }
+            if (this.hitInRound) this.currentIndex++;
 
-            this.round++;
-            if (this.burnoutInCurrentRound) this.round++; // Strafrunde aussetzen
+            if (this.round >= this.config.rounds) {
+                this.isFinished = true;
+            } else {
+                this.round++;
+                if (this.burnoutInCurrentRound) this.round++; 
+            }
 
             this.hitInRound = false;
             this.roundDarts = [];
             this.burnoutInCurrentRound = false;
 
             if (this.currentIndex >= this.targets.length || this.round > this.config.rounds) {
+                this.round = Math.min(this.round, this.config.rounds);
                 this.isFinished = true;
             }
         }
     }
 
     getFinalStats() {
-        const won = this.points >= this.config.minPoints && this.currentIndex >= this.targets.length;
+        const won = this.points >= this.config.minPoints && this.currentIndex >= this.targets.length && this.round <= this.config.rounds;
         const hitRate = this.stats.hits / (this.stats.totalDarts || 1);
         
         // SR System auf max 180 angepasst

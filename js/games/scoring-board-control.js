@@ -97,20 +97,23 @@ export class ScoringBoardControl {
         }
 
         // 4. DART PILLS (S-X / D-X / T-X Anzeige)
+        const activeTargets = this.game.currentTargets || [target, target, target];
+        
         for (let i = 0; i < 3; i++) {
             const el = this.elements[`bc-dart-${i+1}`];
             if (el) {
-                const val = roundDarts[i]; // ATC liefert hier oft den Multiplikator als Zahl (0, 1, 2, 3)
+                const val = roundDarts[i];
                 if (val !== undefined) {
                     let text = 'M';
                     if (val > 0) {
                         const prefix = val === 1 ? 'S' : (val === 2 ? 'D' : 'T');
-                        const tNum = target === 25 ? 'BULL' : target;
+                        // Wir holen uns das spezifische Ziel für DIESEN Pfeil
+                        const dartTarget = activeTargets[i] || target;
+                        const tNum = dartTarget === 25 ? 'BULL' : dartTarget;
                         text = `${prefix}-${tNum}`;
                     }
                     el.textContent = text;
                     el.className = `dart-dot filled ${val > 0 ? 'hit' : 'miss'}`;
-                    // Hintergrundfarbe analog zur View setzen
                     const bgColors = ['var(--target-blue-1)', 'var(--target-blue-2)', 'var(--target-blue-3)'];
                     if (val > 0) el.style.background = bgColors[i];
                 } else {

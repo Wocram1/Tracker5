@@ -238,9 +238,12 @@ export class AroundTheClock {
         this._isProcessingNextRound = false;
 
         if (!this.isFinished) {
-            this.round++; 
-            if (this.burnoutInCurrentRound) {
+            // Limit-Check BEVOR hochgezählt wird
+            if (this.round >= this.config.rounds) {
+                this.isFinished = true;
+            } else {
                 this.round++; 
+                if (this.burnoutInCurrentRound) this.round++; 
             }
 
             this.roundDarts = [];
@@ -248,13 +251,18 @@ export class AroundTheClock {
             this.roundStartIndex = this.currentIndex;
             this.roundStartHits = this.currentHitsOnTarget;
 
-            if (this.round > this.config.rounds) this.isFinished = true;
+            // Failsafe Anzeige-Clamp
+            if (this.round > this.config.rounds) {
+                this.round = this.config.rounds;
+                this.isFinished = true;
+            }
         }
     }
 
     getFinalStats() {
         const netScore = this.points - this.malusScore;
-        const won = netScore >= this.config.minPoints && this.currentIndex >= this.targets.length;
+        
+    const won = netScore >= this.config.minPoints && this.currentIndex >= this.targets.length && this.round <= this.config.rounds;
         const hitRate = this.stats.hits / this.stats.totalDarts || 0;
         
         const pointEfficiency = Math.min(1, this.points / 1000); 

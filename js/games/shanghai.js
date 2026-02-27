@@ -166,7 +166,7 @@ get currentTargetNumber() {
         }
     }
 
-    nextRound() {
+   nextRound() {
         if (this.isFinished || this._isProcessingNextRound) return;
         this._isProcessingNextRound = true;
 
@@ -177,10 +177,15 @@ get currentTargetNumber() {
         this._isProcessingNextRound = false;
 
         if (!this.isFinished) {
-            this.round++;
-            if (this.burnoutInCurrentRound) this.round++; // Strafrunde
+            if (this.round >= this.config.rounds) {
+                this.isFinished = true;
+            } else {
+                this.round++;
+                if (this.burnoutInCurrentRound) this.round++; // Strafrunde
+            }
 
             if (this.currentIndex >= this.targets.length - 1 || this.round > this.config.rounds) {
+                this.round = Math.min(this.round, this.config.rounds);
                 this.isFinished = true;
             } else {
                 this.currentIndex++;
@@ -210,7 +215,7 @@ get currentTargetNumber() {
 
     getFinalStats() {
         const finalScore = this.points - this.malusScore;
-        const hasWon = finalScore >= this.config.minPoints || (this.config.shanghaiOut && this.isFinished);
+       const hasWon = (finalScore >= this.config.minPoints && this.round <= this.config.rounds) || (this.config.shanghaiOut && this.isFinished);
         const hitRate = this.stats.hits / this.stats.totalDarts || 0;
         const maxPoints = this.calculateMaxPoints();
 
