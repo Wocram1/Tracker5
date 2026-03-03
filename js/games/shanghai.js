@@ -166,33 +166,29 @@ get currentTargetNumber() {
         }
     }
 
-   nextRound() {
+nextRound() {
         if (this.isFinished || this._isProcessingNextRound) return;
         this._isProcessingNextRound = true;
 
-        while (this.roundDarts.length < 3 && !this.isFinished && !this.burnoutInCurrentRound) {
-            this.registerThrow(0); 
+        while (this.roundDarts.length < 3 && !this.isFinished) {
+            this.registerThrow(0);
         }
 
-        this._isProcessingNextRound = false;
-
         if (!this.isFinished) {
+            // Check gegen Rundenlimit (1-7 oder 1-20 etc.)
             if (this.round >= this.config.rounds) {
                 this.isFinished = true;
             } else {
                 this.round++;
-                if (this.burnoutInCurrentRound) this.round++; // Strafrunde
-            }
-
-            if (this.currentIndex >= this.targets.length - 1 || this.round > this.config.rounds) {
-                this.round = Math.min(this.round, this.config.rounds);
-                this.isFinished = true;
-            } else {
                 this.currentIndex++;
-                this.roundDarts = [];
-                this.burnoutInCurrentRound = false;
+            }
+            this.roundDarts = [];
+            
+            if (this.currentIndex >= this.targets.length) {
+                this.isFinished = true;
             }
         }
+        this._isProcessingNextRound = false;
     }
 
     saveHistory() {

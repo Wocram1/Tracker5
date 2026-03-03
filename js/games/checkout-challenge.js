@@ -240,7 +240,16 @@ export class CheckoutChallenge {
                 this.currentRoundThrows = [];
             }
         }
+    
     }
+
+get currentRoundDisplay() {
+    // Nutzt die korrekte Variable für die Runden
+    const current = (this.roundsUsedForCurrentTarget || 0) + 1;
+    // Nutzt den bereits im Constructor berechneten Max-Wert
+    const max = this.maxRoundsPerTarget || 3;
+    return `${current}/${max}`;
+}
 
     prepareNextTarget() {
         this.attemptsLeft--;

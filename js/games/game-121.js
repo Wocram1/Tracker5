@@ -320,6 +320,14 @@ export class Game121 {
         this.roundsUsedForTarget = 0;
     }
 
+    get currentRoundDisplay() {
+    // roundsUsedForTarget zählt die bereits beendeten Runden. 
+    // Wir addieren 1 für die laufende Runde.
+    const current = this.roundsUsedForTarget + 1;
+    const max = this.levelConfig[this.level]?.rounds || 3;
+    return `${current}/${max}`;
+}
+
     getFinalStats() {
         let sr = 0;
         if (!this.isTraining) {

@@ -11,6 +11,7 @@ export class WarmupController {
 
     async init() {
         document.body.classList.add('game-active');
+        document.body.classList.add('hide-app-header'); 
         
         if (this.appContainer) {
             // Grundgerüst nur einmalig setzen
@@ -24,7 +25,14 @@ export class WarmupController {
                 playerName: document.getElementById('x01-player-name'),
                 challengeTitle: document.getElementById('x01-challenge-title'),
                 scoringStats: document.getElementById('x01-scoring-stats'),
+                challengeHeader: document.getElementById('x01-challenge-header'),
+                
+                // Neue Status-Elemente in der unteren Bar
                 targetContainer: document.getElementById('x01-target-progress-container'),
+                targetProgress: document.getElementById('x01-target-progress'),
+                minPtsContainer: document.getElementById('x01-min-pts-container'),
+                minPtsVal: document.getElementById('x01-min-pts-val'),
+                
                 statsBar: document.getElementById('x01-stats-bar'),
                 points: document.getElementById('x01-points'),
                 malus: document.getElementById('x01-malus'),
@@ -46,8 +54,18 @@ export class WarmupController {
             };
         }
         
-        if (this.ui.scoringStats) this.ui.scoringStats.classList.add('hidden'); // Verstecke AVG/LAST
-        if (this.ui.targetContainer) this.ui.targetContainer.classList.remove('hidden'); // Zeige 0/15 etc.
+        // UI-Anpassung für Warmup: Scoring aus, Challenge ein
+        if (this.ui.scoringStats) this.ui.scoringStats.classList.add('hidden'); 
+        if (this.ui.challengeHeader) {
+            this.ui.challengeHeader.style.display = 'flex';
+            this.ui.challengeHeader.classList.remove('hidden');
+        }
+
+        // Neue Pill-Container einblenden
+        if (this.ui.targetContainer) this.ui.targetContainer.style.display = 'flex';
+        if (this.ui.minPtsContainer && this.game.minPointsRequired) {
+            this.ui.minPtsContainer.style.display = 'flex';
+        }
 
         // Header mit Name und Spiel-Schwierigkeit setzen
         await this.updateHeaderInfo();
@@ -182,27 +200,34 @@ export class WarmupController {
     renderDisplayStats() {
         if (this.ui.statsBar) this.ui.statsBar.style.display = 'flex';
         if (this.ui.points) this.ui.points.textContent = this.game.points;
-        if (this.ui.malus) this.ui.malus.textContent = `-${this.game.malusTotal || 0}`;
         
-        // Ziel-Anzeige (Dynamisches Element erhalten)
-        let goalDisplay = document.getElementById('warmup-goal-display');
-        if (!goalDisplay) {
-            goalDisplay = document.createElement('div');
-            goalDisplay.id = 'warmup-goal-display';
-            goalDisplay.style.marginLeft = "15px";
-            goalDisplay.innerHTML = `<span class="label">ZIEL</span> <span class="value" style="color:#f1c40f; font-weight:bold; margin-left:5px;">${this.game.minPointsRequired}</span>`;
-            this.ui.malusContainer?.parentElement.appendChild(goalDisplay);
-        } else {
-            const valEl = goalDisplay.querySelector('.value');
-            if (valEl) valEl.textContent = this.game.minPointsRequired;
+        // Malus Anzeige (im Challenge Header)
+        const malusVal = document.getElementById('x01-malus-val');
+        if (malusVal) malusVal.textContent = this.game.malusTotal || 0;
+        
+        // Punkte Anzeige (im Challenge Header)
+        const totalPointsVal = document.getElementById('x01-total-points');
+        if (totalPointsVal) totalPointsVal.textContent = this.game.points;
+
+        // Ziel-Counter Fortschritt (z.B. Runde 1/10 oder Zahl 3/20)
+        if (this.ui.targetProgress) {
+            const current = this.game.round || 1;
+            const total = this.game.maxRounds || 10;
+            this.ui.targetProgress.textContent = `${current}/${total}`;
         }
 
+        // Mindestpunkte Anzeige
+        if (this.ui.minPtsVal) {
+            this.ui.minPtsVal.textContent = this.game.minPointsRequired || 0;
+        }
+
+        // Legacy Support für alte Container
+        if (this.ui.malus) this.ui.malus.textContent = `-${this.game.malusTotal || 0}`;
         if (this.ui.pointsContainer) this.ui.pointsContainer.classList.remove('hidden');
         if (this.ui.malusContainer) this.ui.malusContainer.classList.remove('hidden');
     }
 
     highlightBoard() {
-        // Performance-Optimierung: Alle aktiven Klassen auf einmal entfernen
         document.querySelectorAll('.segment-path.target-dart-1, .segment-path.target-dart-2, .segment-path.target-dart-3, .segment-path.toggle-color-1-2, .segment-path.toggle-color-2-3, .segment-path.toggle-color-1-3, .segment-path.toggle-color-1-2-3')
             .forEach(path => {
                 path.classList.remove(
@@ -224,7 +249,7 @@ export class WarmupController {
 
         Object.keys(segmentAssignment).forEach(num => {
             const darts = segmentAssignment[num];
-            const segmentGroup = document.getElementById(`segment-${num}`);
+            const segmentGroup = this.appContainer.querySelector(`#segment-${num}`);
             if (!segmentGroup) return;
 
             const paths = segmentGroup.querySelectorAll('.segment-path');

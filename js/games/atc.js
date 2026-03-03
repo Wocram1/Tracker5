@@ -31,9 +31,6 @@ export class AroundTheClock {
         this.isTraining = isTraining;
         this.level = level;
 
-        // --- LEVEL KONFIGURATION ---
-        // regainBlitz/regainHerz: Wieviel man pro Hit zurückerhält (z.B. 1 oder 0.5)
-        // startWert 0 deaktiviert das System für dieses Level komplett
         this.levelConfigs = {
             1:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 35, startBlitz: 3, regainBlitz: 1, startHerz: 3, regainHerz: 1, minPoints: 45, hitsPerTarget: 1 },
             2:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 32, startBlitz: 3, regainBlitz: 1, startHerz: 3, regainHerz: 1, minPoints: 70, hitsPerTarget: 1 },
@@ -49,10 +46,11 @@ export class AroundTheClock {
         
         this.targets = [...this.config.targets];
         this.targetHitsNeeded = this.config.hitsPerTarget || 1; 
-        this.currentHitsOnTarget = 0; 
         
         this.currentIndex = 0;
+        this.currentHitsOnTarget = 0; 
         this.round = 1;
+        this.maxRounds = this.config.rounds; // Korrekt zugewiesen
         this.points = 0;
         this.malusScore = 0;
         this.bolts = this.config.startBlitz || 0;
@@ -60,7 +58,6 @@ export class AroundTheClock {
         this.isFinished = false;
         this.roundDarts = [];
         this.history = [];
-        
 
         this.roundStartIndex = 0;
         this.roundStartHits = 0;
@@ -80,31 +77,9 @@ export class AroundTheClock {
             gameId: 'atc',
             title: 'ATC Training',
             options: [
-                {
-                    id: 'range',
-                    label: 'Bereich',
-                    type: 'select',
-                    values: [
-                        { label: '10 - 20', value: '10-20' },
-                        { label: '1 - 20', value: '1-20' }
-                    ]
-                },
-                {
-                    id: 'hits',
-                    label: 'Treffer pro Zahl',
-                    type: 'select',
-                    values: [
-                        { label: '1', value: '1' },
-                        { label: '2', value: '2' },
-                        { label: '3', value: '3' }
-                    ]
-                },
-                {
-                    id: 'bull',
-                    label: 'Inkl. Bull',
-                    type: 'toggle',
-                    default: false
-                }
+                { id: 'range', label: 'Bereich', type: 'select', values: [ { label: '10 - 20', value: '10-20' }, { label: '1 - 20', value: '1-20' } ] },
+                { id: 'hits', label: 'Treffer pro Zahl', type: 'select', values: [ { label: '1', value: '1' }, { label: '2', value: '2' }, { label: '3', value: '3' } ] },
+                { id: 'bull', label: 'Inkl. Bull', type: 'toggle', default: false }
             ]
         };
     }
@@ -147,15 +122,20 @@ export class AroundTheClock {
     registerThrow(multiplier) {
         if (this.isFinished || this.roundDarts.length >= 3) return;
         this.saveHistory();
+
         const isFirstDart = this.roundDarts.length === 0;
         this.stats.totalDarts++;
         this.roundDarts.push(multiplier);
 
         if (multiplier > 0) {
-            if (isFirstDart) this.stats.firstDartHits = (this.stats.firstDartHits || 0) + 1;
+            if (isFirstDart) this.stats.firstDartHits++;
             this.handleHit(multiplier);
         } else {
             this.handleMiss();
+        }
+
+        if (this.currentIndex >= this.targets.length) {
+            this.isFinished = true;
         }
     }
 
@@ -165,11 +145,11 @@ export class AroundTheClock {
         this.stats.maxStreak = Math.max(this.stats.maxStreak, this.stats.currentStreak);
         this.points += (this.currentTargetNumber * multiplier);
         this.currentHitsOnTarget++;
+        
         if (multiplier === 1) this.stats.singles++;
         if (multiplier === 2) this.stats.doubles++;
         if (multiplier === 3) this.stats.triples++;
         
-        // Regain Logik: Nur auffüllen, wenn das System aktiv ist (start > 0)
         if (this.config.startBlitz > 0) {
             this.bolts = Math.min(3, this.bolts + (this.config.regainBlitz || 1));
         }
@@ -177,23 +157,24 @@ export class AroundTheClock {
             this.lives = Math.min(3, this.lives + (this.config.regainHerz || 1));
         }
 
-        if (this.currentHitsOnTarget >= this.targetHitsNeeded) this.moveToNextTarget();
+        if (this.currentHitsOnTarget >= this.targetHitsNeeded) {
+            this.currentIndex++;
+            this.currentHitsOnTarget = 0;
+        }
     }
 
     handleMiss() {
         this.stats.misses++;
         this.stats.currentStreak = 0;
 
-        // Blitz System (nur wenn startBlitz > 0)
         if (this.config.startBlitz > 0 && this.bolts > 0) {
             this.bolts--;
             if (this.bolts === 0 && !this.burnoutInCurrentRound) {
                 this.triggerBurnout();
             }
-            return; // Blitz schützt Herz
+            return;
         } 
         
-        // Herz System (nur wenn startHerz > 0)
         if (this.config.startHerz > 0) {
             if (this.lives > 0) {
                 this.lives--;
@@ -203,67 +184,58 @@ export class AroundTheClock {
                 this.malusScore += 50;
             }
         } else {
-            // Fallback wenn weder Blitz noch Herz aktiv sind (einfacher Malus)
             this.malusScore += 10;
         }
     }
 
     triggerBurnout() {
         this.burnoutInCurrentRound = true;
+        this.malusScore += 10; // Strafpunkte für Burnout
         while (this.roundDarts.length < 3) {
             this.roundDarts.push(0);
             this.stats.totalDarts++;
             this.stats.misses++;
-            this.stats.currentStreak = 0;
         }
         if (!this._isProcessingNextRound) {
             this.nextRound();
         }
     }
 
-    moveToNextTarget() {
-        this.currentHitsOnTarget = 0;
-        this.currentIndex++;
-        if (this.currentIndex >= this.targets.length) this.isFinished = true;
-    }
-
     nextRound() {
         if (this.isFinished || this._isProcessingNextRound) return;
         this._isProcessingNextRound = true;
 
-        while (this.roundDarts.length < 3 && !this.isFinished && !this.burnoutInCurrentRound) {
+        // Auffüllen falls nötig
+        while (this.roundDarts.length < 3 && !this.isFinished) {
             this.registerThrow(0);
         }
 
-        this._isProcessingNextRound = false;
-
         if (!this.isFinished) {
-            // Limit-Check BEVOR hochgezählt wird
-            if (this.round >= this.config.rounds) {
+            if (this.round >= this.maxRounds) {
                 this.isFinished = true;
             } else {
-                this.round++; 
-                if (this.burnoutInCurrentRound) this.round++; 
+                this.round++;
+                // Bei Burnout eine zusätzliche Strafrunde überspringen
+                if (this.burnoutInCurrentRound) this.round++;
             }
 
             this.roundDarts = [];
-            this.burnoutInCurrentRound = false; 
+            this.burnoutInCurrentRound = false;
             this.roundStartIndex = this.currentIndex;
             this.roundStartHits = this.currentHitsOnTarget;
 
-            // Failsafe Anzeige-Clamp
-            if (this.round > this.config.rounds) {
-                this.round = this.config.rounds;
+            if (this.round > this.maxRounds) {
+                this.round = this.maxRounds;
                 this.isFinished = true;
             }
         }
+        this._isProcessingNextRound = false;
     }
 
     getFinalStats() {
-        const netScore = this.points - this.malusScore;
-        
-    const won = netScore >= this.config.minPoints && this.currentIndex >= this.targets.length && this.round <= this.config.rounds;
-        const hitRate = this.stats.hits / this.stats.totalDarts || 0;
+        const netScore = Math.max(0, this.points - this.malusScore);
+        const won = (this.currentIndex >= this.targets.length) && (netScore >= (this.config.minPoints || 0)) && (this.round <= this.maxRounds);
+        const hitRate = this.stats.hits / (this.stats.totalDarts || 1);
         
         const pointEfficiency = Math.min(1, this.points / 1000); 
         const rawSR = (hitRate * 150) + (pointEfficiency * 30) + (this.level * 2);
@@ -277,7 +249,10 @@ export class AroundTheClock {
             sr: finalSR,
             won: won,
             stats: { 
-                ...this.stats, finalScore: netScore, 
+                ...this.stats, 
+                points: this.points,
+                malus: this.malusScore,
+                finalScore: netScore, 
                 hitRate: (hitRate * 100).toFixed(1) + "%",
                 mode: this.isTraining ? "ATC Training" : `ATC Level ${this.level}`
             }

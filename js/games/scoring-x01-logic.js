@@ -19,6 +19,7 @@ export class ScoringX01Logic {
         // Spielstatus
         this.currentScore = this.startScore;
         this.scoreAtRoundStart = this.startScore;
+        this.lastScore = 0; // NEU: Speichert das Ergebnis der letzten Aufnahme für das UI
         this.round = 1;
         this.dartsThrown = 0;
         this.totalDarts = 0;
@@ -147,6 +148,9 @@ export class ScoringX01Logic {
         if (this.isFinished) return;
         const roundPoints = this.currentRoundThrows.reduce((sum, t) => sum + (t.points || 0), 0);
         
+        // NEU: Letzten Score für das UI speichern
+        this.lastScore = roundPoints;
+
         if (roundPoints >= 180) this.stats.oneEighty++;
         else if (roundPoints >= 140) this.stats.oneFortyPlus++;
         else if (roundPoints >= 100) this.stats.hundredPlus++;
@@ -161,7 +165,8 @@ export class ScoringX01Logic {
         this.history.push(JSON.stringify({ 
             scoreStart: this.scoreAtRoundStart, 
             stats: {...this.stats},
-            totalDarts: this.totalDarts
+            totalDarts: this.totalDarts,
+            lastScore: this.lastScore // Auch im Verlauf speichern für Undo
         }));
         
         this.scoreAtRoundStart = this.currentScore; 
@@ -185,6 +190,7 @@ export class ScoringX01Logic {
             const lastState = JSON.parse(this.history.pop());
             this.scoreAtRoundStart = lastState.scoreStart;
             this.currentScore = lastState.scoreStart;
+            this.lastScore = lastState.lastScore || 0; // Letzten Score wiederherstellen
             this.currentRoundThrows = [];
             this.dartsThrown = 0;
             this.round--;

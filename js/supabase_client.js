@@ -201,44 +201,60 @@ window.renderProfile = function() {
  */
 window.syncMatchToDatabase = async function(xpGained, matchStats, srGained = 0, srCategory = 'boardcontrol', isTraining = false) {
     
+    // Sicherstellen, dass wir Zahlen haben
+    const xp = parseInt(xpGained || 0);
+    const sr = parseInt(srGained || 0);
+    // Versucht Darts aus verschiedenen Ebenen zu fischen
+    const dartsThrown = parseInt(matchStats.totalDarts || matchStats.stats?.totalDarts || matchStats.darts || 0);
+
     // 1. Darts & Games optimistisch updaten (NUR wenn es KEIN Training ist)
     if (window.appState.profile && !isTraining) {
         window.appState.profile.total_games_played = (window.appState.profile.total_games_played || 0) + 1;
         
-        // Fängt Darts aus verschiedenen Game-Engines sicher ab (X01 nutzt oft .stats.totalDarts)
-        const dartsThrown = parseInt(matchStats.totalDarts || matchStats.stats?.totalDarts || matchStats.darts || 0);
-        window.appState.profile.total_darts_thrown = (window.appState.profile.total_dart_thrown || 0) + dartsThrown;
+        // FIX: Korrekter Variablenname (total_darts_thrown statt total_dart_thrown)
+        const currentDarts = window.appState.profile.total_darts_thrown || 0;
+        window.appState.profile.total_darts_thrown = currentDarts + dartsThrown;
         
-        // SOFORT ins HTML schreiben
+        // SOFORT ins HTML schreiben (UI-Reaktionszeit verbessern)
         const dartsEl = document.getElementById('stat-total-darts');
         const gamesEl = document.getElementById('stat-total-games');
         if (dartsEl) dartsEl.textContent = window.appState.profile.total_darts_thrown.toLocaleString();
         if (gamesEl) gamesEl.textContent = window.appState.profile.total_games_played.toLocaleString();
     }
 
-    // 2. XP optimistisch hinzufügen
+    // 2. XP & SR optimistisch im Profil-Objekt setzen
     if (window.appState.profile) {
-        window.appState.profile.xp = (window.appState.profile.xp || 0) + parseInt(xpGained || 0);
+        window.appState.profile.xp = (window.appState.profile.xp || 0) + xp;
+        
+        // SR nur setzen wenn kein Training und Kategorie gültig
+        const srKey = `sr_${srCategory}`;
+        if (!isTraining && window.appState.profile.hasOwnProperty(srKey)) {
+            window.appState.profile[srKey] = sr;
+        }
+
         setTimeout(() => {
             window.renderProfile(); 
         }, 800); 
-    } else {
-        window.renderProfile();
     }
 
-    // 3. Im Hintergrund an die DB senden (FIX: Syntax & Parameter)
+    // 3. Im Hintergrund an die DB senden
+    // WICHTIG: Die Namen der Parameter müssen exakt mit deiner SQL Funktion p_... übereinstimmen!
     const { error } = await supabaseClient.rpc('finish_game', {
         p_game_mode: matchStats.mode || 'unknown',
         p_stats: matchStats,
-        p_xp_gained: parseInt(xpGained || 0),
-        p_sr_gained: srGained,
+        p_xp_gained: xp,
+        p_sr_gained: sr,
         p_sr_category: srCategory,
-        p_darts_thrown: parseInt(matchStats.totalDarts || matchStats.stats?.totalDarts || matchStats.darts || 0),
-        p_is_training: isTraining || false
+        p_darts_thrown: dartsThrown,
+        p_is_training: isTraining
     });
 
-    if (error) console.error("Datenbank-Fehler:", error);
-    else fetchUserProfile(); 
+    if (error) {
+        console.error("Datenbank-Fehler beim Speichern:", error);
+    } else {
+        console.log(`Match synchronisiert: ${xp} XP, ${sr} SR (${srCategory})`);
+        fetchUserProfile(); // Daten final von DB ziehen um sicher zu sein
+    }
 };
 
 function flashError(msg) {

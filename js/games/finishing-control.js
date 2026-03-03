@@ -37,6 +37,16 @@ export class FinishingController {
                 livesContainer: document.getElementById('x01-lives-container'),
                 playerName: document.getElementById('x01-player-name'),
                 challengeTitle: document.getElementById('x01-challenge-title'),
+                
+                // Header-Sichtbarkeitselemente
+                challengeHeader: document.getElementById('x01-challenge-header'),
+                avgContainer: document.getElementById('x01-avg-container'),
+                lastContainer: document.getElementById('x01-last-container'),
+                
+                // Neue Container in der unteren Bar
+                minPtsContainer: document.getElementById('x01-min-pts-container'),
+                targetContainer: document.getElementById('x01-target-progress-container'),
+
                 // Throw-Boxes als Array für schnellen Zugriff
                 throws: [
                     document.getElementById('th-1'),
@@ -45,6 +55,15 @@ export class FinishingController {
                 ]
             };
         }
+
+        // Interface-Anpassung: Finishing benötigt Malus/Punkte, kein Average
+        if (this.ui.challengeHeader) this.ui.challengeHeader.style.display = 'flex';
+        if (this.ui.avgContainer) this.ui.avgContainer.style.display = 'none';
+        if (this.ui.lastContainer) this.ui.lastContainer.style.display = 'none';
+        
+        // Neue Elemente einblenden, falls sie für dieses Spiel relevant sind
+        if (this.ui.minPtsContainer) this.ui.minPtsContainer.style.display = 'flex';
+        if (this.ui.targetContainer) this.ui.targetContainer.style.display = 'flex';
 
         // Header initialisieren
         await this.updateHeaderInfo();
@@ -108,24 +127,34 @@ export class FinishingController {
         // 1. Haupt-Score (Restscore für das aktuelle Target)
         if (this.ui.score) this.ui.score.textContent = this.game.currentScore; 
 
-        // 2. Runden-Zähler (R 1/3)
         if (this.ui.round) {
-            const currentRound = (this.game.roundsUsedForTarget || 0) + 1;
-            const maxRounds = this.game.maxRoundsPerTarget || 3;
-            this.ui.round.textContent = `R ${currentRound}/${maxRounds}`;
+            this.ui.round.textContent = this.game.getRoundProgress ? this.game.getRoundProgress() : this.game.round;
+
+            if (this.game.currentRoundDisplay) {
+                this.ui.round.textContent = this.game.currentRoundDisplay;
+            } else {
+                const currentRound = (this.game.roundsUsedForTarget || 0) + 1;
+                const config = this.game.levelConfig ? this.game.levelConfig[this.game.level] : null;
+                const maxRounds = config?.rounds || config?.roundsPerTarget || 3;
+                this.ui.round.textContent = `${currentRound}/${maxRounds}`;
+            }
         }
 
         // 3. Target-Fortschritt (z.B. 2/5)
         if (this.ui.progress) {
-            this.ui.progress.textContent = `${this.game.targetsPlayed}/${this.game.totalTargetsToPlay}`;
+            const current = (this.game.currentIndex !== undefined) ? (this.game.currentIndex + 1) : (this.game.targetsPlayed || 0);
+            const total = this.game.totalTargetsToPlay || 0;
+            this.ui.progress.textContent = `${current}/${total}`;
         }
 
         // 4. Punkte & Malus
         if (this.ui.totalPoints) this.ui.totalPoints.textContent = this.game.points || 0;
-        if (this.ui.malus) this.ui.malus.textContent = this.game.malusAmount || 0;
+        if (this.ui.malus) this.ui.malus.textContent = this.game.malusScore || this.game.malusTotal || 0;
 
         // 5. Mindestpunkte Anzeige
-        if (this.ui.minPts) this.ui.minPts.textContent = this.game.minPointsRequired || 0;
+        if (this.ui.minPts) {
+            this.ui.minPts.textContent = this.game.minPointsRequired || 0;
+        }
 
         // 6. Checkout-Modus Badge (S/O oder D/O)
         if (this.ui.modeBadge) {
@@ -182,7 +211,6 @@ export class FinishingController {
         if (this.ui.livesContainer && this.game.lives !== undefined) {
             this.ui.livesContainer.classList.remove('hidden');
             
-            // Optimiert: Nur Icons updaten, wenn nötig
             const icons = this.ui.livesContainer.querySelectorAll('i');
             if (icons.length === 0) {
                 this.ui.livesContainer.innerHTML = this.generateIcons(this.game.lives, 'icon-heart', 'ri-heart-fill');

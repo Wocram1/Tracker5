@@ -194,31 +194,22 @@ export class Bermuda {
         if (this.isFinished || this._isProcessingNextRound) return;
         this._isProcessingNextRound = true;
 
-        while (this.roundDarts.length < 3 && !this.isFinished && !this.burnoutInCurrentRound) {
+        // Sicherstellen dass 3 Darts registriert sind
+        while (this.roundDarts.length < 3 && !this.isFinished) {
             this.registerThrow(0);
         }
 
-        this._isProcessingNextRound = false;
-
         if (!this.isFinished) {
-            if (this.hitInRound) this.currentIndex++;
-
             if (this.round >= this.config.rounds) {
                 this.isFinished = true;
             } else {
                 this.round++;
-                if (this.burnoutInCurrentRound) this.round++; 
+                this.currentIndex++; // Bermuda springt jede Runde zum nächsten Ziel
+                if (this.currentIndex >= this.targets.length) this.isFinished = true;
             }
-
-            this.hitInRound = false;
             this.roundDarts = [];
-            this.burnoutInCurrentRound = false;
-
-            if (this.currentIndex >= this.targets.length || this.round > this.config.rounds) {
-                this.round = Math.min(this.round, this.config.rounds);
-                this.isFinished = true;
-            }
         }
+        this._isProcessingNextRound = false;
     }
 
     getFinalStats() {

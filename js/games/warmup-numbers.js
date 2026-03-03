@@ -2,10 +2,35 @@ import { LevelSystem } from '../supabase_client.js';
 
 /**
  * NumbersWarmup LevelMapper (1-20)
- * Skaliert nun feiner über 20 Level.
  */
 export const NumbersWarmupLevelMapper = (playerLevel) => {
     return Math.min(20, Math.max(1, Math.floor(playerLevel / 5) + 1));
+};
+
+/**
+ * LEVEL CONFIGURATION TABLE
+ */
+const LEVEL_CONFIG = {
+    1:  { rounds: 6,  minPoints: 35,  malus: 1, mode: 'desc',   xpBase: 315 },
+    2:  { rounds: 7,  minPoints: 50,  malus: 1, mode: 'desc',   xpBase: 330 },
+    3:  { rounds: 7,  minPoints: 65,  malus: 1, mode: 'desc',   xpBase: 345 },
+    4:  { rounds: 8,  minPoints: 80,  malus: 1, mode: 'desc',   xpBase: 360 },
+    5:  { rounds: 8,  minPoints: 95,  malus: 2, mode: 'desc',   xpBase: 375 },
+    6:  { rounds: 9,  minPoints: 110, malus: 2, mode: 'desc',   xpBase: 390 },
+    7:  { rounds: 9,  minPoints: 125, malus: 2, mode: 'desc',   xpBase: 405 },
+    8:  { rounds: 10, minPoints: 140, malus: 2, mode: 'desc',   xpBase: 420 },
+    9:  { rounds: 10, minPoints: 155, malus: 2, mode: 'desc',   xpBase: 435 },
+    10: { rounds: 11, minPoints: 170, malus: 3, mode: 'desc',   xpBase: 450 },
+    11: { rounds: 11, minPoints: 185, malus: 3, mode: 'random', xpBase: 465 },
+    12: { rounds: 12, minPoints: 200, malus: 3, mode: 'random', xpBase: 480 },
+    13: { rounds: 12, minPoints: 215, malus: 3, mode: 'random', xpBase: 495 },
+    14: { rounds: 13, minPoints: 230, malus: 3, mode: 'random', xpBase: 510 },
+    15: { rounds: 13, minPoints: 245, malus: 4, mode: 'random', xpBase: 525 },
+    16: { rounds: 14, minPoints: 260, malus: 4, mode: 'random', xpBase: 540 },
+    17: { rounds: 14, minPoints: 275, malus: 4, mode: 'random', xpBase: 555 },
+    18: { rounds: 15, minPoints: 290, malus: 4, mode: 'random', xpBase: 570 },
+    19: { rounds: 15, minPoints: 305, malus: 4, mode: 'random', xpBase: 585 },
+    20: { rounds: 16, minPoints: 320, malus: 5, mode: 'random', xpBase: 600 }
 };
 
 export class NumbersWarmup {
@@ -57,7 +82,6 @@ export class NumbersWarmup {
 
     /**
      * HIGHLIGHTS FÜR DAS BOARD
-     * Gibt alle Ziele der aktuellen Runde zurück
      */
     get targetNumbers() {
         if (this.isFinished) return [];
@@ -65,7 +89,7 @@ export class NumbersWarmup {
     }
 
     /**
-     * Liefert die Highlights inklusive Dart-Index für die Farbsteuerung/Blinken
+     * Liefert die Highlights inklusive Dart-Index
      */
     get highlights() {
         const targets = this.targetNumbers;
@@ -74,8 +98,7 @@ export class NumbersWarmup {
         return targets.map((num, idx) => ({
             value: num, 
             multiplier: 1, 
-            dartIndex: idx, // Wichtig für die Unterscheidung im Controller
-            // Fallback-Farben, falls CSS-Klassen nicht greifen:
+            dartIndex: idx,
             color: idx === 0 ? 'rgba(0, 242, 255, 0.5)' : (idx === 1 ? 'rgba(255, 0, 255, 0.5)' : 'rgba(0, 255, 0, 0.5)')
         }));
     }
@@ -122,17 +145,9 @@ export class NumbersWarmup {
     _getEffectiveConfig(level, custom) {
         if (custom) return this.setupTraining(custom);
         
-        const rounds = 6 + Math.floor(level / 2);
-        const minPoints = 20 + (level * 15);
-        const malus = 1 + Math.floor(level / 5);
-
-        return {
-            rounds: rounds,
-            mode: level > 10 ? 'random' : 'desc',
-            minPoints: minPoints,
-            malus: malus,
-            xpBase: 300 + (level * 15)
-        };
+        // Nutze LEVEL_CONFIG Tabelle
+        const config = LEVEL_CONFIG[level] || LEVEL_CONFIG[1];
+        return { ...config };
     }
 
     _generateTargetsForRound() {

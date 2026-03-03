@@ -103,6 +103,28 @@ body.game-active {
 }
 
 /* STATS UNTER DEM SCORE (Malus & Gesamtpunkte) */
+
+/* Spezifische Farben für AVG und LAST */
+.stat-avg { 
+    color: var(--neon-cyan); 
+    border-left: 1px solid rgba(255, 255, 255, 0.1); 
+    padding-left: 10px; 
+}
+
+.stat-last { 
+    color: var(--neon-gold); 
+    border-left: 1px solid rgba(255, 255, 255, 0.1); 
+    padding-left: 10px; 
+}
+
+/* Optional: Damit die Labels (AVG/LAST) etwas dezenter aussehen */
+.sub-stat-item small {
+    font-size: 0.5rem;
+    opacity: 0.6;
+    margin-right: 2px;
+    text-transform: uppercase;
+}
+
 .score-sub-stats {
     display: flex;
     gap: 12px;
@@ -180,11 +202,22 @@ body.game-active {
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* THROWBOX TARGET SYNC */
-.throw-box.target-dart-1:not(.active-dart-1) { background: rgba(224, 224, 224, 0.15) !important; border: 2px solid rgba(224, 224, 224, 0.5) !important; color: transparent; }
-.throw-box.target-dart-2:not(.active-dart-2) { background: rgba(189, 0, 255, 0.15) !important; border: 2px solid rgba(189, 0, 255, 0.5) !important; color: transparent; }
-.throw-box.target-dart-3:not(.active-dart-3) { background: rgba(255, 204, 0, 0.15) !important; border: 2px solid rgba(255, 204, 0, 0.5) !important; color: transparent; }
-
+/* 2. Throw-Boxen Farben (ca. Zeile 139) */
+.throw-box.target-dart-1:not(.active-dart-1) { 
+    background: rgba(0, 210, 255, 0.15) !important; 
+    border: 2px solid var(--target-blue-1) !important; 
+    color: transparent; 
+}
+.throw-box.target-dart-2:not(.active-dart-2) { 
+    background: rgba(0, 123, 255, 0.15) !important; 
+    border: 2px solid var(--target-blue-2) !important; 
+    color: transparent; 
+}
+.throw-box.target-dart-3:not(.active-dart-3) { 
+    background: rgba(0, 34, 170, 0.15) !important; 
+    border: 2px solid var(--target-blue-3) !important; 
+    color: transparent; 
+}
 .throw-box.active-dart-1, .throw-box.active-dart-2, .throw-box.active-dart-3 {
     color: white !important;
     text-shadow: 0 0 10px rgba(255,255,255,0.5);
@@ -319,3 +352,25 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 /* UTILS */
 .hidden { display: none !important; }
 .miss-btn { color: var(--neon-red) !important; }
+
+.ani-undo {
+    animation: undo-pulse 0.4s ease;
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: var(--neon-cyan) !important;
+}
+
+@keyframes undo-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+/* In game-x01.css ergänzen */
+#x01-challenge-header {
+    display: flex !important; /* Überschreibt eventuelle Ausblendungen */
+    gap: 12px;
+    justify-content: center;
+}
+
+.hidden {
+    display: none !important;
+}
