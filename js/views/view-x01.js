@@ -3,7 +3,7 @@ const dartNumbers = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14
 export const htmlX01 = `
     <div class="x01-main-display glass-card">
         <div class="x01-top-bar">
-            <button class="bc-exit-mini" onclick="document.body.classList.remove('hide-app-header'); navigate('dashboard')" title="Exit">
+            <button class="bc-exit-mini" onclick="if(confirm('Abbrechen?')) { location.href='index.html'; }"
                 <i class="ri-close-line"></i>
             </button>
             <div class="player-info-center">

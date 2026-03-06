@@ -42,10 +42,10 @@
         <section id="content-area">
             
             <div id="view-dashboard" class="view dashboard-layout animated-in">
-               <div id="user-profile-header" class="profile-container glass-panel">
+      <div id="user-profile-header" class="profile-container glass-panel tier-rookie">
     <div class="profile-rank-zone">
         <div class="user-meta">
-            <h2 id="display-name">Loading...</h2>
+            <h2 id="display-name">Lade...</h2>
             <span class="rank-title" id="rank-name">ROOKIE</span>
         </div>
         
@@ -68,28 +68,31 @@
     </div>
 
     <div class="xp-fusion-wrapper">
-        <div class="level-circle-hexagon">
-            <span id="display-level">1</span>
+        <div class="level-circle">
+            <span id="display-level">0</span>
         </div>
-        <div class="xp-bar-container">
-            <div id="xp-bar" class="xp-fill"></div>
-            <span id="xp-text">0 / 0 XP</span>
+        
+        <div class="xp-container">
+            <div id="display-xp-fill" class="xp-fill"></div>
+            <div class="xp-label-row" id="display-xp">0 / 0 XP</div>
         </div>
     </div>
 
-    <div class="sr-badge-grid">
-        <div class="sr-card sco">
-            <label>SCO</label>
-            <span id="sr-scoring">0</span>
-        </div>
-        <div class="sr-card fin">
-            <label>FIN</label>
-            <span id="sr-finishing">0</span>
-        </div>
-        <div class="sr-card brd">
-            <label>BRD</label>
-            <span id="sr-boardcontrol">0</span>
-        </div>
+    <div class="sr-badge-grid" style="margin-top: 25px;">
+      <div class="sr-card sco">
+    <div class="sr-icon-slot" id="icon-scoring"></div> <label>SCO</label>
+    <span id="sr-scoring">0</span>
+</div>
+<div class="sr-card fin">
+    <div class="sr-icon-slot" id="icon-finishing"></div>
+    <label>FIN</label>
+    <span id="sr-finishing">0</span>
+</div>
+<div class="sr-card brd">
+    <div class="sr-icon-slot" id="icon-boardcontrol"></div>
+    <label>BRD</label>
+    <span id="sr-boardcontrol">0</span>
+</div>
     </div>
 </div>
                 <div class="action-grid">
@@ -103,11 +106,10 @@
                     </div>
                 </div>
 
-                <div class="wide-card glass-card" onclick="alert('Quickplay Logik folgt!')">
-                    <div class="wide-icon-left"><i class="ri-play-circle-line"></i></div>
-                    <div class="wide-content-center"><h3>Quickplay X01</h3></div>
-                    <div class="wide-info-right"><i class="ri-information-line"></i></div>
-                </div>
+               <div class="wide-card glass-card" onclick="UIController.initQuickplay()">
+    <div class="wide-icon-left"><i class="ri-shuffle-line"></i></div> <div class="wide-content-center"><h3>Quickplay</h3></div>
+    <div class="wide-info-right"><i class="ri-play-fill"></i></div>
+</div>
 
                 <div class="wide-card glass-card" onclick="navigate('stats')">
                     <div class="wide-icon-left"><i class="ri-bar-chart-box-line"></i></div>
@@ -216,14 +218,19 @@
                         </div>
                     </div>
                     
-                    <div class="result-actions" style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button id="btn-level-down" class="glass-btn hidden" onclick="GameManager.retryLowerLevel()">
-                            <i class="ri-arrow-down-circle-line"></i> Level -1
-                        </button>
-                        <button class="primary-btn flash-btn" style="flex: 1;" onclick="GameManager.closeResultModal()">
-                            WEITER <i class="ri-arrow-right-double-line"></i>
-                        </button>
-                    </div>
+                   <div class="result-actions" style="display: flex; gap: 10px; margin-top: 15px;">
+    <button id="btn-level-down" class="glass-btn hidden" onclick="GameManager.retryLowerLevel()">
+        <i class="ri-arrow-down-circle-line"></i> Level -1
+    </button>
+    
+    <button id="btn-result-done" class="primary-btn flash-btn" style="flex: 1;" onclick="GameManager.closeResultModal()">
+        WEITER <i class="ri-arrow-right-double-line"></i>
+    </button>
+
+    <button id="btn-quickplay-next" class="primary-btn flash-btn hidden" style="flex: 1;" onclick="GameManager.nextQuickplayGame()">
+        NÄCHSTES CHALLENGE <i class="ri-skip-forward-line"></i>
+    </button>
+</div>
                 </div>
             </div>
             
@@ -231,10 +238,10 @@
             
         </section>
     </main>
-
+    
+    <script type="module" src="js/supabase_client.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="./js/ui_controller.js"></script>
     <script type="module" src="./js/games/game-manager.js"></script>
-    <script type="module" src="js/supabase_client.js"></script>
 </body>
 </html>

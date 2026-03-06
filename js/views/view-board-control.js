@@ -64,7 +64,7 @@ export const htmlBoardControl = (target, roundDarts, score, lives, bolts, malus,
         
         <div class="bc-top-info-bar" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 15px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.05); position: relative;">
             
-            <button class="bc-exit-mini" style="position: relative; top: 0; right: 0; margin-right: 15px;" onclick="document.body.classList.remove('hide-app-header', 'game-active'); navigate('dashboard')" title="Exit">
+            <button class="bc-exit-mini" style="position: relative; top: 0; right: 0; margin-right: 15px;" onclick="if(confirm('Abbrechen?')) { location.href='index.html'; }">
                 <i class="ri-close-line"></i>
             </button>
 

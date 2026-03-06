@@ -374,3 +374,14 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 .hidden {
     display: none !important;
 }
+
+/* Highlights für gezielte Ringe */
+.target-only-double .double-path {
+    fill: var(--neon-blue, #00d2ff) !important;
+    filter: drop-shadow(0 0 10px var(--neon-blue, #00d2ff));
+}
+
+.target-only-triple .triple-path {
+    fill: var(--neon-purple, #bd00ff) !important;
+    filter: drop-shadow(0 0 10px var(--neon-purple));
+}

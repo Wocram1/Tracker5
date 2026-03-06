@@ -10,6 +10,10 @@ import { CheckoutChallenge, CheckoutChallengeLevelMapper } from './checkout-chal
 import { NumbersWarmup, NumbersWarmupLevelMapper } from './warmup-numbers.js';
 import { WarmupController } from './warmup-control.js';
 import { FinishingController } from './finishing-control.js';
+import { DoublesWarmup, DoublesWarmupLevelMapper } from './doubles-warmup.js';
+import { JDCWarmup, JDCWarmupLevelMapper } from './jdc-warmup.js';
+import { BullsWarmup, BullsWarmupLevelMapper } from './bulls-warmup.js';
+import { CountUpLogic, CountUpLevelMapper } from './countup-logic.js';
 import { LevelSystem } from '../supabase_client.js';
 
 const GAME_CLASSES = {
@@ -20,6 +24,10 @@ const GAME_CLASSES = {
     'game121': Game121,
     'checkoutchallenge': CheckoutChallenge,
     'numbers-warmup': NumbersWarmup,
+    'doubles-warmup': DoublesWarmup,
+    'jdc-warmup': JDCWarmup,
+    'bulls-warmup': BullsWarmup,
+    'countup': CountUpLogic,
     'x01': ScoringX01Logic
 };
 
@@ -30,12 +38,19 @@ const LEVEL_MAPPERS = {
     'sectionhit': SectionHitLevelMapper,
     'game121': Game121LevelMapper,
     'checkoutchallenge': CheckoutChallengeLevelMapper,
-    'numbers-warmup': NumbersWarmupLevelMapper
+    'numbers-warmup': NumbersWarmupLevelMapper,
+    'doubles-warmup': DoublesWarmupLevelMapper,
+    'jdc-warmup': JDCWarmupLevelMapper,
+    'countup': CountUpLevelMapper,
+    'bulls-warmup': BullsWarmupLevelMapper
 };
 
 export const GameManager = {
     currentGame: null,
     isTrainingMode: false,
+    quickplayQueue: [],
+    quickplayIndex: 0,
+    isQuickplayActive: false,
 
     // --- NAVIGATION & VIEWS ---
     hideAllViews() {
@@ -77,11 +92,16 @@ export const GameManager = {
             games.push({ id: 'sectionhit', name: 'Section Hit', icon: 'ri-focus-3-line', active: true });
         } else if (category === 'scoring') {
             games.push({ id: 'x01', name: 'X01 Training', icon: 'ri-numbers-line', active: true });
+                games.push({ id: 'countup', name: 'Count Up', icon: 'ri-bar-chart-line', active: true });
+            
         } else if (category === 'finishing') {
             games.push({ id: 'game121', name: '121 Challenge', icon: 'ri-focus-2-line', active: true });
             games.push({ id: 'checkoutchallenge', name: 'Checkout Challenge', icon: 'ri-target-line', active: true });
         } else if (category === 'warmup') {
             games.push({ id: 'numbers-warmup', name: '20, 19, 18 Warmup', icon: 'ri-fire-line', active: true });
+            games.push({ id: 'doubles-warmup', name: 'Doubles Warmup', icon: 'ri-shield-line', active: true });
+            games.push({ id: 'jdc-warmup', name: 'JDC Warmup', icon: 'ri-cup-line', active: true });
+            games.push({ id: 'bulls-warmup', name: 'Bulls Warmup', icon: 'ri-record-circle-line', active: true });
         }
 
         games.forEach(g => {
@@ -96,30 +116,26 @@ export const GameManager = {
     },
 
     // --- GAME SELECTION & SETUP ---
-    // --- GAME SELECTION & SETUP ---
-async handleGameSelection(gameId) {
-    const GameClass = GAME_CLASSES[gameId];
-    if (!GameClass) return;
+    async handleGameSelection(gameId) {
+        const GameClass = GAME_CLASSES[gameId];
+        if (!GameClass) return;
 
-    if (this.isTrainingMode) {
-        // X01 nutzt nun denselben generischen Weg wie 121
-        if (GameClass.getTrainingConfig) {
-            this.hideAllViews();
-            const config = GameClass.getTrainingConfig();
-            this.showTrainingSetupModal(config, gameId); // gameId mitgeben, um den Start-Button zu binden
+        if (this.isTrainingMode) {
+            if (GameClass.getTrainingConfig) {
+                this.hideAllViews();
+                const config = GameClass.getTrainingConfig();
+                this.showTrainingSetupModal(config, gameId);
+            } else {
+                this.loadGame(gameId, 1, true);
+            }
         } else {
-            this.loadGame(gameId, 1, true);
+            this.loadGame(gameId, 1, false);
         }
-    } else {
-        // Challenge Modus Logik bleibt (direkter Start)
-        this.loadGame(gameId, 1, false);
-    }
-},
+    },
 
-   showTrainingSetupModal(config, gameId) {
+    showTrainingSetupModal(config, gameId) {
         const modal = document.getElementById('modal-game-setup');
         
-        // Generiere das HTML für die Optionen
         const fieldsHtml = config.options.map(opt => {
             if (opt.type === 'select') {
                 return `
@@ -163,7 +179,7 @@ async handleGameSelection(gameId) {
                 <h2>${config.title}</h2>
                 <div class="setup-fields">${fieldsHtml}</div>
                 <div class="setup-actions">
-                    <button class="glass-btn" onclick="document.getElementById('modal-game-setup').classList.add('hidden')">Abbrechen</button>
+                    <button class="glass-btn" onclick="window.closeSetupModal()">Cancel</button>
                     <button class="glass-btn primary" onclick="GameManager.confirmTrainingStart('${gameId}')">Start</button>
                 </div>
             </div>
@@ -172,7 +188,7 @@ async handleGameSelection(gameId) {
         modal.classList.remove('hidden');
     },
 
-   confirmTrainingStart(gameId) {
+    confirmTrainingStart(gameId) {
         const GameClass = GAME_CLASSES[gameId];
         const config = GameClass.getTrainingConfig();
         const settings = {};
@@ -193,14 +209,12 @@ async handleGameSelection(gameId) {
     },
 
     // --- GAME ENGINE ---
-  // Ersetze loadGame mit dieser Version (unterstützt forceLevel für "Level -1")
     async loadGame(gameId, requestedLevel = 1, isTraining = false, customSettings = null, forceLevel = false) {
         const GameClass = GAME_CLASSES[gameId];
         if (!GameClass) return;
 
         let finalLevel = requestedLevel;
 
-        // Wenn nicht forciert, ermittle Level über die XP des Spielers
         if (!isTraining && LEVEL_MAPPERS[gameId] && !forceLevel) {
             try {
                 const stats = await LevelSystem.getUserStats();
@@ -208,7 +222,6 @@ async handleGameSelection(gameId) {
             } catch (e) { console.error(e); }
         }
 
-        // Zustand merken (für Retry/Level Down)
         this.lastGameId = gameId;
         this.lastGameLevel = finalLevel;
         this.lastIsTraining = isTraining;
@@ -218,7 +231,35 @@ async handleGameSelection(gameId) {
         
         const targetView = (instance.interfaceType === 'board-control') ? 'view-game-active' : 'view-game-x01';
         this.hideAllViews();
-        document.getElementById(targetView)?.classList.remove('hidden');
+        const targetEl = document.getElementById(targetView);
+        if (targetEl) targetEl.classList.remove('hidden');
+    },
+
+    startQuickplaySequence(gameIds) {
+        this.quickplayQueue = gameIds;
+        this.quickplayIndex = 0;
+        this.isQuickplayActive = true;
+        
+        document.getElementById('modal-game-setup').classList.add('hidden');
+        this.loadGame(this.quickplayQueue[0], 1, false);
+    },
+
+   nextQuickplayGame() {
+        this.quickplayIndex++;
+        
+        // WICHTIG: Hier kurz alles aufräumen, bevor das nächste Spiel geladen wird
+        document.getElementById('modal-game-result').classList.add('hidden');
+        document.body.classList.remove('game-active', 'hide-app-header'); 
+
+        if (this.quickplayIndex < this.quickplayQueue.length) {
+            const nextGameId = this.quickplayQueue[this.quickplayIndex];
+            // Kurze Verzögerung für das DOM-Rendering
+            setTimeout(() => {
+                this.loadGame(nextGameId, 1, false);
+            }, 50);
+        } else {
+            this.closeResultModal(); // Nutzt die saubere Cleanup-Logik von oben
+        }
     },
 
     initInterface(gameInstance) {
@@ -238,14 +279,13 @@ async handleGameSelection(gameId) {
     nextRoundBC()   { this.currentGame?.nextRound?.(); },
     undoBC()         { this.currentGame?.undo?.(); },
     
-nextRoundX01() { 
-    if (this.currentGame && this.currentGame.nextRound) {
-        this.currentGame.nextRound(); 
-    } else if (this.currentGame && this.currentGame.game && this.currentGame.game.nextRound) {
-        // Falls die Logik direkt angesprochen werden muss
-        this.currentGame.game.nextRound();
-    }
-},
+    nextRoundX01() { 
+        if (this.currentGame && this.currentGame.nextRound) {
+            this.currentGame.nextRound(); 
+        } else if (this.currentGame && this.currentGame.game && this.currentGame.game.nextRound) {
+            this.currentGame.game.nextRound();
+        }
+    },
 
     handleInputX01(val) {
         if (!this.currentGame) return;
@@ -259,16 +299,31 @@ nextRoundX01() {
 
     undoX01() { this.currentGame?.undo?.(); },
 
-  // --- FINISH & STATS ---
-   async completeGame() {
+    // --- FINISH & STATS ---
+    async completeGame() {
         const logic = this.currentGame.game || this.currentGame;
         const res = logic.getFinalStats();
         const stats = res.stats || {};
-        const earnedXP = parseInt(res.xp) || 0; // Fix für NaN Bug bei XP
+        const earnedXP = parseInt(res.xp) || 0;
         
-        // 1. Sync & HUD Update
+        // --- ELO LOGIK INTEGRATION ---
+        let finalSRValue = res.sr || 0;
+        const srCategory = logic.srCategory || 'boardcontrol';
+
+        if (window.appState.profile && !logic.isTraining && LevelSystem.calculateElo) {
+            const srKey = `sr_${srCategory}`;
+            const currentSR = window.appState.profile[srKey] || 0;
+            
+            // Berechne das neue Elo basierend auf der Match-Performance (res.sr ist 0-180)
+            const eloResult = LevelSystem.calculateElo(currentSR, res.sr || 0);
+            finalSRValue = eloResult.newSR;
+            
+            console.log(`Elo Update für ${srCategory}: ${eloResult.change >= 0 ? '+' : ''}${eloResult.change} (Neu: ${finalSRValue})`);
+        }
+        
         if (window.syncMatchToDatabase) {
-            await window.syncMatchToDatabase(earnedXP, stats, res.sr || 0, logic.srCategory || 'scoring', logic.isTraining);
+            // Wir schicken den finalSRValue (das neue Elo-Rating) statt der Match-Punkte
+            await window.syncMatchToDatabase(earnedXP, stats, finalSRValue, srCategory, logic.isTraining);
         }
         
         const modal = document.getElementById('modal-game-result');
@@ -277,14 +332,12 @@ nextRoundX01() {
             return;
         }
 
-        // 2. HUD in Modal verschieben
         const profileHeader = document.getElementById('user-profile-header');
         const hudPlaceholder = document.getElementById('modal-hud-placeholder');
         if (profileHeader && hudPlaceholder) {
             hudPlaceholder.appendChild(profileHeader);
         }
 
-        // 3. Header & Titel
         const titleEl = document.getElementById('res-title');
         titleEl.textContent = res.won ? "MISSION ACCOMPLISHED" : "MISSION FAILED";
         titleEl.style.color = res.won ? "var(--neon-green)" : "var(--neon-red)";
@@ -296,27 +349,47 @@ nextRoundX01() {
             titleEl.classList.remove('neon-glow');
         }
 
-        // 4. "Level -1" Button Logik
+        // Quickplay-Weiche für Buttons
+        const btnDone = document.querySelector('button[onclick="GameManager.closeResultModal()"]');
+        const btnNext = document.getElementById('btn-quickplay-next');
         const btnLevelDown = document.getElementById('btn-level-down');
-        if (btnLevelDown) {
-            // Nur anzeigen wenn: Verloren, Level > 1 und KEIN Training
-            if (!res.won && this.lastGameLevel > 1 && !logic.isTraining) {
-                btnLevelDown.classList.remove('hidden');
+
+        if (this.isQuickplayActive) {
+            if (this.quickplayIndex < this.quickplayQueue.length - 1) {
+                if (btnNext) {
+                    btnNext.classList.remove('hidden');
+                    btnNext.innerHTML = `NEXT CHALLENGE (${this.quickplayIndex + 2}/3) <i class="ri-skip-forward-line"></i>`;
+                }
+                if (btnDone) btnDone.classList.add('hidden');
             } else {
-                btnLevelDown.classList.add('hidden');
+                if (btnNext) btnNext.classList.add('hidden');
+                if (btnDone) {
+                    btnDone.classList.remove('hidden');
+                    btnDone.innerHTML = `FINISH QUICKPLAY <i class="ri-check-double-line"></i>`;
+                }
+            }
+            if (btnLevelDown) btnLevelDown.classList.add('hidden');
+        } else {
+            if (btnNext) btnNext.classList.add('hidden');
+            if (btnDone) {
+                btnDone.classList.remove('hidden');
+                btnDone.innerHTML = `WEITER <i class="ri-arrow-right-double-line"></i>`;
+            }
+            if (btnLevelDown) {
+                if (!res.won && this.lastGameLevel > 1 && !logic.isTraining) {
+                    btnLevelDown.classList.remove('hidden');
+                } else {
+                    btnLevelDown.classList.add('hidden');
+                }
             }
         }
 
-        // 5. Dynamische Stats rastern (Helfer-Funktion bleibt unangetastet)
         if(this.renderDynamicStats) this.renderDynamicStats(stats);
 
         this.hideAllViews(); 
         modal.classList.remove('hidden');
 
-        // Sicherheitshalber Display auf 0 setzen bevor die Animation startet
         document.getElementById('xp-total').innerHTML = "0 XP";
-
-        // 6. XP Animation & Particles
         this.animateValue('xp-total', 0, earnedXP, 1000, " XP");
         
         if (earnedXP > 0 && this.triggerFloatingXP) {
@@ -324,34 +397,36 @@ nextRoundX01() {
         }
     },
 
-    closeResultModal() {
-        // HUD zurück ins Dashboard schieben
+   closeResultModal() {
+        // 1. HUD zurück ins Dashboard schieben
         const profileHeader = document.getElementById('user-profile-header');
         const dashboardView = document.getElementById('view-dashboard');
         if (profileHeader && dashboardView) {
             dashboardView.insertBefore(profileHeader, dashboardView.firstChild);
         }
 
-        // INTERFACE REFRESH: Zwingend diese beiden Klassen löschen!
+        // 2. Quickplay Status komplett zurücksetzen
+        this.isQuickplayActive = false;
+        this.quickplayQueue = [];
+        this.quickplayIndex = 0;
+
+        // 3. UI-Klassen entfernen, die das Dashboard zerschießen könnten
         document.body.classList.remove('game-active', 'hide-app-header');
         
+        // 4. Modal ausblenden und navigieren
         document.getElementById('modal-game-result').classList.add('hidden');
         window.navigate('dashboard');
     },
 
     retryLowerLevel() {
-        // HUD zurück ins Dashboard schieben
         const profileHeader = document.getElementById('user-profile-header');
         const dashboardView = document.getElementById('view-dashboard');
         if (profileHeader && dashboardView) {
             dashboardView.insertBefore(profileHeader, dashboardView.firstChild);
         }
-
-        // Interface Refresh (Fullscreen beenden)
         document.body.classList.remove('game-active', 'hide-app-header');
         document.getElementById('modal-game-result').classList.add('hidden');
 
-        // Spiel mit 1 Level niedriger neustarten (forceLevel = true umgeht den XP Calculator)
         if (this.lastGameId && this.lastGameLevel > 1) {
             this.loadGame(this.lastGameId, this.lastGameLevel - 1, this.lastIsTraining, null, true);
         }
@@ -359,9 +434,9 @@ nextRoundX01() {
 
     renderDynamicStats(stats) {
         const grid = document.getElementById('dynamic-stats-grid');
-        grid.innerHTML = ''; // Clear old stats
+        if (!grid) return;
+        grid.innerHTML = ''; 
         
-        // Mapping für schönere Namen (alles andere wird ignoriert oder formatiert)
         const statLabels = {
             totalDarts: "Darts Thrown", darts: "Darts Thrown",
             hits: "Hits", misses: "Misses",
@@ -376,9 +451,7 @@ nextRoundX01() {
 
         Object.entries(stats).forEach(([key, value]) => {
             if (ignoreKeys.includes(key) || value === 0 || value === undefined) return;
-            
             const labelName = statLabels[key] || key.toUpperCase();
-            
             const box = document.createElement('div');
             box.className = 'res-dyn-stat';
             box.innerHTML = `
@@ -386,8 +459,6 @@ nextRoundX01() {
                 <span class="value">${value}</span>
             `;
             grid.appendChild(box);
-            
-            // Kleine Einblend-Animation
             box.style.opacity = '0';
             box.style.transform = 'translateY(10px)';
             setTimeout(() => {
@@ -398,25 +469,22 @@ nextRoundX01() {
         });
     },
 
-    // In game-manager.js einfügen:
-
-animateValue(id, start, end, duration, suffix = "") {
-    const obj = document.getElementById(id);
-    if (!obj) return;
-    let startTimestamp = null;
-    const step = (timestamp) => {
-        if (!startTimestamp) startTimestamp = timestamp;
-        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.innerHTML = Math.floor(progress * (end - start) + start) + suffix;
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        } else {
-            // Stelle sicher, dass am Ende der genaue Wert steht
-            obj.innerHTML = end + suffix; 
-        }
-    };
-    window.requestAnimationFrame(step);
-},
+    animateValue(id, start, end, duration, suffix = "") {
+        const obj = document.getElementById(id);
+        if (!obj) return;
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            obj.innerHTML = Math.floor(progress * (end - start) + start) + suffix;
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                obj.innerHTML = end + suffix; 
+            }
+        };
+        window.requestAnimationFrame(step);
+    },
 
     triggerFloatingXP(xpAmount) {
         const xpBarTarget = document.getElementById('xp-bar');
@@ -425,8 +493,6 @@ animateValue(id, start, end, duration, suffix = "") {
 
         const startRect = originPoint.getBoundingClientRect();
         const endRect = xpBarTarget.getBoundingClientRect();
-
-        // Spawne 8-15 Partikel für den "Gaming-Effekt"
         const particleCount = Math.min(15, Math.max(5, Math.floor(xpAmount / 50))); 
 
         for (let i = 0; i < particleCount; i++) {
@@ -435,27 +501,19 @@ animateValue(id, start, end, duration, suffix = "") {
             particle.textContent = '+XP';
             document.body.appendChild(particle);
 
-            // Startposition (leicht um den Ursprung gestreut)
             const startX = startRect.left + (Math.random() * startRect.width);
             const startY = startRect.top + (Math.random() * 20 - 10);
-            
             particle.style.left = `${startX}px`;
             particle.style.top = `${startY}px`;
 
-            // Flugeigenschaften generieren
-            const duration = Math.random() * 0.4 + 0.6; // 0.6s - 1.0s
-            
+            const duration = Math.random() * 0.4 + 0.6; 
             setTimeout(() => {
-                // Fliegt zur Mitte des XP Balkens
                 const endX = endRect.left + (endRect.width / 2);
                 const endY = endRect.top + (endRect.height / 2);
-                
                 particle.style.transition = `transform ${duration}s cubic-bezier(0.25, 1, 0.5, 1), opacity ${duration}s ease-in`;
                 particle.style.transform = `translate(${endX - startX}px, ${endY - startY}px) scale(0.3)`;
                 particle.style.opacity = '0';
             }, 50);
-
-            // Aufräumen
             setTimeout(() => particle.remove(), duration * 1000 + 100);
         }
     },
@@ -471,7 +529,6 @@ animateValue(id, start, end, duration, suffix = "") {
     }
 };
 
-// Globaler Helper
 window.selectModalOption = (btn, fieldId, value) => {
     btn.parentNode.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');

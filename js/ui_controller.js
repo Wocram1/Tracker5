@@ -1,6 +1,8 @@
 import { htmlX01 } from './views/view-x01.js';
+import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung hinzugefügt
 
 const UIController = {
+    DAILY_WORKOUT_IDS: ['bulls-warmup', 'atc', 'numbers-warmup', 'shanghai', 'checkoutchallenge'],
     // KORRIGIERTE IDs passend zu game-manager.js imports
     gamesData: {
         board: [
@@ -14,10 +16,14 @@ const UIController = {
             { id: 'checkoutchallenge', name: 'Checkout Challenge', icon: 'ri-target-line', active: true }
         ], 
         scoring: [
-            { id: 'x01', name: 'X01 Training', icon: 'ri-numbers-line', active: true }
+            { id: 'x01', name: 'X01 Training', icon: 'ri-numbers-line', active: true },
+            { id: 'countup', name: 'Count Up', icon: 'ri-bar-chart-line', active: true }
         ], 
         warmup: [
-            { id: 'numbers-warmup', name: '20, 19, 18 Warmup', icon: 'ri-fire-line', active: true }
+            { id: 'numbers-warmup', name: '20, 19, 18 Warmup', icon: 'ri-fire-line', active: true },
+            { id: 'doubles-warmup', name: 'Double Mastery (16,8,4)', icon: 'ri-focus-3-line', active: true },
+            { id: 'jdc-warmup', name: 'JDC Warmup', icon: 'ri-flashlight-line', active: true },
+            { id: 'bulls-warmup', name: 'Bulls Mastery', icon: 'ri-record-circle-line', active: true }
         ]
     },
 
@@ -56,15 +62,49 @@ const UIController = {
         }
     },
 
+    updateProfileDisplay(profile) {
+        if (!profile) return;
+
+        const nameEl = document.getElementById('display-name');
+        const levelEl = document.getElementById('display-level'); 
+        const xpFill = document.getElementById('display-xp-fill');
+        const xpText = document.getElementById('display-xp');
+        const headerContainer = document.getElementById('user-profile-header');
+        
+        if (nameEl) nameEl.textContent = profile.username;
+        
+        const lvl = LevelSystem.calcLevel(profile.xp || 0);
+        if (levelEl) levelEl.textContent = lvl;
+
+        let tierClass = 'tier-rookie';
+        if (lvl > 60) tierClass = 'tier-legend';
+        else if (lvl > 30) tierClass = 'tier-elite';
+        else if (lvl > 10) tierClass = 'tier-pro';
+
+        if (headerContainer) {
+            headerContainer.classList.remove('tier-rookie', 'tier-pro', 'tier-elite', 'tier-legend');
+            headerContainer.classList.add(tierClass);
+        }
+
+        if (xpFill && xpText) {
+            const currentLvlXp = LevelSystem.xpForLevel(lvl);
+            const nextLvlXp = LevelSystem.xpForLevel(lvl + 1);
+            
+            const neededForNext = nextLvlXp - currentLvlXp;
+            const progressInLevel = (profile.xp || 0) - currentLvlXp;
+            
+            let percent = Math.floor((progressInLevel / neededForNext) * 100);
+            xpFill.style.width = `${percent}%`;
+            xpText.textContent = `${progressInLevel} / ${neededForNext} XP`;
+        }
+    },
+
     showChallengeCategories() {
-        // Kategorien im Challenge Mode jetzt auch als Balken
         const container = document.getElementById('view-challenge').querySelector('.category-list') || 
                           document.getElementById('view-challenge').querySelector('.category-grid');
         if (!container) return;
 
-        // Wir stellen sicher, dass die Klasse für die Liste stimmt
         container.className = "category-list animated-in";
-
         container.innerHTML = `
             <div class="wide-card glass-card" onclick="UIController.prepareAndRenderGames('board', false)">
                 <div class="wide-icon-left"><i class="ri-focus-3-line"></i></div>
@@ -99,7 +139,6 @@ const UIController = {
     renderGamesList(categoryKey, isTrainingMode) {
         const container = document.getElementById('view-games-list');
         const games = this.gamesData[categoryKey];
-        
         if (!container || !games) return;
 
         const backTarget = isTrainingMode ? 'training' : 'challenge';
@@ -115,7 +154,6 @@ const UIController = {
         `;
 
         games.forEach(game => {
-            // Hier nutzen wir jetzt den neuen einheitlichen Balken-Stil
             html += `
                 <div class="wide-card glass-card ${game.active ? '' : 'locked gray-scale'}" 
                      onclick="${game.active ? `selectGame('${game.id}')` : ''}">
@@ -140,6 +178,94 @@ const UIController = {
 
     showGamesByCategory(category) {
         this.prepareAndRenderGames(category, true);
+    },
+
+    // Hilfsfunktion um das Auswahl-Menü wieder anzuzeigen
+    showQuickplayOptions() {
+        this.initQuickplay();
+    },
+
+    initQuickplay() {
+        const modal = document.getElementById('modal-game-setup');
+        const allGameIds = Object.values(this.gamesData).flat().filter(g => g.active).map(g => g.id);
+        const randomQueue = [...allGameIds].sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="document.getElementById('modal-game-setup').classList.add('hidden')"></div>
+            <div class="setup-container glass-panel animate-pop">
+                <div class="setup-header">
+                    <h2>Quickplay</h2>
+                    <p>Wähle dein Trainingsformat</p>
+                </div>
+
+                <div class="qp-options-grid" style="display: grid; gap: 15px; margin-bottom: 20px;">
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${this.DAILY_WORKOUT_IDS.join("','")}'], 'Daily Workout')" style="padding: 20px; text-align: left; border: 1px solid var(--neon-cyan);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="color: var(--neon-cyan); margin: 0;">Daily Workout</h3>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele • Volles Training</p>
+                            </div>
+                            <i class="ri-calendar-check-line" style="font-size: 2rem; color: var(--neon-cyan);"></i>
+                        </div>
+                    </div>
+
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${randomQueue.join("','")}'], 'Random Mix')" style="padding: 20px; text-align: left;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3 style="margin: 0;">Random Mix</h3>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">3 zufällige Spiele • Kurze Session</p>
+                            </div>
+                            <i class="ri-shuffle-line" style="font-size: 2rem; opacity: 0.5;"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qp-actions">
+                    <button class="glass-btn" onclick="document.getElementById('modal-game-setup').classList.add('hidden')">Abbrechen</button>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    },
+
+    showQuickplayPreview(queueIds, title) {
+        const modal = document.getElementById('modal-game-setup');
+        const allGames = Object.values(this.gamesData).flat();
+        
+        const gamesListHtml = queueIds.map((id, index) => {
+            const game = allGames.find(g => g.id === id) || { name: id, icon: 'ri-play-line' };
+            return `
+                <div class="preview-item" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 8px;">
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--neon-cyan); color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                        ${index + 1}
+                    </div>
+                    <i class="${game.icon}" style="font-size: 1.2rem; color: var(--neon-cyan);"></i>
+                    <span style="font-weight: 600;">${game.name}</span>
+                </div>
+            `;
+        }).join('');
+
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="document.getElementById('modal-game-setup').classList.add('hidden')"></div>
+            <div class="setup-container glass-panel animate-pop">
+                <div class="setup-header">
+                    <h2 style="color: var(--neon-cyan);">${title}</h2>
+                    <p>Folgende Challenges warten auf dich:</p>
+                </div>
+
+                <div class="preview-list" style="margin: 20px 0;">
+                    ${gamesListHtml}
+                </div>
+
+                <div class="qp-actions" style="display: flex; gap: 10px;">
+                    <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayOptions()">Zurück</button>
+                    <button class="primary-btn flash-btn" style="flex: 2;" onclick="GameManager.startQuickplaySequence(['${queueIds.join("','")}'])">
+                        JETZT STARTEN <i class="ri-play-fill"></i>
+                    </button>
+                </div>
+            </div>
+        `;
     }
 };
 
@@ -147,6 +273,10 @@ const UIController = {
 window.navigate = (t) => UIController.navigate(t);
 window.showGames = (c) => UIController.showGamesByCategory(c);
 window.UIController = UIController;
+window.closeSetupModal = () => {
+    document.getElementById('modal-game-setup').classList.add('hidden');
+    UIController.navigate('dashboard');
+};
 
 window.selectGame = (id) => {
     if (window.GameManager) {
@@ -156,7 +286,6 @@ window.selectGame = (id) => {
     }
 };
 
-// Helper für Setup Modals
 window.selectModalOption = (btn, fieldId, value) => {
     const parent = btn.parentNode;
     parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));

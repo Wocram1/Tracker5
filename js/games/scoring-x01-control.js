@@ -21,7 +21,8 @@ export class ScoringX01Control {
                 playerName: document.getElementById('x01-player-name'),
                 challengeTitle: document.getElementById('x01-challenge-title'),
                 round: document.getElementById('x01-round'),
-                
+
+                checkoutBadge: document.getElementById('x01-checkout-badge'),
                 // Scoring Elemente (X01)
                 avgContainer: document.getElementById('x01-avg-container'),
                 avgVal: document.getElementById('x01-avg-val'),
@@ -90,11 +91,17 @@ export class ScoringX01Control {
         const isStandardX01 = this.game.name === 'X01';
 
         if (isStandardX01) {
-            // --- UPDATE FÜR X01 ---
-            this.ui.round.textContent = `R${this.game.round}`;
-            const avg = this.game.totalDarts > 0 ? ((this.game.stats.totalPoints / this.game.totalDarts) * 3).toFixed(1) : "0.0";
-            if(this.ui.avgVal) this.ui.avgVal.textContent = avg;
-            if(this.ui.lastVal) this.ui.lastVal.textContent = this.game.lastScore || 0;
+         // --- UPDATE FÜR X01 & COUNTUP ---
+        this.ui.round.textContent = `R${this.game.round}`;
+        const avg = this.game.totalDarts > 0 ? ((this.game.stats.totalPoints / this.game.totalDarts) * 3).toFixed(1) : "0.0";
+        if(this.ui.avgVal) this.ui.avgVal.textContent = avg;
+        if(this.ui.lastVal) this.ui.lastVal.textContent = this.game.lastScore || 0;
+
+        // NEU: Hier wird das Badge befüllt
+        if(this.ui.checkoutBadge) {
+            // Wenn das Spiel checkoutText hat (CountUp), nimm den, sonst Standard (S/O oder D/O)
+            this.ui.checkoutBadge.textContent = this.game.checkoutText || (this.game.isDoubleOut ? 'D/O' : 'S/O');
+        }
         } else {
             // --- UPDATE FÜR WARMUP / FINISHING ---
             this.ui.round.textContent = this.game.currentRoundDisplay || `R${this.game.round}`;

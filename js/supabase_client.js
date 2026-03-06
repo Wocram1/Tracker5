@@ -3,6 +3,8 @@
  * Fokus: Authentifizierung, Profil-Synchronisation und XP/Level System.
  */
 
+import { getRankSvg } from './sr-ranks.js';
+
 const SB_URL = 'https://ujccdnduolqyzjoeghrl.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqY2NkbmR1b2xxeXpqb2VnaHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjI5NTIsImV4cCI6MjA4NjI5ODk1Mn0.4P_H3vrvOnfNGK4TKjas75pu3HpNT3OSMAPzK9Ok64s';
 const INVITE_REQUIRED = '123';
@@ -29,6 +31,26 @@ export const LevelSystem = {
             level: LevelSystem.calcLevel(xp),
             xp: xp
         };
+    },
+
+    /**
+     * NEU: Berechnet das neue Elo-Rating basierend auf der Match-Performance (0-180)
+     */
+    calculateElo(currentSR, matchPerformance) {
+        const K = 32; // Volatilitäts-Faktor
+        const MAX_SCORE = 180;
+        
+        // 1. Normierung der Match-Leistung (0.0 bis 1.0)
+        const actual = Math.min(MAX_SCORE, matchPerformance) / MAX_SCORE;
+        
+        // 2. Erwartungswert basierend auf aktuellem Rating
+        // Ein Rating von 1000 erwartet ca. 90 Punkte (0.5 Performance)
+        const expected = 1 / (1 + Math.pow(10, (1000 - currentSR) / 600));
+        
+        const change = Math.round(K * (actual - expected));
+        const newSR = Math.max(0, currentSR + change); // Verhindert negatives Rating
+
+        return { newSR, change };
     },
 
     // Formel: XP = 80 * L^2.25
@@ -163,12 +185,16 @@ window.renderProfile = function() {
     const profile = window.appState.profile;
     if (!profile) return;
 
+    if (window.UIController && window.UIController.updateProfileDisplay) {
+        window.UIController.updateProfileDisplay(profile);
+    }
+
     const progress = LevelSystem.getLevelProgress(profile.xp || 0);
 
     const nameEl = document.getElementById('display-name');
     const levelEl = document.getElementById('display-level');
     if (nameEl) nameEl.textContent = profile.username || "Spieler";
-    if (levelEl) levelEl.textContent = `LVL ${progress.level}`;
+    if (levelEl) levelEl.textContent = progress.level;
 
     const xpBarEl = document.getElementById('xp-bar');
     if (xpBarEl) {
@@ -187,13 +213,21 @@ window.renderProfile = function() {
     if (totalDartsEl) totalDartsEl.textContent = (profile.total_darts_thrown || 0).toLocaleString();
     if (totalGamesEl) totalGamesEl.textContent = (profile.total_games_played || 0).toLocaleString();
 
-    const srFin = document.getElementById('sr-finishing');
-    const srSco = document.getElementById('sr-scoring');
-    const srBrd = document.getElementById('sr-boardcontrol');
+    // SR CATEGORIES UPDATE (Inklusive Icons aus sr-ranks.js)
+    const categories = [
+        { id: 'sr-finishing', iconId: 'icon-finishing', val: profile.sr_finishing },
+        { id: 'sr-scoring', iconId: 'icon-scoring', val: profile.sr_scoring },
+        { id: 'sr-boardcontrol', iconId: 'icon-boardcontrol', val: profile.sr_boardcontrol }
+    ];
 
-    if (srFin) srFin.textContent = profile.sr_finishing || 0;
-    if (srSco) srSco.textContent = profile.sr_scoring || 0;
-    if (srBrd) srBrd.textContent = profile.sr_boardcontrol || 0;
+    categories.forEach(cat => {
+        const textEl = document.getElementById(cat.id);
+        const iconEl = document.getElementById(cat.iconId);
+        const score = cat.val || 0;
+        
+        if (textEl) textEl.textContent = score;
+        if (iconEl) iconEl.innerHTML = getRankSvg(score);
+    });
 };
 
 /**

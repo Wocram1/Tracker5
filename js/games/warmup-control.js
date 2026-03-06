@@ -228,47 +228,68 @@ export class WarmupController {
     }
 
     highlightBoard() {
-        document.querySelectorAll('.segment-path.target-dart-1, .segment-path.target-dart-2, .segment-path.target-dart-3, .segment-path.toggle-color-1-2, .segment-path.toggle-color-2-3, .segment-path.toggle-color-1-3, .segment-path.toggle-color-1-2-3')
-            .forEach(path => {
-                path.classList.remove(
-                    'target-dart-1', 'target-dart-2', 'target-dart-3',
-                    'toggle-color-1-2', 'toggle-color-2-3', 'toggle-color-1-3', 'toggle-color-1-2-3'
-                );
-            });
-
-        const targets = this.game.currentTargets || []; 
-        const throwsCount = (this.game.currentRoundThrows || []).length;
-        const remaining = targets.slice(throwsCount);
-
-        const segmentAssignment = {};
-        remaining.forEach((num, index) => {
-            const dartPosition = throwsCount + index + 1;
-            if (!segmentAssignment[num]) segmentAssignment[num] = [];
-            segmentAssignment[num].push(dartPosition);
+        // Zuerst alle Highlights entfernen
+        document.querySelectorAll('.segment-path').forEach(path => {
+            path.classList.remove(
+                'target-dart-1', 'target-dart-2', 'target-dart-3',
+                'toggle-color-1-2', 'toggle-color-2-3', 'toggle-color-1-3', 'toggle-color-1-2-3'
+            );
         });
 
-        Object.keys(segmentAssignment).forEach(num => {
-            const darts = segmentAssignment[num];
+        const targets = this.game.currentTargets || [];
+        const targetRings = this.game.currentTargetRings || []; // Erwartet z.B. ['S', 'D', 'T']
+        const throwsCount = (this.game.currentRoundThrows || []).length;
+
+        // Wir berechnen die Zuweisung für die verbleibenden Darts der Runde
+        const remainingIndices = [0, 1, 2].filter(i => i >= throwsCount);
+
+        remainingIndices.forEach(index => {
+            const num = targets[index];
+            const ring = targetRings[index]; // 'S', 'D', 'T' oder undefined
+            const dartPosition = index + 1; // 1, 2 oder 3
+
+            if (num === undefined) return;
+
             const segmentGroup = this.appContainer.querySelector(`#segment-${num}`);
             if (!segmentGroup) return;
 
             const paths = segmentGroup.querySelectorAll('.segment-path');
-            
             paths.forEach(path => {
-                if (darts.length === 1) {
-                    path.classList.add(`target-dart-${darts[0]}`);
-                } else if (darts.length === 2) {
-                    const s = darts.sort((a, b) => a - b);
-                    path.classList.add(`toggle-color-${s[0]}-${s[1]}`);
-                } else if (darts.length === 3) {
-                    path.classList.add('toggle-color-1-2-3');
+                // Erkennung der Ringe basierend auf den Klassen in view-x01.js
+                const isDouble = path.classList.contains('double-path');
+                const isTriple = path.classList.contains('triple-path');
+                const isSingle = !isDouble && !isTriple;
+
+                // Prüfen, ob dieser Pfad zum gewünschten Ring gehört
+                const isCorrectRing = !ring || 
+                    (ring === 'S' && isSingle) ||
+                    (ring === 'D' && isDouble) ||
+                    (ring === 'T' && isTriple);
+
+                if (isCorrectRing) {
+                    // Da wir hier pro Dart einzeln durchgehen, prüfen wir auf existierende Klassen für Toggle-Effekte
+                    if (path.classList.contains('target-dart-1') && dartPosition === 2) {
+                        path.classList.remove('target-dart-1');
+                        path.classList.add('toggle-color-1-2');
+                    } else if (path.classList.contains('target-dart-1') && dartPosition === 3) {
+                        path.classList.remove('target-dart-1');
+                        path.classList.add('toggle-color-1-3');
+                    } else if (path.classList.contains('target-dart-2') && dartPosition === 3) {
+                        path.classList.remove('target-dart-2');
+                        path.classList.add('toggle-color-2-3');
+                    } else if (path.classList.contains('toggle-color-1-2') && dartPosition === 3) {
+                        path.classList.remove('toggle-color-1-2');
+                        path.classList.add('toggle-color-1-2-3');
+                    } else {
+                        path.classList.add(`target-dart-${dartPosition}`);
+                    }
                 }
             });
         });
     }
 
     updateModifierUI() {
-        document.querySelectorAll('.modifier-btn').forEach(btn => {
+        document.querySelectorAll('.mod-btn').forEach(btn => {
             const btnMult = parseInt(btn.dataset.mult);
             btn.classList.toggle('active', btnMult === this.modifier && this.modifier !== 1);
         });

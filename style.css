@@ -1,3 +1,6 @@
+/* ==========================================================================
+   1. CORE SETTINGS & VARIABLES
+   ========================================================================== */
 :root {
     /* DEEPER GAMING BACKGROUND: Dunkles, edles Marine-Grau */
     --bg-main: #0f172a;
@@ -47,6 +50,20 @@ body {
     position: relative;
 }
 
+/* ==========================================================================
+   2. LAYOUT & BACKGROUND EFFECTS (ORBS)
+   ========================================================================== */
+#app-screen {
+    max-width: 450px; 
+    margin: 0 auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+}
+
 /* --- DIE LICHT-ORBS (Atmosphärisches Leuchten & Fading) --- */
 body::before, body::after, .center-orb {
     content: '';
@@ -80,44 +97,9 @@ body::after {
     animation: pulseFade 10s infinite ease-in-out;
 }
 
-/* --- ANIMATIONEN --- */
-@keyframes glowFade {
-    0%, 100% { opacity: 0.1; }
-    50% { opacity: 0.3; }
-}
-
-@keyframes pulseFade {
-    0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(0.9); }
-    50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.05); }
-}
-
-@keyframes orbMove {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(80px, 50px) scale(1.2); }
-}
-
-@keyframes xp-shimmer {
-    0% { transform: translateX(-150%) skewX(-20deg); }
-    100% { transform: translateX(250%) skewX(-20deg); }
-}
-
-@keyframes live-pulse {
-    0% { transform: scale(0.95); opacity: 0.5; box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
-    70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(57, 255, 20, 0); }
-    100% { transform: scale(0.95); opacity: 0.5; box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
-}
-
-#app-screen {
-    max-width: 450px; 
-    margin: 0 auto;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 0 24px;
-    position: relative;
-    z-index: 1;
-}
-
+/* ==========================================================================
+   3. MASTER UI COMPONENTS (GLASS SYSTEM)
+   ========================================================================== */
 /* --- MASTER GLASS SYSTEM --- */
 .glass-card, 
 .square-card, 
@@ -158,17 +140,13 @@ body::after {
     animation: shimmer 0.8s forwards;
 }
 
-@keyframes shimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
-
-/* --- BALKEN-KARTEN --- */
+/* --- BALKEN-KARTEN (WIDE CARDS) --- */
 .wide-card {
     display: grid;
     grid-template-columns: 60px 1fr 40px;
     align-items: center;
-    padding: 16px;
+    padding: 166px; /* Beibehalten wie im Original */
+    padding: 16px; 
     margin-bottom: 16px;
     cursor: pointer;
     animation: float 10s infinite ease-in-out;
@@ -189,37 +167,225 @@ body::after {
     font-size: 1.4rem; border: 1px solid rgba(255,255,255,0.1);
 }
 
-/* --- XP & RATING (SR) SPEZIAL-STYLES --- */
-.hero-hub { width: 100%; padding: 25px; margin-bottom: 25px; }
+/* --- QUADRAT-KARTEN (SQUARE CARDS) --- */
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 25px; }
+.square-card { aspect-ratio: 1/1; padding: 18px; animation: float 12s infinite ease-in-out; }
+.square-card:nth-child(2) { animation-delay: -6s; }
+.square-top i { font-size: 2.6rem; background: var(--purple-glow); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 8px 16px rgba(176, 106, 179, 0.3)); }
+.square-card:nth-child(2) .square-top i { background: var(--orange-glow); -webkit-background-clip: text; }
 
-/* Fortschrittsbalken mit permanentem Shimmer */
+/* ==========================================================================
+   4. DASHBOARD & PROFILE STYLES
+   ========================================================================== */
+.profile-container {
+    padding: 24px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.profile-rank-zone {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.user-meta h2 { font-size: 1.4rem; font-weight: 800; }
+
+/* RANK & STATS */
+.rank-title { 
+    font-size: 0.7rem; 
+    color: var(--primary-accent); 
+    letter-spacing: 2px; 
+    font-weight: 700; 
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rank-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--neon-green);
+    border-radius: 50%;
+    animation: live-pulse 2s infinite;
+}
+
+.counters-row {
+    display: flex;
+    gap: 10px;
+}
+
+.stat-mini.compact { 
+    display: flex; 
+    flex-direction: row; 
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
+    flex: 1;
+}
+
+.stat-mini.compact i { color: var(--primary-accent); font-size: 0.9rem; margin-bottom: 0; }
+.stat-mini.compact .stat-values { display: flex; flex-direction: column; line-height: 1; }
+.stat-mini.compact span { font-size: 0.95rem; font-weight: 900; }
+.stat-mini.compact label { font-size: 0.55rem; color: var(--text-muted); font-weight: 700; }
+
+/* ==========================================================================
+   5. XP BARS, LEVEL HEXAGON & TIER SYSTEM
+   ========================================================================== */
+
+/* DEFAULT / ROOKIE (Lvl 1-10) -> Cyan */
+.tier-rookie {
+    --tier-main: #00f2fe;
+    --tier-secondary: #4facfe;
+    --tier-glow: 0 0 15px rgba(0, 242, 254, 0.5);
+}
+
+/* PRO (Lvl 11-30) -> Giftgrün */
+.tier-pro {
+    --tier-main: #39ff14;
+    --tier-secondary: #008f11;
+    --tier-glow: 0 0 15px rgba(57, 255, 20, 0.5);
+}
+
+/* ELITE (Lvl 31-60) -> Lila */
+.tier-elite {
+    --tier-main: #ea62ff;
+    --tier-secondary: #a335f3;
+    --tier-glow: 0 0 20px rgba(234, 98, 255, 0.6);
+}
+
+/* LEGEND (Lvl 61+) -> Gold */
+.tier-legend {
+    --tier-main: #ffd700;
+    --tier-secondary: #ff8c00;
+    --tier-glow: 0 0 25px rgba(255, 215, 0, 0.8);
+}
+
+/* --- HEXAGON --- */
+.level-circle {
+    width: 60px;
+    height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    background: var(--tier-main); /* Nutzt Tier Variable */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    filter: drop-shadow(var(--tier-glow));
+    flex-shrink: 0;
+}
+
+.level-circle::after {
+    content: '';
+    position: absolute;
+    inset: 3px; 
+    background: #0f172a;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    z-index: -1;
+}
+
+.level-circle span {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--tier-main); 
+    text-shadow: 0 0 10px var(--tier-main);
+}
+
+/* --- XP BAR SYSTEM --- */
+.xp-fusion-wrapper {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-top: 5px;
+    position: relative;
+}
+
 .xp-container { 
     height: 12px; 
-    background: rgba(0,0,0,0.4); 
-    border-radius: 20px; 
+    background: rgba(255, 255, 255, 0.05); 
+    border-radius: 0 6px 6px 0; 
     width: 100%; 
-    margin-top: 15px;
     position: relative;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-left: -5px; 
+    z-index: 5;
     overflow: hidden;
 }
 
 .xp-fill { 
     height: 100%; 
-    background: var(--cyan-glow); 
-    border-radius: 20px; 
-    box-shadow: 0 0 15px rgba(0, 242, 254, 0.5);
-    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 0%;
+    background: linear-gradient(
+        90deg, 
+        var(--tier-secondary) 0%, 
+        var(--tier-main) 50%, 
+        #ffffff 80%, 
+        var(--tier-main) 100%
+    );
+    background-size: 200% 100%;
+    animation: energyFlow 2s linear infinite;
+    box-shadow: var(--tier-glow);
+    transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
 }
 
-.xp-fill::before {
+/* PARTICLE TRAIL (Der Lichtpunkt an der Spitze) */
+.xp-fill::after {
     content: '';
     position: absolute;
-    top: 0; left: 0; width: 60px; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    animation: xp-shimmer 2.5s infinite;
+    top: 50%;
+    right: 0px; 
+    transform: translateY(-50%);
+    width: 10px;
+    height: 100%;
+    background: #fff;
+    filter: blur(2px);
+    z-index: 5;
+    opacity: 0.6;
 }
+
+/* Label unter dem Balken */
+.xp-label-row {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 1px 2px #000;
+    z-index: 11;
+    pointer-events: none;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes energyFlow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Pulsieren für Legend/High Level */
+@keyframes tierPulse {
+    0% { filter: drop-shadow(0 0 5px var(--tier-main)); }
+    50% { filter: drop-shadow(0 0 20px var(--tier-main)); }
+    100% { filter: drop-shadow(0 0 5px var(--tier-main)); }
+}
+
+.tier-legend .level-circle {
+    animation: tierPulse 3s infinite ease-in-out;
+}
+
+/* SR RATING DISPLAY */
+.hero-hub { width: 100%; padding: 25px; margin-bottom: 25px; }
 
 .rating-grid {
     display: grid;
@@ -239,7 +405,27 @@ body::after {
 .sr-box .label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
 .sr-box .value { font-size: 1.1rem; font-weight: 900; color: var(--accent-rating); display: block; margin-top: 4px; }
 
-/* --- RESULT MODAL XP ABRECHNUNG --- */
+.sr-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.sr-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+    padding: 10px;
+    border-radius: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+.sr-card label { font-size: 0.6rem; color: var(--text-muted); display: block; }
+.sr-card span { font-size: 1rem; font-weight: 900; color: var(--accent-rating); }
+
+/* ==========================================================================
+   6. RESULT SCREEN & MODALS
+   ========================================================================= */
 .xp-breakdown {
     margin: 20px 0;
     padding: 20px;
@@ -261,209 +447,6 @@ body::after {
     color: var(--neon-cyan);
 }
 
-/* --- HEADER & TITEL --- */
-.app-top-bar { padding: 30px 0 20px 0; display: flex; justify-content: space-between; align-items: center; }
-.brand-logo { font-size: 1.5rem; font-weight: 900; letter-spacing: -1.5px; }
-.brand-logo .dot {
-    display: inline-block; width: 8px; height: 8px;
-    background: var(--cyan-glow); border-radius: 50%; margin-left: 6px;
-    box-shadow: 0 0 12px rgba(0, 198, 255, 0.5);
-}
-
-/* --- QUADRAT-KARTEN --- */
-.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 25px; }
-.square-card { aspect-ratio: 1/1; padding: 18px; animation: float 12s infinite ease-in-out; }
-.square-card:nth-child(2) { animation-delay: -6s; }
-.square-top i { font-size: 2.6rem; background: var(--purple-glow); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 8px 16px rgba(176, 106, 179, 0.3)); }
-.square-card:nth-child(2) .square-top i { background: var(--orange-glow); -webkit-background-clip: text; }
-
-/* --- AUTH & BUTTONS --- */
-.glass-input {
-    width: 100%; background: rgba(255,255,255,0.05) !important; border: 1px solid var(--glass-border) !important;
-    padding: 18px; border-radius: 18px; margin-bottom: 15px; color: #fff !important;
-}
-
-.primary-btn {
-    background: var(--cyan-glow) !important; color: white !important; border: none; padding: 18px;
-    border-radius: 18px; font-weight: 800; width: 100%; cursor: pointer;
-    box-shadow: 0 10px 25px rgba(0, 198, 255, 0.3);
-}
-
-/* --- HELPERS --- */
-@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }
-.animated-in { animation: slideUpSpring 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-@keyframes slideUpSpring { 0% { opacity: 0; transform: translateY(40px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-.hidden { display: none !important; }
-
-/* --- NEUES DASHBOARD LAYOUT STYLES (VEREDELT) --- */
-.profile-container {
-    padding: 24px;
-    margin-bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.profile-rank-zone {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-}
-
-/* HEXAGON ENGINE */
-.level-circle, .level-circle-hexagon {
-    width: 58px;
-    height: 64px;
-    background: var(--purple-glow);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 900;
-    color: white;
-    /* Hexagon Shape */
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    box-shadow: 0 0 20px rgba(163, 53, 243, 0.4);
-    position: relative;
-    z-index: 2; /* Liegt ÜBER dem Balken */
-}
-
-.level-circle::after {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    background: rgba(0,0,0,0.2);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    z-index: -1;
-}
-
-.user-meta h2 { font-size: 1.4rem; font-weight: 800; }
-
-/* PULSE-DOT RANK */
-.rank-title { 
-    font-size: 0.7rem; 
-    color: var(--primary-accent); 
-    letter-spacing: 2px; 
-    font-weight: 700; 
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.rank-title::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--neon-green);
-    border-radius: 50%;
-    animation: live-pulse 2s infinite;
-}
-
-.xp-fusion-wrapper {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin: 10px 0;
-}
-
-.xp-bar-container {
-    flex-grow: 1;
-    height: 12px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 0 10px 10px 0;
-    margin-left: -18px; /* Dockt das Hexagon an die rechte vertikale Seite an */
-    padding-left: 18px; 
-    position: relative;
-    overflow: hidden;
-    border: 1px solid var(--glass-border);
-    border-left: none; /* Keine Kante innerhalb des Hexagons */
-    z-index: 1;
-}
-
-.xp-label-row { 
-    display: flex; 
-    justify-content: space-between; 
-    padding-left: 45px; /* Am Balkenbeginn ausgerichtet */
-    font-size: 0.65rem; 
-    font-weight: 700; 
-    margin-bottom: 8px; 
-    color: var(--text-muted);
-}
-
-.xp-bar-wrapper {
-    height: 100%;
-    width: 100%;
-}
-
-.xp-bar-wrapper .xp-fill::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 40px; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: xp-shimmer 2s infinite;
-}
-
-.counters-row {
-    display: flex;
-    gap: 10px;
-}
-
-/* HAPTISCHE STAT-TILES - JETZT SCHMALER (COMPACT) */
-.stat-mini.compact { 
-    display: flex; 
-    flex-direction: row; /* Icon neben Text statt oben drüber */
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 10px;
-    box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);
-    flex: 1;
-}
-
-.stat-mini.compact i { color: var(--primary-accent); font-size: 0.9rem; margin-bottom: 0; }
-.stat-mini.compact .stat-values { display: flex; flex-direction: column; line-height: 1; }
-.stat-mini.compact span { font-size: 0.95rem; font-weight: 900; }
-.stat-mini.compact label { font-size: 0.55rem; color: var(--text-muted); font-weight: 700; }
-
-.sr-badge-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-/* HAPTISCHE SR-CARDS */
-.sr-card {
-    background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
-    padding: 10px;
-    border-radius: 16px;
-    text-align: center;
-    border: 1px solid rgba(255,255,255,0.05);
-    box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 2px 2px 5px rgba(0,0,0,0.2);
-}
-
-.sr-card label { font-size: 0.6rem; color: var(--text-muted); display: block; }
-.sr-card span { font-size: 1rem; font-weight: 900; color: var(--accent-rating); }
-
-/* --- GAMING 2026 RESULT SCREEN & FLOATING XP --- */
-
-/* Der XP-Partikel der über den Bildschirm fliegt */
-.xp-particle {
-    position: fixed;
-    color: var(--neon-cyan); 
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    font-size: 1.2rem;
-    pointer-events: none;
-    z-index: 99999;
-    text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px #fff;
-    transform: scale(1);
-    opacity: 1;
-}
-
-/* Modal Anpassungen für HUD Integration */
 #modal-game-result .modal-content {
     max-height: 95vh;
     overflow-y: auto;
@@ -483,7 +466,7 @@ body::after {
     border-radius: 0 !important;
 }
 
-/* Dynamisches Grid für die Stats */
+/* DYNAMISCHE STATS IM RESULT SCREEN */
 .dynamic-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -530,9 +513,368 @@ body::after {
     font-family: 'Orbitron', sans-serif;
 }
 
+/* QUICKPLAY MODAL SPECIFICS */
+#modal-game-setup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-backdrop {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+}
+
+.quickplay-modal {
+    position: relative;
+    width: 90%;
+    max-width: 400px;
+    padding: 25px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.qp-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--primary-accent);
+    margin: 10px 0 5px 0;
+}
+
+.qp-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--primary-accent);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 900;
+    border-radius: 4px;
+}
+
+.qp-list {
+    margin: 25px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.qp-preview-item {
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.qp-number {
+    font-family: 'Orbitron';
+    color: var(--primary-accent);
+    font-size: 1.2rem;
+    margin-right: 15px;
+    width: 30px;
+}
+
+.qp-info {
+    flex: 1;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+}
+
+.qp-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.qp-cat {
+    font-size: 0.7rem;
+    opacity: 0.5;
+    text-transform: uppercase;
+}
+
+.qp-icon {
+    font-size: 1.4rem;
+    opacity: 0.8;
+}
+
+.qp-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   7. BUTTONS, INPUTS & CONTROLS
+   ========================================================================== */
+.app-top-bar { padding: 30px 0 20px 0; display: flex; justify-content: space-between; align-items: center; }
+
+.brand-logo { font-size: 1.5rem; font-weight: 900; letter-spacing: -1.5px; }
+.brand-logo .dot {
+    display: inline-block; width: 8px; height: 8px;
+    background: var(--cyan-glow); border-radius: 50%; margin-left: 6px;
+    box-shadow: 0 0 12px rgba(0, 198, 255, 0.5);
+}
+
+.glass-input {
+    width: 100%; background: rgba(255,255,255,0.05) !important; border: 1px solid var(--glass-border) !important;
+    padding: 18px; border-radius: 18px; margin-bottom: 15px; color: #fff !important;
+}
+
+.primary-btn {
+    background: var(--cyan-glow) !important; color: white !important; border: none; padding: 18px;
+    border-radius: 18px; font-weight: 800; width: 100%; cursor: pointer;
+    box-shadow: 0 10px 25px rgba(0, 198, 255, 0.3);
+}
+
 .flash-btn {
     background: linear-gradient(135deg, var(--neon-cyan) 0%, #007bff 100%) !important;
     font-size: 1.1rem;
     letter-spacing: 2px;
     animation: pulse-ready 2s infinite;
+}
+
+/* ==========================================================================
+   8. ANIMATIONS & HELPERS
+   ========================================================================== */
+.hidden { display: none !important; }
+
+/* XP Particles */
+.xp-particle {
+    position: fixed;
+    color: var(--neon-cyan); 
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 99999;
+    text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px #fff;
+    transform: scale(1);
+    opacity: 1;
+}
+
+@keyframes glowFade {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.3; }
+}
+
+@keyframes pulseFade {
+    0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(0.9); }
+    50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+@keyframes orbMove {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(80px, 50px) scale(1.2); }
+}
+
+@keyframes xp-shimmer {
+    0% { transform: translateX(-150%) skewX(-20deg); }
+    100% { transform: translateX(250%) skewX(-20deg); }
+}
+
+@keyframes live-pulse {
+    0% { transform: scale(0.95); opacity: 0.5; box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
+    70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(57, 255, 20, 0); }
+    100% { transform: scale(0.95); opacity: 0.5; box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }
+
+.animated-in { animation: slideUpSpring 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes slideUpSpring { 0% { opacity: 0; transform: translateY(40px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* ==========================================================================
+   9. TRAINING SETUP WIDGETS (NEU)
+   ========================================================================== */
+
+/* Container für jede Einstellung */
+.setup-group {
+    margin-bottom: 20px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 15px;
+}
+
+.setup-group:last-child {
+    border-bottom: none;
+}
+
+.setup-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* --- OPTION GRID (Die Auswahl-Buttons) --- */
+/* Macht aus den Buttons eine schöne Reihe (Segmented Control) */
+.option-grid {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 5px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.opt-btn {
+    flex: 1; /* Alle Buttons gleich breit */
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    padding: 10px 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.opt-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* AKTIVER ZUSTAND (Selected) */
+.opt-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--tier-main, var(--neon-cyan)); /* Leuchtender Rand */
+    color: white;
+    text-shadow: 0 0 8px var(--tier-main, var(--neon-cyan));
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.opt-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--tier-main, var(--neon-cyan));
+    opacity: 0.1; /* Leichter farbiger Hintergrund */
+}
+
+/* --- TOGGLE SWITCH (Schieberegler) --- */
+.toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 40px; /* Feste Höhe für Ausrichtung */
+}
+
+.toggle-row span {
+    font-size: 1rem;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy Effekt */
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Checked State */
+input:checked + .slider {
+    background-color: var(--tier-main, var(--neon-cyan)); /* Deine Theme Farbe */
+    border-color: var(--tier-main, var(--neon-cyan));
+    box-shadow: 0 0 10px var(--tier-main, var(--neon-cyan));
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+    background-color: #fff;
+}
+
+/* --- NUMBER INPUT IMPROVEMENT --- */
+/* Entfernt die hässlichen Standard-Browser Pfeile */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+
+/* Stylt das Input Feld passend zum Grid */
+.setup-group input[type="number"] {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: rgba(0, 0, 0, 0.3) !important;
+}
+/* ==========================================================================
+   10. QUICKPLAY MODAL SPECIFICS
+   ========================================================================== */
+.qp-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.qp-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    border-color: var(--neon-cyan) !important;
+}
+
+.sr-icon-slot {
+    width: 35px;
+    height: 35px;
+    margin-bottom: 2px;
+    stroke-width: 5px;
+    shape-rendering: crispEdges;
+}
+
+.sr-icon-slot svg {
+    width: 100%;
+    height: 100%;
 }
