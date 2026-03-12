@@ -23,7 +23,7 @@ export class JDCWarmup {
         this.id = 'jdc-warmup';
         this.name = "JDC Challenge";
         this.interfaceType = "x01-warmup";
-        this.srCategory = "warmup";
+        this.srCategory = "boardcontrol";
         this.isTraining = isTraining;
         this.level = level;
 

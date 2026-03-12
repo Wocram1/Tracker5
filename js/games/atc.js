@@ -32,10 +32,15 @@ export class AroundTheClock {
         this.level = level;
 
         this.levelConfigs = {
-            1:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 35, startBlitz: 3, regainBlitz: 1, startHerz: 3, regainHerz: 1, minPoints: 45, hitsPerTarget: 1 },
-            2:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 32, startBlitz: 3, regainBlitz: 1, startHerz: 3, regainHerz: 1, minPoints: 70, hitsPerTarget: 1 },
-            4:  { targets: [11,12,13,14,15,16,17,18,19,20], rounds: 30, startBlitz: 2, regainBlitz: 1, startHerz: 0, regainHerz: 0, minPoints: 145, hitsPerTarget: 2 },
-            5:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 30, startBlitz: 3, regainBlitz: 1, startHerz: 3, regainHerz: 1, minPoints: 145, hitsPerTarget: 1 },
+            'daily': { targets: [20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20], rounds: 7, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 10, hitsPerTarget: 1, missPenalty: 1 },
+            1:  { targets: [1,3,5,7,9,11,13,15,17,19], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 45, hitsPerTarget: 1 },
+            2:  { targets: [2,4,6,8,10,12,14,16,18,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 65, hitsPerTarget: 1 },
+            4:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 85, hitsPerTarget: 1 },
+            5:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 45, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 105, hitsPerTarget: 1 },
+            6:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 40, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 135, hitsPerTarget: 1 },
+            7:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 35, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 170, hitsPerTarget: 1 },
+            8:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 30, startBlitz: 0, regainBlitz: 0, startHerz: 1, regainHerz: 0.5, minPoints: 210, hitsPerTarget: 1 },
+            9:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 250, hitsPerTarget: 1 },
             10: { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 25, startBlitz: 3, regainBlitz: 1, startHerz: 2, regainHerz: 1, minPoints: 270, hitsPerTarget: 1 },
             15: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25], rounds: 20, startBlitz: 2, regainBlitz: 0.5, startHerz: 1, regainHerz: 0.5, minPoints: 395, hitsPerTarget: 1 },
             20: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25], rounds: 15, startBlitz: 1, regainBlitz: 0.5, startHerz: 1, regainHerz: 0, minPoints: 520, hitsPerTarget: 1 }
@@ -164,29 +169,32 @@ export class AroundTheClock {
     }
 
     handleMiss() {
-        this.stats.misses++;
-        this.stats.currentStreak = 0;
+    this.stats.misses++;
+    this.stats.currentStreak = 0;
+    
+    // Dynamischer Malus aus der Config oder Fallback auf 10
+    const penalty = this.config.missPenalty || 10;
 
-        if (this.config.startBlitz > 0 && this.bolts > 0) {
-            this.bolts--;
-            if (this.bolts === 0 && !this.burnoutInCurrentRound) {
-                this.triggerBurnout();
-            }
-            return;
-        } 
-        
-        if (this.config.startHerz > 0) {
-            if (this.lives > 0) {
-                this.lives--;
-                this.malusScore += 25;
-                if (this.lives === 0 && !this.isTraining) this.isFinished = true;
-            } else {
-                this.malusScore += 50;
-            }
-        } else {
-            this.malusScore += 10;
+    if (this.config.startBlitz > 0 && this.bolts > 0) {
+        this.bolts--;
+        if (this.bolts === 0 && !this.burnoutInCurrentRound) {
+            this.triggerBurnout();
         }
+        return;
+    } 
+    
+    if (this.config.startHerz > 0) {
+        if (this.lives > 0) {
+            this.lives--;
+            this.malusScore += 25; // Herz-Verlust Malus bleibt bei 25 (hartcodiert wie gewünscht)
+            if (this.lives === 0 && !this.isTraining) this.isFinished = true;
+        } else {
+            this.malusScore += 50;
+        }
+    } else {
+        this.malusScore += penalty; // Hier greift der konfigurierte Malus
     }
+}
 
     triggerBurnout() {
         this.burnoutInCurrentRound = true;

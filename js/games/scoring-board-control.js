@@ -196,6 +196,9 @@ export class ScoringBoardControl {
             const roundBefore = this.game.round;
 
             this.game.registerThrow(multiplier);
+            
+            // SOUND: Hit oder Miss
+            window.SoundManager?.play(multiplier > 0 ? 'hit' : 'miss');
 
             if (this.game.roundDarts.length === 3) {
                 this.frozenTargetDisplay = this.game.targetDisplay || displayBefore;
@@ -208,6 +211,25 @@ export class ScoringBoardControl {
 
             this.triggerHitEffect(multiplier);
             this.updateView();
+
+          // AUTO-NEXT LOGIK
+            if (this.game.roundDarts.length === 3 && !this.game.isFinished) {
+                const nextBtn = document.getElementById('bc-next-btn');
+                if (nextBtn) {
+                    // Startet die Füll-Animation sofort
+                    nextBtn.classList.remove('auto-next-anim'); // Reset falls noch drauf
+                    void nextBtn.offsetWidth; // DOM Repaint erzwingen, um Animation sauber neu zu starten
+                    nextBtn.classList.add('auto-next-anim');
+                }
+
+                clearTimeout(this.autoNextTimeout);
+                this.autoNextTimeout = setTimeout(() => {
+                    if (nextBtn) nextBtn.classList.remove('auto-next-anim'); // Animation aufräumen
+                    if (this.game.roundDarts.length === 3) {
+                        window.GameManager.nextRoundBC();
+                    }
+                }, 1100); // Auf 1100ms erhöht
+            }
         }
     }
 
@@ -233,6 +255,10 @@ export class ScoringBoardControl {
     }
 
     undo() {
+        clearTimeout(this.autoNextTimeout);
+        const nextBtn = document.getElementById('bc-next-btn');
+        if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+
         const btn = document.getElementById('bc-undo-btn');
         if (btn) btn.classList.add('ani-undo');
 

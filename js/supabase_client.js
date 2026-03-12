@@ -11,6 +11,49 @@ const INVITE_REQUIRED = '123';
 
 const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
+// --- CO-OP SERVICE (FÜR ZWEITEN BENUTZER) ---
+// Wir halten den Co-Op Client isoliert, um die Haupt-Session nicht zu überschreiben.
+let coopClient = null;
+let coopProfile = null;
+
+export const CoopService = {
+    async loginCoopPartner(email, password) {
+        // Erstellt on-the-fly den isolierten Client ohne Browser-Persistenz
+        const tempClient = window.supabase.createClient(SB_URL, SB_KEY, {
+            auth: { persistSession: false }
+        });
+
+        const authEmail = email.includes('@') ? email : `${email.toLowerCase().trim()}@dart.app`;
+        const { data, error } = await tempClient.auth.signInWithPassword({
+            email: authEmail,
+            password
+        });
+
+        if (error) throw error;
+
+        coopClient = tempClient;
+        
+        // Profil des Partners laden
+        const { data: profile } = await tempClient
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+            
+        coopProfile = profile;
+        return profile;
+    },
+
+    getCoopPartner() {
+        return coopProfile;
+    },
+
+    logoutCoop() {
+        coopClient = null;
+        coopProfile = null;
+    }
+};
+
 // --- XP & LEVEL SYSTEM LOGIK ---
 export const LevelSystem = {
     /**
@@ -36,20 +79,23 @@ export const LevelSystem = {
     /**
      * NEU: Berechnet das neue Elo-Rating basierend auf der Match-Performance (0-180)
      */
-    calculateElo(currentSR, matchPerformance) {
-        const K = 32; // Volatilitäts-Faktor
+    calculateElo(currentSR, matchPerformance, srCategory) {
+        // Wenn es Warmup ist, senken wir den Einfluss (K-Faktor) massiv
+        const K = srCategory === 'warmup' ? 8 : 32; 
         const MAX_SCORE = 180;
         
-        // 1. Normierung der Match-Leistung (0.0 bis 1.0)
         const actual = Math.min(MAX_SCORE, matchPerformance) / MAX_SCORE;
-        
-        // 2. Erwartungswert basierend auf aktuellem Rating
-        // Ein Rating von 1000 erwartet ca. 90 Punkte (0.5 Performance)
         const expected = 1 / (1 + Math.pow(10, (1000 - currentSR) / 600));
         
-        const change = Math.round(K * (actual - expected));
-        const newSR = Math.max(0, currentSR + change); // Verhindert negatives Rating
+        let change = Math.round(K * (actual - expected));
+        
+        // ZUSÄTZLICHER SCHUTZ: 
+        // Wenn es ein Warmup ist, darf das Rating niemals sinken
+        if (srCategory === 'warmup' && change < 0) {
+            change = 0;
+        }
 
+        const newSR = Math.max(0, currentSR + change);
         return { newSR, change };
     },
 
@@ -122,6 +168,7 @@ function setupAuthEventListeners() {
     if (btnSignup) btnSignup.onclick = handleSignUp;
     if (btnLogout) btnLogout.onclick = async () => {
         await supabaseClient.auth.signOut();
+        CoopService.logoutCoop(); // Auch Co-Op Partner ausloggen
         window.location.reload();
     };
 }
@@ -207,13 +254,11 @@ window.renderProfile = function() {
         headerEl.classList.add(`lvl-${progress.level}`);
     }
 
-    // UPDATE: Nutzt jetzt die korrekten Spaltennamen aus deiner SQL DB
     const totalDartsEl = document.getElementById('stat-total-darts');
     const totalGamesEl = document.getElementById('stat-total-games');
     if (totalDartsEl) totalDartsEl.textContent = (profile.total_darts_thrown || 0).toLocaleString();
     if (totalGamesEl) totalGamesEl.textContent = (profile.total_games_played || 0).toLocaleString();
 
-    // SR CATEGORIES UPDATE (Inklusive Icons aus sr-ranks.js)
     const categories = [
         { id: 'sr-finishing', iconId: 'icon-finishing', val: profile.sr_finishing },
         { id: 'sr-scoring', iconId: 'icon-scoring', val: profile.sr_scoring },
@@ -233,61 +278,67 @@ window.renderProfile = function() {
 /**
  * Synchronisiert Spielergebnisse mit der DB und aktualisiert das HUD optimistisch
  */
-window.syncMatchToDatabase = async function(xpGained, matchStats, srGained = 0, srCategory = 'boardcontrol', isTraining = false) {
+window.syncMatchToDatabase = async function(xpGained, matchStats, srGained = 0, srCategory = 'boardcontrol', isTraining = false, p2Data = null) {
     
-    // Sicherstellen, dass wir Zahlen haben
     const xp = parseInt(xpGained || 0);
     const sr = parseInt(srGained || 0);
-    // Versucht Darts aus verschiedenen Ebenen zu fischen
     const dartsThrown = parseInt(matchStats.totalDarts || matchStats.stats?.totalDarts || matchStats.darts || 0);
 
-    // 1. Darts & Games optimistisch updaten (NUR wenn es KEIN Training ist)
-    if (window.appState.profile && !isTraining) {
-        window.appState.profile.total_games_played = (window.appState.profile.total_games_played || 0) + 1;
-        
-        // FIX: Korrekter Variablenname (total_darts_thrown statt total_dart_thrown)
-        const currentDarts = window.appState.profile.total_darts_thrown || 0;
-        window.appState.profile.total_darts_thrown = currentDarts + dartsThrown;
-        
-        // SOFORT ins HTML schreiben (UI-Reaktionszeit verbessern)
-        const dartsEl = document.getElementById('stat-total-darts');
-        const gamesEl = document.getElementById('stat-total-games');
-        if (dartsEl) dartsEl.textContent = window.appState.profile.total_darts_thrown.toLocaleString();
-        if (gamesEl) gamesEl.textContent = window.appState.profile.total_games_played.toLocaleString();
-    }
+    // 1. Lokale UI Optimierung für Hauptspieler (unverändert)
+   if (window.appState.profile && !isTraining) {
+            // FIX: Naming Issue behoben (total_games_played anstelle von games_played)
+            window.appState.profile.total_games_played = (window.appState.profile.total_games_played || 0) + 1;
+            window.appState.profile.total_darts_thrown = (window.appState.profile.total_darts_thrown || 0) + dartsThrown;
+            window.appState.profile.xp = (window.appState.profile.xp || 0) + xp;
+            
+            const srKey = `sr_${srCategory}`;
+            if (window.appState.profile.hasOwnProperty(srKey)) {
+                window.appState.profile[srKey] = sr;
+            }
 
-    // 2. XP & SR optimistisch im Profil-Objekt setzen
-    if (window.appState.profile) {
-        window.appState.profile.xp = (window.appState.profile.xp || 0) + xp;
-        
-        // SR nur setzen wenn kein Training und Kategorie gültig
-        const srKey = `sr_${srCategory}`;
-        if (!isTraining && window.appState.profile.hasOwnProperty(srKey)) {
-            window.appState.profile[srKey] = sr;
+            setTimeout(() => window.renderProfile(), 800);
         }
 
-        setTimeout(() => {
-            window.renderProfile(); 
-        }, 800); 
+    // 2. Datenbank-Synchronisation
+    const syncTasks = [];
+    
+    // Payload für Hauptspieler
+   
+     const payloadP1 = {
+            p_game_mode: matchStats.mode || 'unknown',
+            p_stats: matchStats,
+            p_xp_gained: xp,
+            p_sr_gained: sr,
+            p_sr_category: srCategory,
+            p_darts_thrown: dartsThrown,
+            p_is_training: isTraining
+        };
+   
+    syncTasks.push(supabaseClient.rpc('finish_game', payloadP1));
+
+    // Task 2: Co-Op Partner (falls eingeloggt)
+    if (coopClient && !isTraining) {
+        // Falls p2Data mitgeliefert wurde (für individuelle Stats), nutze diese.
+        // Andernfalls nimm den Standard-Payload (Fallback).
+        const payloadP2 = p2Data ? {
+            p_game_mode: p2Data.matchStats.mode || 'unknown',
+            p_stats: p2Data.matchStats,
+            p_xp_gained: parseInt(p2Data.xpGained || 0),
+            p_sr_gained: parseInt(p2Data.srGained || 0),
+            p_sr_category: srCategory,
+            p_darts_thrown: parseInt(p2Data.matchStats.totalDarts || 0),
+            p_is_training: isTraining
+        } : payloadP1;
+
+        syncTasks.push(coopClient.rpc('finish_game', payloadP2));
     }
 
-    // 3. Im Hintergrund an die DB senden
-    // WICHTIG: Die Namen der Parameter müssen exakt mit deiner SQL Funktion p_... übereinstimmen!
-    const { error } = await supabaseClient.rpc('finish_game', {
-        p_game_mode: matchStats.mode || 'unknown',
-        p_stats: matchStats,
-        p_xp_gained: xp,
-        p_sr_gained: sr,
-        p_sr_category: srCategory,
-        p_darts_thrown: dartsThrown,
-        p_is_training: isTraining
-    });
-
-    if (error) {
-        console.error("Datenbank-Fehler beim Speichern:", error);
-    } else {
-        console.log(`Match synchronisiert: ${xp} XP, ${sr} SR (${srCategory})`);
-        fetchUserProfile(); // Daten final von DB ziehen um sicher zu sein
+    try {
+        const results = await Promise.all(syncTasks);
+        console.log(`Match synchronisiert für ${syncTasks.length} Spieler.`);
+        fetchUserProfile(); 
+    } catch (err) {
+        console.error("Kritischer Fehler beim Match-Sync:", err);
     }
 };
 

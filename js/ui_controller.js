@@ -2,7 +2,7 @@ import { htmlX01 } from './views/view-x01.js';
 import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung hinzugefügt
 
 const UIController = {
-    DAILY_WORKOUT_IDS: ['bulls-warmup', 'atc', 'numbers-warmup', 'shanghai', 'checkoutchallenge'],
+    DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
     // KORRIGIERTE IDs passend zu game-manager.js imports
     gamesData: {
         board: [
@@ -13,11 +13,13 @@ const UIController = {
         ],
         finishing: [
             { id: 'game121', name: '121 Challenge', icon: 'ri-focus-2-line', active: true },
-            { id: 'checkoutchallenge', name: 'Checkout Challenge', icon: 'ri-target-line', active: true }
+            { id: 'checkoutchallenge', name: 'Checkout Challenge', icon: 'ri-target-line', active: true },
+            { id: 'catch40', name: 'Catch 40', icon: 'ri-catch-line', active: true }
         ], 
         scoring: [
             { id: 'x01', name: 'X01 Training', icon: 'ri-numbers-line', active: true },
-            { id: 'countup', name: 'Count Up', icon: 'ri-bar-chart-line', active: true }
+            { id: 'countup', name: 'Count Up', icon: 'ri-bar-chart-line', active: true },
+                { id: 'XXonXX', name: 'XXonXX', icon: 'ri-shuffle-line', active: true }
         ], 
         warmup: [
             { id: 'numbers-warmup', name: '20, 19, 18 Warmup', icon: 'ri-fire-line', active: true },
@@ -199,7 +201,7 @@ const UIController = {
                 </div>
 
                 <div class="qp-options-grid" style="display: grid; gap: 15px; margin-bottom: 20px;">
-                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${this.DAILY_WORKOUT_IDS.join("','")}'], 'Daily Workout')" style="padding: 20px; text-align: left; border: 1px solid var(--neon-cyan);">
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${this.DAILY_WORKOUT_IDS.join("','")}'], 'Daily Workout', 'daily')" style="padding: 20px; text-align: left;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <h3 style="color: var(--neon-cyan); margin: 0;">Daily Workout</h3>
@@ -209,7 +211,7 @@ const UIController = {
                         </div>
                     </div>
 
-                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${randomQueue.join("','")}'], 'Random Mix')" style="padding: 20px; text-align: left;">
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${randomQueue.join("','")}'], 'Random Mix', 'random')" style="padding: 20px; text-align: left;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <h3 style="margin: 0;">Random Mix</h3>
@@ -229,7 +231,7 @@ const UIController = {
         modal.classList.remove('hidden');
     },
 
-    showQuickplayPreview(queueIds, title) {
+    showQuickplayPreview(queueIds, title, qpMode) {
         const modal = document.getElementById('modal-game-setup');
         const allGames = Object.values(this.gamesData).flat();
         
@@ -260,7 +262,7 @@ const UIController = {
 
                 <div class="qp-actions" style="display: flex; gap: 10px;">
                     <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayOptions()">Zurück</button>
-                    <button class="primary-btn flash-btn" style="flex: 2;" onclick="GameManager.startQuickplaySequence(['${queueIds.join("','")}'])">
+                    <button class="primary-btn flash-btn" style="flex: 2;" onclick="GameManager.startQuickplaySequence(['${queueIds.join("','")}'], '${qpMode}')">
                         JETZT STARTEN <i class="ri-play-fill"></i>
                     </button>
                 </div>

@@ -19,9 +19,9 @@ export class Bermuda {
 
         // --- LEVEL KONFIGURATION ---
         this.levelConfigs = {
-            1: { targets: [12, 13, 14, 'D', 15, 16, 17, 'T', 18, 19, 20, 'B'], rounds: 40, startHerz: 3, startBlitz: 3, minPoints: 150 },
-            2: { targets: [13, 14, 15, 'D', 16, 17, 18, 'T', 19, 20, 'B'], rounds: 35, startHerz: 2, startBlitz: 2, minPoints: 250 },
-            3: { targets: [10, 11, 12, 13, 14, 'D', 15, 16, 17, 18, 19, 'T', 20, 'B'], rounds: 30, startHerz: 2, startBlitz: 1, minPoints: 400 },
+            1: { targets: [12, 13, 14, 'D', 15, 16, 17, 'T', 18, 19, 20, 'B'], rounds: 40, startHerz: 0, startBlitz: 0, minPoints: 150 },
+            2: { targets: [13, 14, 15, 'D', 16, 17, 18, 'T', 19, 20, 'B'], rounds: 35, startHerz: 0, startBlitz: 0, minPoints: 250 },
+            3: { targets: [10, 11, 12, 13, 14, 'D', 15, 16, 17, 18, 19, 'T', 20, 'B'], rounds: 30, startHerz: 0, startBlitz: 0, minPoints: 400 },
             4: { targets: [1, 5, 20, 'D', 9, 12, 14, 'T', 11, 8, 16, 'B'], rounds: 25, startHerz: 1, startBlitz: 1, minPoints: 550 },
             5: { targets: [20, 19, 18, 'D', 17, 16, 15, 'T', 14, 13, 12, 'B'], rounds: 20, startHerz: 1, startBlitz: 0, minPoints: 700 },
             6: { targets: [20, 19, 18, 'D18', 17, 16, 15, 'T15', 14, 13, 12, 'B'], rounds: 18, startHerz: 1, startBlitz: 0, minPoints: 900 }
