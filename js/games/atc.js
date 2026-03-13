@@ -32,10 +32,10 @@ export class AroundTheClock {
         this.level = level;
 
         this.levelConfigs = {
-            'daily': { targets: [20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20], rounds: 7, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 10, hitsPerTarget: 1, missPenalty: 1 },
-            1:  { targets: [1,3,5,7,9,11,13,15,17,19], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 45, hitsPerTarget: 1 },
-            2:  { targets: [2,4,6,8,10,12,14,16,18,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 65, hitsPerTarget: 1 },
-            4:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 85, hitsPerTarget: 1 },
+            1:  { targets: [1,3,5,7,9,11,13,15,17,19], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 20, hitsPerTarget: 1,  missPenalty: 1 },
+            2:  { targets: [2,4,6,8,10,12,14,16,18,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 20, hitsPerTarget: 1, missPenalty: 1 },
+            3:  { targets: [1,2,3,4,5,6,7,8,9,10], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 19, hitsPerTarget: 1, missPenalty: 1 },
+            4:  { targets: [10,11,12,13,14,15,16,17,18,19,20], rounds: 25, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 85, hitsPerTarget: 1, missPenalty: 1 },
             5:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 45, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 105, hitsPerTarget: 1 },
             6:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 40, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 135, hitsPerTarget: 1 },
             7:  { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 35, startBlitz: 0, regainBlitz: 0, startHerz: 0, regainHerz: 0, minPoints: 170, hitsPerTarget: 1 },

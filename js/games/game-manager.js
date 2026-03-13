@@ -52,6 +52,27 @@ const LEVEL_MAPPERS = {
     'bulls-warmup': BullsWarmupLevelMapper
 };
 
+// --WAKELOCK--
+let wakeLock = null;
+
+const requestWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock aktiv');
+        } catch (err) {
+            console.error(`${err.name}, ${err.message}`);
+        }
+    }
+};
+
+// Reaktivieren, wenn man kurz die App wechselt und zurückkommt
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+    }
+});
+
 export const GameManager = {
     currentGame: null,
     isTrainingMode: false,
@@ -416,6 +437,10 @@ export const GameManager = {
     // --- GAME ENGINE ---
     async loadGame(gameId, requestedLevel = 1, isTraining = false, customSettings = null, forceLevel = false) {
         const GameClass = GAME_CLASSES[gameId];
+        requestWakeLock();
+        if (typeof requestWakeLock === 'function') {
+            await requestWakeLock();
+        }
         if (!GameClass) return;
 
         let finalLevel = requestedLevel;
@@ -525,7 +550,7 @@ export const GameManager = {
     },
 
     handleModifier(m) {
-        window.SoundManager?.play('click');
+        window.SoundManager?.fastaudio.play('click');
         if (this.currentGame && this.currentGame.setModifier) this.currentGame.setModifier(m);
     },
 
@@ -535,6 +560,7 @@ export const GameManager = {
     async completeGame() {
         const activeLogic = this.currentGame.game || this.currentGame;
         const res = activeLogic.getFinalStats();
+        
         
         let p1FinalData = { xp: res.xp, stats: res.stats, sr: res.sr };
         let p2SyncPayload = null;
@@ -580,6 +606,9 @@ export const GameManager = {
                 p1FinalData.sr = eloResult.newSR;
             }
         }
+    
+
+
 
         const srCategory = activeLogic.srCategory || 'boardcontrol';
 

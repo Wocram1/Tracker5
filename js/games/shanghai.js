@@ -152,7 +152,7 @@ get currentTargetNumber() {
             this.lives = Math.max(0, this.lives - (this.config.hM || 1));
             if (this.lives === 0 && !this.isTraining) this.isFinished = true;
         } else {
-            this.malusScore += 25;
+            this.malusScore += 5;
         }
     }
 

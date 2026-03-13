@@ -63,8 +63,38 @@ export const SR_LEVELS = [
   <circle cx="60" cy="60" r="12" fill="#E0E0E0" stroke="#757575" stroke-width="2"/>
 </svg>
 ` },
-    { min: 500, max: 599, svg: `<svg id="gold1">...</svg>` },
-    { min: 600, max: 699, svg: `<svg id="gold2">...</svg>` },
+    { min: 500, max: 599, svg: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="silver_1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D0D0D0"/>
+      <stop offset="50%" stop-color="#B0B0B0"/>
+      <stop offset="100%" stop-color="#656565"/>
+    </linearGradient>
+  </defs>
+  <path d="M15 45 L5 55 L15 65 M105 45 L115 55 L105 65" fill="none" stroke="#A0A0A0" stroke-width="2" stroke-linecap="round"/>
+  <path d="M60 15 L100 35 V85 L60 105 L20 85 V35 Z" fill="url(#silver_1)"/>
+  <path d="M60 15 L100 35 L60 55 L20 35 Z" fill="white" opacity="0.1"/>
+  <circle cx="60" cy="60" r="12" fill="#D0D0D0" stroke="#656565" stroke-width="1.5"/>
+  <path d="M60 50 L65 60 L55 60 Z" fill="#656565"/>
+</svg>` },
+    { min: 600, max: 699, svg: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="silver_2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E0E0E0"/>
+      <stop offset="50%" stop-color="#C0C0C0"/>
+      <stop offset="100%" stop-color="#757575"/>
+    </linearGradient>
+  </defs>
+  <path d="M15 45 L5 55 L15 65 M105 45 L115 55 L105 65" fill="none" stroke="#BDBDBD" stroke-width="3" stroke-linecap="round"/>
+  <path d="M60 15 L100 35 V85 L60 105 L20 85 V35 Z" fill="url(#silver_2)"/>
+  <path d="M60 15 L100 35 L60 55 L20 35 Z" fill="white" opacity="0.15"/>
+  <circle cx="60" cy="60" r="12" fill="#E0E0E0" stroke="#757575" stroke-width="2"/>
+  <path d="M50 55 C55 50, 65 50, 70 55 L60 60 Z" fill="#757575" opacity="0.7"/>
+  <path d="M50 65 C55 70, 65 70, 70 65 L60 60 Z" fill="#757575" opacity="0.7"/>
+</svg>
+` },
+    { min: 700, max: 799, svg: `<svg id="gold3">...</svg>` },
+    { min: 800, max: 899, svg: `<svg id="gold4">...</svg>` },
     // ... füge hier alle deine Stufen hinzu
 ];
 
