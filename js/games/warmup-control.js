@@ -114,16 +114,10 @@ export class WarmupController {
         this.updateUI();
 
         // AUTO-NEXT LOGIK
-<<<<<<< HEAD
    const currentDarts = this.game.currentRoundThrows.length; // In Finishing oft: this.game.currentRoundThrows.length etc.
         
         if (currentDarts === 3 && !this.game.isFinished) {
             const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
-=======
-        const currentDarts = this.game.currentRoundThrows.length;
-        if (this.game.currentRoundThrows.length === 3 && !this.game.isFinished) {
-      const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
             if (nextBtn) {
                 nextBtn.classList.remove('auto-next-anim');
                 void nextBtn.offsetWidth; // Repaint

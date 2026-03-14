@@ -212,7 +212,6 @@ export class ScoringBoardControl {
             this.triggerHitEffect(multiplier);
             this.updateView();
 
-<<<<<<< HEAD
             const currentDarts = this.game.roundDarts.length; // In Finishing oft: this.game.currentRoundThrows.length etc.
         
         if (currentDarts === 3 && !this.game.isFinished) {
@@ -230,26 +229,6 @@ export class ScoringBoardControl {
                     window.GameManager.nextRoundX01();
                 }
             }, 1100); // Auf 1100ms erhöht
-=======
-          // AUTO-NEXT LOGIK
-            if (this.game.roundDarts.length === 3 && !this.game.isFinished) {
-                const nextBtn = document.getElementById('bc-next-btn');
-                if (nextBtn) {
-                    // Startet die Füll-Animation sofort
-                    nextBtn.classList.remove('auto-next-anim'); // Reset falls noch drauf
-                    void nextBtn.offsetWidth; // DOM Repaint erzwingen, um Animation sauber neu zu starten
-                    nextBtn.classList.add('auto-next-anim');
-                }
-
-                clearTimeout(this.autoNextTimeout);
-                this.autoNextTimeout = setTimeout(() => {
-                    if (nextBtn) nextBtn.classList.remove('auto-next-anim'); // Animation aufräumen
-                    if (this.game.roundDarts.length === 3) {
-                        window.GameManager.nextRoundBC();
-                    }
-                }, 1100); // Auf 1100ms erhöht
-            }
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         }
     }
 }
@@ -276,14 +255,9 @@ export class ScoringBoardControl {
     }
 
     undo() {
-<<<<<<< HEAD
 
         clearTimeout(this.autoNextTimeout);
         const nextBtn = document.getElementById('bc-next-btn') || document.querySelector('.next-btn-side');
-=======
-        clearTimeout(this.autoNextTimeout);
-        const nextBtn = document.getElementById('bc-next-btn');
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         if (nextBtn) nextBtn.classList.remove('auto-next-anim');
 
         const btn = document.getElementById('bc-undo-btn');
