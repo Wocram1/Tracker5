@@ -15,17 +15,12 @@ export const ScoringX01LevelMapper = (playerLevel) => {
  * xpBase: Basis XP für das Level
  */
 const LEVEL_CONFIG = {
-<<<<<<< HEAD
+
     1:  { sScore: 301, maxRounds: 6, doubleOut: false, xpBase: 350 }, 
     2:  { sScore: 301, maxRounds: 5, doubleOut: false,  xpBase: 400 },
     3:  { sScore: 301, maxRounds: 4, doubleOut: false,  xpBase: 500 }, 
     5:  { sScore: 301, maxRounds: 3, doubleOut: false,  xpBase: 600 },
     6:  { sScore: 301, maxRounds: 6, doubleOut: true,  xpBase: 799 }, 
-=======
-    1:  { sScore: 301, maxRounds: 15, doubleOut: false, xpBase: 350 }, // Anfänger: Single Out
-    2:  { sScore: 301, maxRounds: 12, doubleOut: false,  xpBase: 400 }, // Double Out Einführung
-    5:  { sScore: 301, maxRounds: 9, doubleOut: false,  xpBase: 600 },
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
     10: { sScore: 501, maxRounds: 15, doubleOut: false,  xpBase: 900 },
     15: { sScore: 701, maxRounds: 25, doubleOut: true,  xpBase: 1300 },
     20: { sScore: 1001, maxRounds: 30, doubleOut: true, xpBase: 2000 },
