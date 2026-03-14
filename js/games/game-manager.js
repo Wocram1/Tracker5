@@ -52,6 +52,27 @@ const LEVEL_MAPPERS = {
     'bulls-warmup': BullsWarmupLevelMapper
 };
 
+// --WAKELOCK--
+let wakeLock = null;
+
+const requestWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock aktiv');
+        } catch (err) {
+            console.error(`${err.name}, ${err.message}`);
+        }
+    }
+};
+
+// Reaktivieren, wenn man kurz die App wechselt und zurückkommt
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        await requestWakeLock();
+    }
+});
+
 export const GameManager = {
     currentGame: null,
     isTrainingMode: false,
@@ -416,6 +437,10 @@ export const GameManager = {
     // --- GAME ENGINE ---
     async loadGame(gameId, requestedLevel = 1, isTraining = false, customSettings = null, forceLevel = false) {
         const GameClass = GAME_CLASSES[gameId];
+        requestWakeLock();
+        if (typeof requestWakeLock === 'function') {
+            await requestWakeLock();
+        }
         if (!GameClass) return;
 
         let finalLevel = requestedLevel;
@@ -494,13 +519,19 @@ export const GameManager = {
     handleBCInput(m) { this.currentGame?.handleInput?.(m); },
     
     // ANGEPASST FÜR TURN-SWITCH
+<<<<<<< HEAD
     nextRoundBC() { 
         window.SoundManager?.play('next');
+=======
+   nextRoundBC() { 
+        window.SoundManager?.play('next'); // NEU
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         this.currentGame?.nextRound?.(); 
         if (this.isMultiplayer && !this.currentGame.game.isFinished) {
             this.switchTurn();
         }
     },
+<<<<<<< HEAD
 
   
     undoBC() { window.SoundManager?.play('undo'); this.currentGame?.undo?.(); },
@@ -509,6 +540,14 @@ export const GameManager = {
     // ANGEPASST FÜR TURN-SWITCH
     nextRoundX01() { 
         window.SoundManager?.play('next');
+=======
+    
+    undoBC() { window.SoundManager?.play('undo'); this.currentGame?.undo?.(); },
+    
+    // ANGEPASST FÜR TURN-SWITCH
+    nextRoundX01() { 
+        window.SoundManager?.play('next'); // NEU
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         if (this.currentGame && this.currentGame.nextRound) {
             this.currentGame.nextRound(); 
         } else if (this.currentGame && this.currentGame.game && this.currentGame.game.nextRound) {
@@ -526,7 +565,12 @@ export const GameManager = {
         else if (this.currentGame.registerHit) this.currentGame.registerHit(val);
     },
 
+<<<<<<< HEAD
     handleModifier(m) { window.SoundManager?.play('click');
+=======
+    handleModifier(m) {
+        window.SoundManager?.fastaudio.play('click');
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         if (this.currentGame && this.currentGame.setModifier) this.currentGame.setModifier(m);
     },
 
@@ -537,6 +581,10 @@ export const GameManager = {
         const activeLogic = this.currentGame.game || this.currentGame;
         const res = activeLogic.getFinalStats();
         
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         let p1FinalData = { xp: res.xp, stats: res.stats, sr: res.sr };
         let p2SyncPayload = null;
 
@@ -581,6 +629,12 @@ export const GameManager = {
                 p1FinalData.sr = eloResult.newSR;
             }
         }
+<<<<<<< HEAD
+=======
+    
+
+
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
 
         const srCategory = activeLogic.srCategory || 'boardcontrol';
 

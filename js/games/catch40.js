@@ -17,12 +17,21 @@ export class Catch40 {
 
         // --- LEVEL CONFIGURATION (1-20) ---
         this.levelConfig = {
+<<<<<<< HEAD
             1:  { start: 50, end: 55, step: 1, rounds: 2, totalTargets: 5, check: 'single', minPoints: 10, malus: 0 },
             5:  { start: 55, end: 60, step: 1, rounds: 2, totalTargets: 6, check: 'single', minPoints: 25, malus: 0 },
             // Beispiel für "Immer auf der 50 bleiben" für 10 Wiederholungen:
             'daily':  { start: 50, end: 50, step: 0, rounds: 2, totalTargets: 7, check: 'single', minPoints: 15, malus: 0 },
             10: { start: 61, end: 71, step: 1, rounds: 2, totalTargets: 26, check: 'double', minPoints: 30, malus: 0 },
             20: { start: 61, end: 101, step: 1, rounds: 2, totalTargets: 51, check: 'double', minPoints: 60, malus: 0 }
+=======
+            1:  { start: 50, end: 60, step: 1, rounds: 2, totalTargets: 11, check: 'single', minPoints: 10, malus: 0 },
+            5:  { start: 50, end: 70, step: 1, rounds: 2, totalTargets: 21, check: 'single', minPoints: 25, malus: 0 },
+            // Beispiel für "Immer auf der 50 bleiben" für 10 Wiederholungen:
+            'daily':  { start: 50, end: 50, step: 0, rounds: 2, totalTargets: 7, check: 'single', minPoints: 15, malus: 0 },
+            10: { start: 50, end: 100, step: 2, rounds: 2, totalTargets: 26, check: 'double', minPoints: 30, malus: 0 },
+            20: { start: 50, end: 100, step: 1, rounds: 2, totalTargets: 51, check: 'double', minPoints: 60, malus: 0 }
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         };
 
         const config = this._getEffectiveConfig(level, customSettings);

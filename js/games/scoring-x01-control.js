@@ -146,8 +146,15 @@ export class ScoringX01Control {
         
         this.modifier = 1; 
         this.updateUI();
+<<<<<<< HEAD
 const currentDarts = this.game.dartsThrown;
       if (currentDarts === 3 && !this.game.isFinished) {
+=======
+
+        const currentDarts = this.game.dartsThrown; // In Finishing oft: this.game.currentRoundThrows.length etc.
+        
+        if (currentDarts === 3 && !this.game.isFinished) {
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
             const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
             if (nextBtn) {
                 nextBtn.classList.remove('auto-next-anim');

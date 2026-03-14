@@ -31,8 +31,13 @@ export class SectionHit {
         this.level = level;
 
         this.levelConfig = {
+<<<<<<< HEAD
             1: { targets: [16,8,4,2,1], rounds: 20, startHerz: 0, regainHerz: 0, startBlitz: 0, regainBlitz: 0, minPoints: 5, requiredHits: 3 },
             2: { targets: [20,10,5,24,12,6], rounds: 25, startHerz: 0, regainHerz: 0, startBlitz: 0, regainBlitz: 0, minPoints: 6, requiredHits: 3 },
+=======
+            1: { targets: [10,11,12,13,14,15], rounds: 20, startHerz: 3, regainHerz: 1, startBlitz: 3, regainBlitz: 1, minPoints: 12, requiredHits: 3 },
+            2: { targets: [10,11,12,13,14,15,16,17,18], rounds: 25, startHerz: 0, regainHerz: 0, startBlitz: 0, regainBlitz: 0, minPoints: 27, requiredHits: 3 },
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
             3: { targets: [1,2,3,4,5,6,7,8,9,10,11,12], rounds: 30, startHerz: 2, regainHerz: 1, startBlitz: 5, regainBlitz: 1, minPoints: 36, requiredHits: 3 },
             4: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], rounds: 40, startHerz: 2, regainHerz: 0.5, startBlitz: 4, regainBlitz: 1, minPoints: 45, requiredHits: 3 },
             5: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 45, startHerz: 1, regainHerz: 0.5, startBlitz: 3, regainBlitz: 0.5, minPoints: 60, requiredHits: 3 },
