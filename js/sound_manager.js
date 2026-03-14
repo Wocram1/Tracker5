@@ -56,6 +56,7 @@ export const SoundManager = {
         source.start(0); // Startet sofort ohne Verzögerung
     }
 };
+<<<<<<< HEAD
 window.SoundManager = SoundManager;
 
 async function keepScreenAlive() {
@@ -70,3 +71,6 @@ async function keepScreenAlive() {
 
 // Trigger bei jedem Spielstart oder Klick
 document.addEventListener('click', keepScreenAlive, { once: true });
+=======
+window.SoundManager = SoundManager;
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2

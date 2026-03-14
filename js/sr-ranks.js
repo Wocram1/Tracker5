@@ -77,7 +77,10 @@ export const SR_LEVELS = [
   <circle cx="60" cy="60" r="12" fill="#D0D0D0" stroke="#656565" stroke-width="1.5"/>
   <path d="M60 50 L65 60 L55 60 Z" fill="#656565"/>
 </svg>` },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
     { min: 600, max: 699, svg: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="silver_2" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -92,6 +95,7 @@ export const SR_LEVELS = [
   <circle cx="60" cy="60" r="12" fill="#E0E0E0" stroke="#757575" stroke-width="2"/>
   <path d="M50 55 C55 50, 65 50, 70 55 L60 60 Z" fill="#757575" opacity="0.7"/>
   <path d="M50 65 C55 70, 65 70, 70 65 L60 60 Z" fill="#757575" opacity="0.7"/>
+<<<<<<< HEAD
 </svg>` },
 
       { min: 700, max: 799, svg: `<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
@@ -226,6 +230,12 @@ export const SR_LEVELS = [
 </svg>` },
       
 
+=======
+</svg>
+` },
+    { min: 700, max: 799, svg: `<svg id="gold3">...</svg>` },
+    { min: 800, max: 899, svg: `<svg id="gold4">...</svg>` },
+>>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
     // ... füge hier alle deine Stufen hinzu
 ];
 
