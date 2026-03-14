@@ -144,10 +144,7 @@ export class FinishingController {
     }
 
     undo() {
-<<<<<<< HEAD
         // 1. Auto-Next Timer sofort stoppen
-=======
->>>>>>> 2704695901f830b043f960434c52165ee6d24f20
         if (this.autoNextTimeout) {
             clearTimeout(this.autoNextTimeout);
         }
@@ -157,10 +154,7 @@ export class FinishingController {
         if (nextBtn) {
             nextBtn.classList.remove('auto-next-anim');
         }
-<<<<<<< HEAD
         
-=======
->>>>>>> 2704695901f830b043f960434c52165ee6d24f20
         if (this.game.undo) {
             this.game.undo();
         }
