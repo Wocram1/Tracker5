@@ -99,7 +99,7 @@ export class WarmupController {
         if (this.ui.challengeTitle) this.ui.challengeTitle.textContent = displayLevel;
     }
 
-    handleInput(val, mult) {
+   handleInput(val, mult) {
         if (this.game.currentRoundThrows.length >= 3) return;
         const safeVal = parseInt(val) || 0;
         const finalMult = this.modifier !== 1 ? this.modifier : (parseInt(mult) || 1);
@@ -107,8 +107,31 @@ export class WarmupController {
         this.triggerFlash(safeVal, finalMult);
         this.game.registerHit(safeVal, finalMult);
         
+        // SOUND
+        window.SoundManager?.play(safeVal === 0 ? 'miss' : 'hit');
+        
         this.modifier = 1; 
         this.updateUI();
+
+        // AUTO-NEXT LOGIK
+   const currentDarts = this.game.currentRoundThrows.length; // In Finishing oft: this.game.currentRoundThrows.length etc.
+        
+        if (currentDarts === 3 && !this.game.isFinished) {
+            const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
+            if (nextBtn) {
+                nextBtn.classList.remove('auto-next-anim');
+                void nextBtn.offsetWidth; // Repaint
+                nextBtn.classList.add('auto-next-anim');
+            }
+
+            clearTimeout(this.autoNextTimeout);
+            this.autoNextTimeout = setTimeout(() => {
+                if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+                if (currentDarts === 3) { // Bedingung passend zur Datei
+                    window.GameManager.nextRoundX01();
+                }
+            }, 1100); // Auf 1100ms erhöht
+        }
     }
 
     triggerFlash(val, mult) {
@@ -136,6 +159,11 @@ export class WarmupController {
     }
 
     undo() { 
+        clearTimeout(this.autoNextTimeout);
+        const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
+        if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+
+        const btn = document.querySelector('.undo-btn');
         if (this.game.undo) this.game.undo(); 
         this.modifier = 1; 
         this.updateUI(); 
@@ -227,7 +255,7 @@ export class WarmupController {
         if (this.ui.malusContainer) this.ui.malusContainer.classList.remove('hidden');
     }
 
-    highlightBoard() {
+ highlightBoard() {
         // Zuerst alle Highlights entfernen
         document.querySelectorAll('.segment-path').forEach(path => {
             path.classList.remove(
@@ -237,7 +265,7 @@ export class WarmupController {
         });
 
         const targets = this.game.currentTargets || [];
-        const targetRings = this.game.currentTargetRings || []; // Erwartet z.B. ['S', 'D', 'T']
+        const targetRings = this.game.currentTargetRings || []; // Erwartet z.B. ['S', 'D', 'T', 'A']
         const throwsCount = (this.game.currentRoundThrows || []).length;
 
         // Wir berechnen die Zuweisung für die verbleibenden Darts der Runde
@@ -245,7 +273,7 @@ export class WarmupController {
 
         remainingIndices.forEach(index => {
             const num = targets[index];
-            const ring = targetRings[index]; // 'S', 'D', 'T' oder undefined
+            const ring = targetRings[index]; // 'S', 'D', 'T', 'A' oder undefined
             const dartPosition = index + 1; // 1, 2 oder 3
 
             if (num === undefined) return;
@@ -260,8 +288,10 @@ export class WarmupController {
                 const isTriple = path.classList.contains('triple-path');
                 const isSingle = !isDouble && !isTriple;
 
-                // Prüfen, ob dieser Pfad zum gewünschten Ring gehört
+                // PRÜFUNG: Gehört dieser Pfad zum gewünschten Ziel?
+                // ring === 'A' sorgt dafür, dass bei m:0 alle Pfade des Segments (Single, Double, Triple) leuchten
                 const isCorrectRing = !ring || 
+                    ring === 'A' ||
                     (ring === 'S' && isSingle) ||
                     (ring === 'D' && isDouble) ||
                     (ring === 'T' && isTriple);

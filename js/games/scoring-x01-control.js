@@ -92,7 +92,7 @@ export class ScoringX01Control {
 
         if (isStandardX01) {
          // --- UPDATE FÜR X01 & COUNTUP ---
-        this.ui.round.textContent = `R${this.game.round}`;
+       this.ui.round.textContent = `R${this.game.round}/${this.game.maxRounds}`;
         const avg = this.game.totalDarts > 0 ? ((this.game.stats.totalPoints / this.game.totalDarts) * 3).toFixed(1) : "0.0";
         if(this.ui.avgVal) this.ui.avgVal.textContent = avg;
         if(this.ui.lastVal) this.ui.lastVal.textContent = this.game.lastScore || 0;
@@ -135,16 +135,42 @@ export class ScoringX01Control {
     }
 
     // Standard Methoden bleiben unverändert
-    handleInput(val, mult) {
+  handleInput(val, mult) {
         if (this.game.isFinished || this.game.dartsThrown >= 3) return;
         const finalMult = this.modifier !== 1 ? this.modifier : mult;
+        
         this.game.registerHit(parseInt(val), finalMult);
+        
+        // SOUND: Miss (0) oder Hit (>0)
+        window.SoundManager?.play(parseInt(val) === 0 ? 'miss' : 'hit');
+        
         this.modifier = 1; 
         this.updateUI();
+const currentDarts = this.game.dartsThrown;
+      if (currentDarts === 3 && !this.game.isFinished) {
+            const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
+            if (nextBtn) {
+                nextBtn.classList.remove('auto-next-anim');
+                void nextBtn.offsetWidth; // Repaint
+                nextBtn.classList.add('auto-next-anim');
+            }
+
+            clearTimeout(this.autoNextTimeout);
+            this.autoNextTimeout = setTimeout(() => {
+                if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+                if (currentDarts === 3) { // Bedingung passend zur Datei
+                    window.GameManager.nextRoundX01();
+                }
+            }, 1100); // Auf 1100ms erhöht
+        }
     }
     setModifier(m) { this.modifier = (this.modifier === m) ? 1 : m; this.updateModifierUI(); }
     nextRound() { if (this.game.nextRound) { this.game.nextRound(); this.updateUI(); } }
     undo() { 
+        clearTimeout(this.autoNextTimeout);
+        const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
+        if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+
         const btn = document.querySelector('.undo-btn'); 
         if (btn) { btn.classList.add('ani-undo'); setTimeout(() => btn.classList.remove('ani-undo'), 400); }
         if (this.game && typeof this.game.undo === 'function') { this.game.undo(); this.updateUI(); }

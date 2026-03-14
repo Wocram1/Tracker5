@@ -190,12 +190,15 @@ export class ScoringBoardControl {
         }
     }
 
-    handleInput(multiplier) {
+   handleInput(multiplier) {
         if (this.game.roundDarts.length < 3 && !this.game.isFinished) {
             const displayBefore = this.game.targetDisplay || this.game.currentTargetNumber;
             const roundBefore = this.game.round;
 
             this.game.registerThrow(multiplier);
+            
+            // SOUND: Hit oder Miss
+            window.SoundManager?.play(multiplier > 0 ? 'hit' : 'miss');
 
             if (this.game.roundDarts.length === 3) {
                 this.frozenTargetDisplay = this.game.targetDisplay || displayBefore;
@@ -208,8 +211,27 @@ export class ScoringBoardControl {
 
             this.triggerHitEffect(multiplier);
             this.updateView();
+
+            const currentDarts = this.game.roundDarts.length; // In Finishing oft: this.game.currentRoundThrows.length etc.
+        
+        if (currentDarts === 3 && !this.game.isFinished) {
+            const nextBtn = document.getElementById('bc-next-btn') || document.querySelector('.next-btn-side');
+            if (nextBtn) {
+                nextBtn.classList.remove('auto-next-anim');
+                void nextBtn.offsetWidth; // Repaint
+                nextBtn.classList.add('auto-next-anim');
+            }
+
+            clearTimeout(this.autoNextTimeout);
+            this.autoNextTimeout = setTimeout(() => {
+                if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+                if (currentDarts === 3) { // Bedingung passend zur Datei
+                    window.GameManager.nextRoundX01();
+                }
+            }, 1100); // Auf 1100ms erhöht
         }
     }
+}
 
     nextRound() {
         if (!this.game) return;
@@ -233,6 +255,11 @@ export class ScoringBoardControl {
     }
 
     undo() {
+
+        clearTimeout(this.autoNextTimeout);
+        const nextBtn = document.getElementById('bc-next-btn') || document.querySelector('.next-btn-side');
+        if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+
         const btn = document.getElementById('bc-undo-btn');
         if (btn) btn.classList.add('ani-undo');
 

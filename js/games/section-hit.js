@@ -3,7 +3,7 @@ import { LevelSystem } from '../supabase_client.js';
 export const SectionHitLevelMapper = (playerLevel) => {
     if (playerLevel < 10) return 1;
     if (playerLevel < 20) return 2;
-    if (playerLevel < 35) return 3;
+    if (playerLevel < 45) return 3;
     if (playerLevel < 50) return 4;
     if (playerLevel < 70) return 5;
     return 6;
@@ -31,12 +31,12 @@ export class SectionHit {
         this.level = level;
 
         this.levelConfig = {
-            1: { targets: [10,11,12,13,14,15], rounds: 20, startHerz: 3, startBlitz: 3, minPoints: 12, requiredHits: 3 },
-            2: { targets: [10,11,12,13,14,15,16,17,18], rounds: 25, startHerz: 3, startBlitz: 3, minPoints: 27, requiredHits: 3 },
-            3: { targets: [1,2,3,4,5,6,7,8,9,10,11,12], rounds: 30, startHerz: 2, startBlitz: 5, minPoints: 36, requiredHits: 3 },
-            4: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], rounds: 40, startHerz: 2, startBlitz: 4, minPoints: 45, requiredHits: 3 },
-            5: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 45, startHerz: 1, startBlitz: 3, minPoints: 60, requiredHits: 3 },
-            6: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25], rounds: 50, startHerz: 1, startBlitz: 2, minPoints: 70, requiredHits: 3 }
+            1: { targets: [16,8,4,2,1], rounds: 20, startHerz: 0, regainHerz: 0, startBlitz: 0, regainBlitz: 0, minPoints: 5, requiredHits: 3 },
+            2: { targets: [20,10,5,24,12,6], rounds: 25, startHerz: 0, regainHerz: 0, startBlitz: 0, regainBlitz: 0, minPoints: 6, requiredHits: 3 },
+            3: { targets: [1,2,3,4,5,6,7,8,9,10,11,12], rounds: 30, startHerz: 2, regainHerz: 1, startBlitz: 5, regainBlitz: 1, minPoints: 36, requiredHits: 3 },
+            4: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15], rounds: 40, startHerz: 2, regainHerz: 0.5, startBlitz: 4, regainBlitz: 1, minPoints: 45, requiredHits: 3 },
+            5: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], rounds: 45, startHerz: 1, regainHerz: 0.5, startBlitz: 3, regainBlitz: 0.5, minPoints: 60, requiredHits: 3 },
+            6: { targets: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,25], rounds: 50, startHerz: 1, regainHerz: 0, startBlitz: 2, regainBlitz: 0.5, minPoints: 70, requiredHits: 3 }
         };
 
         this.config = isTraining ? this.setupTraining(customSettings) : (this.levelConfig[level] || this.levelConfig[1]);
@@ -72,10 +72,12 @@ export class SectionHit {
     }
 
     setupTraining(s) {
-        return { 
+      return { 
             rounds: s?.maxRounds ?? 99, 
             startHerz: s?.startHerz ?? 5, 
+            regainHerz: s?.regainHerz ?? 1, // Fallback für Training
             startBlitz: s?.startBlitz ?? 10, 
+            regainBlitz: s?.regainBlitz ?? 1, // Fallback für Training
             minPoints: 0,
             requiredHits: s?.requiredHits ?? 3
         };
@@ -175,8 +177,16 @@ export class SectionHit {
         // Regeneration (Maximalwert beachten)
         const maxB = this.isTraining ? 20 : (this.config.startBlitz || 3);
         const maxH = this.isTraining ? 10 : (this.config.startHerz || 3);
-        this.bolts = Math.min(maxB, this.bolts + 1);
-        this.lives = Math.min(maxH, this.lives + 1);
+       const regainB = this.config.regainBlitz !== undefined ? this.config.regainBlitz : 1;
+        const regainH = this.config.regainHerz !== undefined ? this.config.regainHerz : 1;
+
+        // Nur erhöhen, wenn es überhaupt einen Start-Wert gab (Analog zu ATC)
+        if (this.config.startBlitz > 0) {
+            this.bolts = Math.min(maxB, this.bolts + regainB);
+        }
+        if (this.config.startHerz > 0) {
+            this.lives = Math.min(maxH, this.lives + regainH);
+        }
     }
 
     handleMiss() {
@@ -193,7 +203,7 @@ export class SectionHit {
             this.malusScore += 10; 
             if (this.lives === 0 && !this.isTraining) this.isFinished = true;
         } else {
-            this.malusScore += 20; 
+            this.malusScore += 0.5; 
         }
     }
 

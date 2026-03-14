@@ -1,25 +1,54 @@
 /**
  * SCORING X01 LOGIC
- * Vollständige Logik, angepasst an die GameManager-Struktur.
+ * Jetzt mit Level-Konfiguration für Rundenlimits und Checkout-Modi.
  */
+
+export const ScoringX01LevelMapper = (playerLevel) => {
+    return Math.min(20, Math.max(1, Math.floor(playerLevel / 5) + 1));
+};
+
+/**
+ * LEVEL CONFIGURATION
+ * sScore: Startwert (301, 501, etc.)
+ * maxRounds: Maximale Runden (wie in CountUp)
+ * doubleOut: true für Double Out, false für Single Out
+ * xpBase: Basis XP für das Level
+ */
+const LEVEL_CONFIG = {
+    1:  { sScore: 301, maxRounds: 6, doubleOut: false, xpBase: 350 }, 
+    2:  { sScore: 301, maxRounds: 5, doubleOut: false,  xpBase: 400 },
+    3:  { sScore: 301, maxRounds: 4, doubleOut: false,  xpBase: 500 }, 
+    5:  { sScore: 301, maxRounds: 3, doubleOut: false,  xpBase: 600 },
+    6:  { sScore: 301, maxRounds: 6, doubleOut: true,  xpBase: 799 }, 
+    10: { sScore: 501, maxRounds: 15, doubleOut: false,  xpBase: 900 },
+    15: { sScore: 701, maxRounds: 25, doubleOut: true,  xpBase: 1300 },
+    20: { sScore: 1001, maxRounds: 30, doubleOut: true, xpBase: 2000 },
+    'daily': { sScore: 301, maxRounds: 8, doubleOut: false, xpBase: 750 } // Spezieller Modus für tägliche Herausforderungen
+};
+
 export class ScoringX01Logic {
-    // Der GameManager übergibt (requestedLevel, isTraining, customSettings)
     constructor(level = 1, isTraining = false, customSettings = null) {
         this.name = "X01";
         this.interfaceType = "x01"; 
         this.srCategory = "scoring";
         this.isTraining = isTraining;
+        this.level = level;
 
-        // Settings aus dem Modal oder Standardwerte
+        // Level Config laden
+        const config = LEVEL_CONFIG[level] || LEVEL_CONFIG[1];
+        this.config = config;
+
+        // Settings Priorität: Custom Settings > Level Config > Default
         const settings = customSettings || {};
-        this.startScore = parseInt(settings.score) || 501;
-        this.isDoubleOut = settings.doubleOut !== undefined ? settings.doubleOut : true;
+        this.startScore = parseInt(settings.score) || config.sScore || 501;
+        this.maxRounds = parseInt(settings.maxRounds) || config.maxRounds || 99;
+        this.isDoubleOut = settings.doubleOut !== undefined ? settings.doubleOut : config.doubleOut;
         this.isDoubleIn = settings.doubleIn !== undefined ? settings.doubleIn : false;
         
         // Spielstatus
         this.currentScore = this.startScore;
         this.scoreAtRoundStart = this.startScore;
-        this.lastScore = 0; // NEU: Speichert das Ergebnis der letzten Aufnahme für das UI
+        this.lastScore = 0; 
         this.round = 1;
         this.dartsThrown = 0;
         this.totalDarts = 0;
@@ -30,192 +59,170 @@ export class ScoringX01Logic {
 
         this.stats = {
             totalPoints: 0,
-            first9Points: 0,
-            hundredPlus: 0,
-            oneFortyPlus: 0,
-            oneEighty: 0,
-            highestVisit: 0,
-            singles: 0,
-            doubles: 0,
+            hits: 0,
+            misses: 0,
             triples: 0,
-            checkoutAttempts: 0,
-            distribution: {} 
-        };
-        this.initDistribution();
-    }
-
-    /**
-     * WICHTIG: Diese Methode triggert das Fenster im GameManager!
-     */
-    static getTrainingConfig() {
-        return {
-            gameId: 'x01',
-            title: 'X01 Training Setup',
-            options: [
-                {
-                    id: 'score',
-                    label: 'Start-Score',
-                    type: 'select',
-                    values: [
-                        { label: '301', value: '301' },
-                        { label: '501', value: '501' },
-                        { label: '701', value: '701' }
-                    ]
-                },
-                {
-                    id: 'doubleOut',
-                    label: 'Double Out (Finish)',
-                    type: 'toggle',
-                    default: true
-                },
-                {
-                    id: 'doubleIn',
-                    label: 'Double In (Start)',
-                    type: 'toggle',
-                    default: false
-                }
-            ]
+            doubles: 0,
+            oneEighty: 0,
+            checkoutAttempts: 0
         };
     }
 
-    initDistribution() {
-        const sectors = [...Array(21).keys(), 25]; 
-        sectors.forEach(s => {
-            this.stats.distribution[s] = [0, 0, 0]; 
-        });
+    get displayStats() {
+        return [
+            { label: 'AVG', value: ((this.stats.totalPoints / (this.totalDarts || 1)) * 3).toFixed(1), color: 'text-primary' },
+            { label: 'Darts', value: this.totalDarts, color: 'text-info' },
+            { label: 'Runde', value: `${this.round}/${this.maxRounds}`, color: 'text-warning' }
+        ];
     }
 
     registerHit(val, mult) {
         if (this.isFinished || this.dartsThrown >= 3) return;
 
-        const dartIndexInRound = this.currentRoundThrows.length; 
-        let points = val * mult;
-        
-        if (this.totalDarts < 9) this.stats.first9Points += points;
-        if (this.stats.distribution[val] !== undefined) {
-            this.stats.distribution[val][dartIndexInRound]++;
-        }
+        const points = val * mult;
+        const potentialNewScore = this.currentScore - points;
 
-        if (mult === 1 && val > 0) this.stats.singles++;
-        if (mult === 2) this.stats.doubles++;
-        if (mult === 3) this.stats.triples++;
-
-        if (this.isDoubleOut && this.currentScore <= 50 && this.currentScore % 2 === 0) {
-            this.stats.checkoutAttempts++;
-        }
-
+        // Double In Logik
         if (!this.hasStartedScoring) {
-            if (mult === 2) this.hasStartedScoring = true;
-            else points = 0;
+            if (mult === 2) {
+                this.hasStartedScoring = true;
+            } else {
+                this._recordThrow(val, mult, 0, false);
+                return;
+            }
         }
 
-        const tempScore = this.currentScore - points;
-        let isBust = false;
-
-        if (tempScore < 0) isBust = true; 
-        else if (this.isDoubleOut) {
-            if (tempScore === 1) isBust = true; 
-            if (tempScore === 0 && mult !== 2) isBust = true; 
-        }
-
-        const throwData = { 
-            base: val, 
-            mult: mult, 
-            points: isBust ? 0 : points, 
-            scoreBefore: this.currentScore, 
-            isBust: isBust 
-        };
-
-        this.totalDarts++;
-
+        // Checkout & Bust Logik
+        const isBust = this._checkBust(potentialNewScore, val, mult);
+        
         if (isBust) {
-            this.currentRoundThrows.push(throwData);
-            this.currentScore = this.scoreAtRoundStart; 
-            this.dartsThrown = 3; 
+            this._recordThrow(val, mult, 0, false);
+            this.dartsThrown = 3; // Runde beenden bei Bust
         } else {
-            this.currentScore = tempScore;
-            this.currentRoundThrows.push(throwData);
-            this.dartsThrown++;
-            this.stats.totalPoints += points;
+            this.currentScore = potentialNewScore;
+            this._recordThrow(val, mult, points, true);
+            
+            if (this.currentScore === 0) {
+                this.isFinished = true;
+                this.dartsThrown = 3;
+            }
         }
+    }
 
-        if (this.currentScore === 0 && !isBust) {
-            this.isFinished = true;
+    _checkBust(score, val, mult) {
+        // Unter 0 immer Bust
+        if (score < 0) return true;
+        // 1 Rest bei Double Out ist Bust
+        if (score === 1 && this.isDoubleOut) return true;
+        // 0 Rest aber kein Double bei Double Out ist Bust
+        if (score === 0 && this.isDoubleOut && mult !== 2) return true;
+        return false;
+    }
+
+    _recordThrow(val, mult, points, isValid) {
+        this.currentRoundThrows.push({
+            base: val, mult, points, // Hier 'base: val' statt nur 'val'
+            scoreBefore: isValid ? this.currentScore + points : this.currentScore,
+            isDoubleAttempt: this._isCheckoutRange()
+        });
+
+        if (isValid) {
+            this.stats.totalPoints += points;
+            if (mult === 3) this.stats.triples++;
+            if (mult === 2) this.stats.doubles++;
         }
+        
+        this.totalDarts++;
+        this.dartsThrown++;
+        
+        if (this.currentRoundThrows.length === 3) {
+            const roundTotal = this.currentRoundThrows.reduce((sum, t) => sum + t.points, 0);
+            if (roundTotal === 180) this.stats.oneEighty++;
+        }
+    }
+
+    _isCheckoutRange() {
+        if (this.isDoubleOut) return this.currentScore <= 50;
+        return this.currentScore <= 60;
     }
 
     nextRound() {
         if (this.isFinished) return;
-        const roundPoints = this.currentRoundThrows.reduce((sum, t) => sum + (t.points || 0), 0);
         
-        // NEU: Letzten Score für das UI speichern
-        this.lastScore = roundPoints;
-
-        if (roundPoints >= 180) this.stats.oneEighty++;
-        else if (roundPoints >= 140) this.stats.oneFortyPlus++;
-        else if (roundPoints >= 100) this.stats.hundredPlus++;
+        this.saveHistory();
+        this.lastScore = this.currentRoundThrows.reduce((sum, t) => sum + t.points, 0);
         
-        if (roundPoints > this.stats.highestVisit) this.stats.highestVisit = roundPoints;
-
-        while (this.dartsThrown < 3) { 
-            this.currentRoundThrows.push({ base: 0, mult: 1, points: 0, scoreBefore: this.currentScore, isBust: false });
-            this.dartsThrown++;
+        if (this.round >= this.maxRounds) {
+            this.isFinished = true; // Spiel beendet durch Rundenlimit
+        } else {
+            this.round++;
+            this.dartsThrown = 0;
+            this.currentRoundThrows = [];
+            this.scoreAtRoundStart = this.currentScore;
         }
-
-        this.history.push(JSON.stringify({ 
-            scoreStart: this.scoreAtRoundStart, 
-            stats: {...this.stats},
-            totalDarts: this.totalDarts,
-            lastScore: this.lastScore // Auch im Verlauf speichern für Undo
-        }));
-        
-        this.scoreAtRoundStart = this.currentScore; 
-        this.currentRoundThrows = [];
-        this.dartsThrown = 0;
-        this.round++;
     }
 
     undo() {
         if (this.currentRoundThrows.length > 0) {
-            const lastThrow = this.currentRoundThrows.pop();
-            this.currentScore = lastThrow.scoreBefore;
-            this.stats.totalPoints -= lastThrow.points;
-            this.dartsThrown--;
+            const last = this.currentRoundThrows.pop();
+            this.currentScore = last.scoreBefore;
+            this.stats.totalPoints -= last.points;
             this.totalDarts--;
+            this.dartsThrown--;
             this.isFinished = false;
             return;
         }
         
         if (this.history.length > 0) {
             const lastState = JSON.parse(this.history.pop());
-            this.scoreAtRoundStart = lastState.scoreStart;
             this.currentScore = lastState.scoreStart;
-            this.lastScore = lastState.lastScore || 0; // Letzten Score wiederherstellen
-            this.currentRoundThrows = [];
-            this.dartsThrown = 0;
+            this.scoreAtRoundStart = lastState.scoreStart;
             this.round--;
             this.stats = lastState.stats;
             this.totalDarts = lastState.totalDarts;
+            this.currentRoundThrows = [];
+            this.dartsThrown = 0;
+            this.isFinished = false;
         }
+    }
+
+    saveHistory() {
+        this.history.push(JSON.stringify({
+            scoreStart: this.scoreAtRoundStart,
+            stats: { ...this.stats },
+            totalDarts: this.totalDarts
+        }));
     }
 
     getFinalStats() {
         const totalDarts = this.totalDarts || 1;
         const avg = (this.stats.totalPoints / totalDarts) * 3;
+        const hasWon = this.currentScore === 0;
         
-        let finalXP = (this.startScore / 2) + (this.stats.oneEighty * 150);
+        let sr = Math.floor(avg);
+        if (hasWon) sr += 10; // Bonus für Finish
+
+        let finalXP = this.config.xpBase;
+        if (hasWon) {
+            finalXP += (this.stats.oneEighty * 150) + (this.stats.doubles * 20);
+            // Bonus für Effizienz (Runden-Faktor)
+            const speedBonus = Math.max(1, (this.maxRounds - this.round) * 10);
+            finalXP += speedBonus;
+        } else {
+            finalXP = Math.max(50, Math.floor(finalXP * 0.25));
+        }
+
         if (this.isTraining) finalXP *= 0.1;
 
         return {
             xp: Math.floor(finalXP),
-            sr: Math.floor(avg),
-            won: this.isFinished,
+            sr: Math.min(180, sr),
+            won: hasWon,
             stats: {
-                mode: `X01 ${this.startScore}`,
-                points: this.stats.totalPoints,
+                ...this.stats,
                 avg: avg.toFixed(1),
-                darts: this.totalDarts,
-                "180s": this.stats.oneEighty
+                lastScore: this.currentScore,
+                mode: `X01 Lvl ${this.level} (${this.startScore})`
             }
         };
     }

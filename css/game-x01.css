@@ -337,10 +337,16 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 
 .next-btn-side {
     flex: 1.5;
-    background: var(--neon-green) !important;
-    color: black !important;
+    /* Vorher var(--neon-green), jetzt neutraler Glass-Look */
+    background: rgba(255, 255, 255, 0.05) !important; 
+    border: 1px solid var(--glass-border);
+    color: white !important;
     border-radius: 12px;
     font-size: 1.5rem;
+    position: relative; /* Wichtig für die ::before Animation */
+    overflow: hidden;
+    z-index: 1; /* Schafft einen Stacking-Context für den Text */
+    transition: all 0.2s ease;
 }
 
 .btn-highlight-blink { animation: pulse-ready 1.5s infinite !important; }

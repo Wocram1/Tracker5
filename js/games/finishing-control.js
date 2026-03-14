@@ -25,35 +25,36 @@ export class FinishingController {
             this.appContainer.classList.remove('hidden');
 
             // DOM-Elemente einmalig suchen und "cachen"
-            this.ui = {
-                score: document.getElementById('x01-score'),
-                round: document.getElementById('x01-round'),
-                progress: document.getElementById('x01-target-progress'),
-                totalPoints: document.getElementById('x01-total-points'),
-                malus: document.getElementById('x01-malus-val'),
-                minPts: document.getElementById('x01-min-pts-val'),
-                modeBadge: document.getElementById('x01-checkout-badge'),
-                hint: document.getElementById('x01-checkout-hint'),
-                livesContainer: document.getElementById('x01-lives-container'),
-                playerName: document.getElementById('x01-player-name'),
-                challengeTitle: document.getElementById('x01-challenge-title'),
-                
-                // Header-Sichtbarkeitselemente
-                challengeHeader: document.getElementById('x01-challenge-header'),
-                avgContainer: document.getElementById('x01-avg-container'),
-                lastContainer: document.getElementById('x01-last-container'),
-                
-                // Neue Container in der unteren Bar
-                minPtsContainer: document.getElementById('x01-min-pts-container'),
-                targetContainer: document.getElementById('x01-target-progress-container'),
+           this.ui = {
+    // Top Bar & Stats (Alle lokal suchen!)
+    score: this.appContainer.querySelector('#x01-score'),
+    round: this.appContainer.querySelector('#x01-round'),
+    progress: this.appContainer.querySelector('#x01-target-progress'),
+    totalPoints: this.appContainer.querySelector('#x01-total-points'),
+    malus: this.appContainer.querySelector('#x01-malus-val'),
+    minPts: this.appContainer.querySelector('#x01-min-pts-val'),
+    livesContainer: this.appContainer.querySelector('#x01-lives-container'),
+    modeBadge: this.appContainer.querySelector('#x01-checkout-badge'),
+    hint: this.appContainer.querySelector('#x01-checkout-hint'),
+    playerName: this.appContainer.querySelector('#x01-player-name'),
+    challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
+    
+    // Header-Sichtbarkeitselemente
+    challengeHeader: this.appContainer.querySelector('#x01-challenge-header'),
+    avgContainer: this.appContainer.querySelector('#x01-avg-container'),
+    lastContainer: this.appContainer.querySelector('#x01-last-container'),
+    
+    // Container für Finishing-Spezifika
+    minPtsContainer: this.appContainer.querySelector('#x01-min-pts-container'),
+    targetContainer: this.appContainer.querySelector('#x01-target-progress-container'),
 
-                // Throw-Boxes als Array für schnellen Zugriff
-                throws: [
-                    document.getElementById('th-1'),
-                    document.getElementById('th-2'),
-                    document.getElementById('th-3')
-                ]
-            };
+    // Throw-Boxes (Sehr wichtig: Auch hier lokal suchen!)
+    throws: [
+        this.appContainer.querySelector('#th-1'),
+        this.appContainer.querySelector('#th-2'),
+        this.appContainer.querySelector('#th-3')
+    ]
+};
         }
 
         // Interface-Anpassung: Finishing benötigt Malus/Punkte, kein Average
@@ -87,17 +88,46 @@ export class FinishingController {
         }
     }
 
-    handleInput(val, mult) {
+ handleInput(val, mult) {
         const throws = this.game.currentRoundThrows || [];
-        // Nur registrieren, wenn noch keine 3 Darts geworfen wurden (außer Dummy-Darts nach Check)
         if (throws.filter(t => !t.isDummy).length >= 3) return; 
 
         const finalMult = this.modifier !== 1 ? this.modifier : mult;
-        
         this.game.registerHit(parseInt(val), finalMult);
+        
+        // SOUND
+        window.SoundManager?.play(parseInt(val) === 0 ? 'miss' : 'hit');
 
-        this.modifier = 1; // Reset Modifier nach Wurf
+        this.modifier = 1; 
         this.updateUI();
+
+       // AUTO-NEXT LOGIK (Spezifisch für Finishing mit Dummy-Filter)
+        const currentThrows = this.game.currentRoundThrows || [];
+        const realDarts = currentThrows.filter(t => !t.isDummy).length;
+        
+        if (realDarts === 3 && !this.game.isFinished) {
+            // Button finden (X01 Interface nutzt meist .next-btn-side)
+            const nextBtn = document.querySelector('.next-btn-side');
+            
+            if (nextBtn) {
+                // Animation zurücksetzen und neu starten
+                nextBtn.classList.remove('auto-next-anim');
+                void nextBtn.offsetWidth; // Force Reflow für sauberen Animations-Restart
+                nextBtn.classList.add('auto-next-anim');
+            }
+
+            clearTimeout(this.autoNextTimeout);
+            this.autoNextTimeout = setTimeout(() => {
+                // Animation entfernen nach Ablauf
+                if (nextBtn) nextBtn.classList.remove('auto-next-anim');
+
+                // Sicherheitcheck: Sind es immer noch 3 Darts? (Kein Undo passiert?)
+                const checkThrows = this.game.currentRoundThrows || [];
+                if (checkThrows.filter(t => !t.isDummy).length === 3) {
+                    window.GameManager.nextRoundX01();
+                }
+            }, 1100); // Erhöht auf 1100ms für besseres visuelles Feedback
+        }
     }
 
     setModifier(m) {
@@ -114,6 +144,17 @@ export class FinishingController {
     }
 
     undo() {
+        // 1. Auto-Next Timer sofort stoppen
+        if (this.autoNextTimeout) {
+            clearTimeout(this.autoNextTimeout);
+        }
+
+        // 2. Animation visuell abbrechen
+        const nextBtn = document.querySelector('.next-btn-side') || document.getElementById('bc-next-btn');
+        if (nextBtn) {
+            nextBtn.classList.remove('auto-next-anim');
+        }
+        
         if (this.game.undo) {
             this.game.undo();
         }

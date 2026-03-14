@@ -18,10 +18,10 @@ export class CheckoutChallenge {
         // --- LEVEL CONFIGURATION (1-20) ---
         // Synchronisiert mit 121 Challenge Logik
         this.levelConfig = {
-            1:  { range: [2, 40],   attempts: 10, check: 'single', minPoints: 40,  malus: 5,  roundsPerTarget: 3 },
-            2:  { range: [10, 50],  attempts: 10, check: 'single', minPoints: 50,  malus: 5,  roundsPerTarget: 3 },
-            3:  { range: [2, 50],   attempts: 10, check: 'double', minPoints: 40,  malus: 5,  roundsPerTarget: 3 },
-            10: { range: [60, 100], attempts: 10, check: 'single-double', switchTarget: 90, minPoints: 50, malus: 10, roundsPerTarget: 3 },
+            1:  { range: [21, 41],   attempts: 6, check: 'single', minPoints: 10,  malus: 1,  roundsPerTarget: 3 },
+            2:  { range: [21, 50],  attempts: 7, check: 'single', minPoints: 25,  malus: 3,  roundsPerTarget: 3 },
+            3:  { range: [41, 61],   attempts: 8, check: 'single', minPoints: 30,  malus: 5,  roundsPerTarget: 3 },
+            'daily': { range: [60, 100], attempts: 10, check: 'single-double', switchTarget: 90, minPoints: 50, malus: 10, roundsPerTarget: 3 },
             20: { range: [121, 170], attempts: 10, check: 'double', minPoints: 60,  malus: 15, roundsPerTarget: 4 }
         };
 

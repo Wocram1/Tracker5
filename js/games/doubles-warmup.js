@@ -17,7 +17,7 @@ export class DoublesWarmup {
         this.id = 'doubles-warmup';
         this.name = "Double Mastery";
         this.interfaceType = "x01-warmup";
-        this.srCategory = "warmup";
+        this.srCategory = "boardcontrol";
         this.isTraining = isTraining;
         this.level = level;
 

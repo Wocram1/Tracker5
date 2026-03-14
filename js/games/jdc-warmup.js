@@ -13,8 +13,8 @@ export const JDCWarmupLevelMapper = (playerLevel) => {
 const LEVEL_CONFIG = {
     1:  { s1: [18, 20], targets: [20, 18, 10], s2: [18, 20], pointsPerDouble: 20, minPoints: 50,  xpBase: 400 },
     5:  { s1: [15, 20], targets: [20, 19, 18, 16, 10, 8], s2: [15, 20], pointsPerDouble: 30, minPoints: 150, xpBase: 600 },
-    10: { s1: [12, 20], targets: [20, 19, 18, 17, 16, 15, 12, 10, 8, 4, 2, 1], s2: [12, 20], pointsPerDouble: 40, minPoints: 450, xpBase: 1000 },
-    15: { s1: [10, 15], targets: null, s2: [15, 20], pointsPerDouble: 50, minPoints: 750, xpBase: 1300 },
+    10: { s1: [12, 20], targets: [20, 19, 18, 17, 16, 15, 12, 10, 8, 4, 2, 1], s2: [12, 20], pointsPerDouble: 40, minPoints: 300, xpBase: 1000 },
+    15: { s1: [10, 15], targets: null, s2: [15, 20], pointsPerDouble: 50, minPoints: 150, xpBase: 1300 },
     20: { s1: [10, 15], targets: null, s2: [15, 20], pointsPerDouble: 50, minPoints: 1000, xpBase: 1600 }
 };
 
@@ -23,7 +23,7 @@ export class JDCWarmup {
         this.id = 'jdc-warmup';
         this.name = "JDC Challenge";
         this.interfaceType = "x01-warmup";
-        this.srCategory = "warmup";
+        this.srCategory = "boardcontrol";
         this.isTraining = isTraining;
         this.level = level;
 

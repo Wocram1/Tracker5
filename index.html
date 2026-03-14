@@ -96,9 +96,9 @@
     </div>
 </div>
                 <div class="action-grid">
-                    <div class="square-card glass-card" onclick="navigate('training')">
-                        <div class="square-top"><i class="ri-target-line"></i><span class="square-title">Training</span></div>
-                        <div class="square-bottom"><span class="square-desc">eigene parameter</span></div>
+                    <div class="square-card glass-card" onclick="UIController.initQuickplay()">
+                        <div class="square-top"><i class="ri-target-line"></i><span class="square-title">Quickplay</span></div>
+                        <div class="square-bottom"><span class="square-desc">Zufällige Auswahl oder 10mins</span></div>
                     </div>
                     <div class="square-card glass-card" onclick="navigate('challenge')">
                         <div class="square-top"><i class="ri-medal-line"></i><span class="square-title">Challenge</span></div>
@@ -106,8 +106,8 @@
                     </div>
                 </div>
 
-               <div class="wide-card glass-card" onclick="UIController.initQuickplay()">
-    <div class="wide-icon-left"><i class="ri-shuffle-line"></i></div> <div class="wide-content-center"><h3>Quickplay</h3></div>
+               <div class="wide-card glass-card" onclick="navigate('training')">
+    <div class="wide-icon-left"><i class="ri-shuffle-line"></i></div> <div class="wide-content-center"><h3>Training</h3></div>
     <div class="wide-info-right"><i class="ri-play-fill"></i></div>
 </div>
 
@@ -239,9 +239,14 @@
         </section>
     </main>
     
+    <script type="module">
+        import { SoundManager } from './js/sound_manager.js';
+        SoundManager.init();
+    </script>
     <script type="module" src="js/supabase_client.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="./js/ui_controller.js"></script>
+    <script type="module" src="./js/bots/bot-service.js"></script>
     <script type="module" src="./js/games/game-manager.js"></script>
 </body>
 </html>

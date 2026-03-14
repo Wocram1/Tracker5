@@ -12,6 +12,7 @@ export const BullsWarmupLevelMapper = (playerLevel) => {
  * Steigert Rundenanzahl und Punktanforderungen.
  */
 const LEVEL_CONFIG = {
+    'daily': { rounds: 1, minPoints: 50, ptsDouble: 2, ptsSingle: 1, xpBase: 400 },
     1:  { rounds: 10, minPoints: 25,  ptsDouble: 2, ptsSingle: 1, xpBase: 350 },
     2:  { rounds: 10, minPoints: 30,  ptsDouble: 2, ptsSingle: 1, xpBase: 370 },
     3:  { rounds: 10, minPoints: 35,  ptsDouble: 2, ptsSingle: 1, xpBase: 390 },
@@ -31,7 +32,7 @@ export class BullsWarmup {
         this.id = 'bulls-warmup';
         this.name = "Bulls Warmup";
         this.interfaceType = "x01-warmup";
-        this.srCategory = "warmup";
+        this.srCategory = "boardcontrol";
         this.isTraining = isTraining;
         this.level = level;
 
