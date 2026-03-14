@@ -14,24 +14,15 @@ export const NumbersWarmupLevelMapper = (playerLevel) => {
  * { 1: [...], 4: [...] } -> Ab Runde 1 diese Ziele, ab Runde 4 jene.
  */
 const LEVEL_CONFIG = {
-<<<<<<< HEAD
     1:  { rounds: 8,  minPoints: 15,  malus: 1, targets: { 1: [{v:11, m:0}, {v:25, m:1}, {v:6, m:0}], 3: [{v:6, m:0}, {v:25, m:1}, {v:11, m:0}], 5: [{v:20, m:0}, {v:25, m:1}, {v:3, m:0}], 7: [{v:3, m:0}, {v:25, m:1}, {v:20, m:0}] }, pointsPerHit: 1, xpBase: 315 },
     // Beispiel für rundenbasierte Wechsel:
     2:  { 
         rounds: 10,  
         minPoints: 15,  
-=======
-    1:  { rounds: 6,  minPoints: 35,  malus: 1, targets: [{v:20, m:1}, {v:19, m:1}, {v:18, m:1}], pointsPerHit: 1, xpBase: 315 },
-    // Beispiel für rundenbasierte Wechsel:
-    2:  { 
-        rounds: 10,  
-        minPoints: 50,  
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         malus: 1, 
         pointsPerHit: 1, 
         xpBase: 330,
         targets: {
-<<<<<<< HEAD
             1: [{v:11, m:0}, {v:25, m:1}, {v:6, m:0}], 
             2: [{v:3, m:0}, {v:25, m:1}, {v:20, m:0}],
             3: [{v:6, m:0}, {v:25, m:1}, {v:11, m:0}],
@@ -42,11 +33,6 @@ const LEVEL_CONFIG = {
             8: [{v:6, m:0}, {v:25, m:1}, {v:11, m:0}],
             9: [{v:20, m:0}, {v:25, m:1}, {v:3, m:0}], 
             10: [{v:20, m:2}, {v:19, m:2}, {v:18, m:2}],
-=======
-            1: [{v:11, m:1}, {v:25, m:1}, {v:6, m:1}], // Runde 1-4
-            5: [{v:17, m:1}, {v:16, m:1}, {v:15, m:1}], // Ab Runde 5-7
-            8: [{v:20, m:2}, {v:19, m:2}, {v:18, m:2}]  // Ab Runde 8 (Doubles)
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         }
     },
     5:  { rounds: 8,  minPoints: 95,  malus: 2, targets: [{v:20, m:3}, {v:19, m:3}, {v:18, m:3}], pointsPerHit: 5, xpBase: 375 },

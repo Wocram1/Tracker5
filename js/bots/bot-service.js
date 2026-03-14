@@ -34,7 +34,6 @@ export class BotService {
         }
 
         // Runde beenden nach kurzem Warten
-<<<<<<< HEAD
         //await new Promise(res => setTimeout(res, 1200));
         //if (controller.interfaceType === 'board-control') {
           //  gameManager.nextRoundBC();
@@ -42,15 +41,6 @@ export class BotService {
          //   gameManager.nextRoundX01();
       //  }
    }
-=======
-        await new Promise(res => setTimeout(res, 1200));
-        if (controller.interfaceType === 'board-control') {
-            gameManager.nextRoundBC();
-        } else {
-            gameManager.nextRoundX01();
-        }
-    }
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
 
     calculateThrow(game, interfaceType, stats) {
         const rand = Math.random();

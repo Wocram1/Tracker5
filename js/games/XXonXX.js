@@ -11,29 +11,17 @@ export const XXonXXLevelMapper = (playerLevel) => {
  * LEVEL CONFIGURATION TABLE
  */
 const LEVEL_CONFIG = {
-<<<<<<< HEAD
     1:  { rounds: 6,  minPoints: 35,  malus: 1, targets: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}], pointsPerHit: 1, xpBase: 315 },
     2:  { 
         rounds: 7,  
-=======
-    1:  { rounds: 6,  minPoints: 35,  malus: 1, targets: [{v:20, m:1}, {v:19, m:1}, {v:18, m:1}], pointsPerHit: 1, xpBase: 315 },
-    2:  { 
-        rounds: 10,  
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         minPoints: 50,  
         malus: 1, 
         pointsPerHit: 1, 
         xpBase: 330,
         targets: {
-<<<<<<< HEAD
             1: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}], 
             5: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}], 
             7: [{v:25, m:1}, {v:25, m:1}, {v:25, m:1}]  
-=======
-            1: [{v:11, m:1}, {v:25, m:1}, {v:6, m:1}], 
-            5: [{v:17, m:1}, {v:16, m:1}, {v:15, m:1}], 
-            8: [{v:20, m:2}, {v:19, m:2}, {v:18, m:2}]  
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         }
     },
     5:  { rounds: 8,  minPoints: 95,  malus: 2, targets: [{v:20, m:3}, {v:19, m:3}, {v:18, m:3}], pointsPerHit: 5, xpBase: 375 },
@@ -46,12 +34,7 @@ const LEVEL_CONFIG = {
         pointsPerHit: 1, 
         xpBase: 630,
         targets: {
-<<<<<<< HEAD
             1: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}]  
-=======
-            1: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}], 
-            8: [{v:20, m:1}, {v:10, m:1}, {v:5, m:1}]
->>>>>>> 3473ee7cd40fa21899c17045fd298b87c94217c2
         }
     },
 };
