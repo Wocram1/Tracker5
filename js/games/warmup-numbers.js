@@ -1,7 +1,7 @@
 import { LevelSystem } from '../supabase_client.js';
 
 /**
- * NumbersWarmup LevelMapper (1-20)
+ * XXonXX LevelMapper (1-20)
  */
 export const NumbersWarmupLevelMapper = (playerLevel) => {
     return Math.min(20, Math.max(1, Math.floor(playerLevel / 5) + 1));
@@ -9,12 +9,9 @@ export const NumbersWarmupLevelMapper = (playerLevel) => {
 
 /**
  * LEVEL CONFIGURATION TABLE
- * Jetzt mit rundenbasierten Zielen möglich!
- * targets kann ein Array (für alle Runden gleich) oder ein Objekt sein:
- * { 1: [...], 4: [...] } -> Ab Runde 1 diese Ziele, ab Runde 4 jene.
  */
 const LEVEL_CONFIG = {
-    1:  { rounds: 8,  minPoints: 15,  malus: 1, targets: { 1: [{v:11, m:0}, {v:25, m:1}, {v:6, m:0}], 3: [{v:6, m:0}, {v:25, m:1}, {v:11, m:0}], 5: [{v:20, m:0}, {v:25, m:1}, {v:3, m:0}], 7: [{v:3, m:0}, {v:25, m:1}, {v:20, m:0}] }, pointsPerHit: 1, xpBase: 315 },
+      1:  { rounds: 8,  minPoints: 15,  malus: 1, targets: { 1: [{v:11, m:0}, {v:25, m:1}, {v:6, m:0}], 3: [{v:6, m:0}, {v:25, m:1}, {v:11, m:0}], 5: [{v:20, m:0}, {v:25, m:1}, {v:3, m:0}], 7: [{v:3, m:0}, {v:25, m:1}, {v:20, m:0}] }, pointsPerHit: 1, xpBase: 315 },
     // Beispiel für rundenbasierte Wechsel:
     2:  { 
         rounds: 10,  
@@ -35,7 +32,7 @@ const LEVEL_CONFIG = {
             10: [{v:20, m:2}, {v:19, m:2}, {v:18, m:2}],
         }
     },
-    5:  { rounds: 8,  minPoints: 95,  malus: 2, targets: [{v:20, m:3}, {v:19, m:3}, {v:18, m:3}], pointsPerHit: 5, xpBase: 375 },
+    9:  { rounds: 8,  minPoints: 95,  malus: 2, targets: [{v:20, m:3}, {v:19, m:3}, {v:18, m:3}], pointsPerHit: 5, xpBase: 375 },
     10: { rounds: 11, minPoints: 170, malus: 3, targets: [{v:20, m:1}, {v:18, m:2}, {v:13, m:1}], pointsPerHit: 10, xpBase: 450 },
     20: { rounds: 16, minPoints: 320, malus: 5, targets: null, mode: 'random', pointsPerHit: 10, xpBase: 600 },
     'daily':  { 
@@ -57,9 +54,10 @@ const LEVEL_CONFIG = {
     },
 };
 
+
 export class NumbersWarmup {
     constructor(level = 1, isTraining = false, customSettings = null) {
-        this.id = 'numbers-warmup';
+        this.id = 'NumbersWarmup';
         this.name = "Numbers Warmup";
         this.interfaceType = "x01-warmup"; 
         this.srCategory = "boardcontrol";
@@ -101,7 +99,12 @@ export class NumbersWarmup {
 
     get currentTargetRings() {
         if (this.isFinished || !this.activeTargets) return ['S', 'S', 'S'];
-        return this.activeTargets.map(t => t.m === 3 ? 'T' : (t.m === 2 ? 'D' : 'S'));
+        return this.activeTargets.map(t => {
+            if (t.m === 0) return 'A'; 
+            if (t.m === 3) return 'T';
+            if (t.m === 2) return 'D';
+            return 'S';
+        });
     }
 
     get displayStats() {
@@ -132,13 +135,11 @@ export class NumbersWarmup {
         const configTargets = this.config.targets;
 
         if (configTargets) {
-            // Prüfung: Ist targets ein rundenbasiertes Objekt?
             if (!Array.isArray(configTargets) && typeof configTargets === 'object') {
                 const rounds = Object.keys(configTargets).map(Number).sort((a, b) => b - a);
                 const currentSettingKey = rounds.find(r => r <= this.round) || rounds[rounds.length - 1];
                 return [...configTargets[currentSettingKey]];
             }
-            // Fallback: Einfaches Array für alle Runden
             return [...configTargets];
         }
 
@@ -163,11 +164,15 @@ export class NumbersWarmup {
         const dartIndex = this.currentRoundThrows.length;
         const target = this.activeTargets[dartIndex];
         
-        const isHit = (val === target.v && mult === target.m);
+        const isHit = (target.m === 0) 
+            ? (val === target.v && mult > 0) 
+            : (val === target.v && mult === target.m);
 
         let pointsForDart = 0;
         if (isHit) {
-            pointsForDart = this.pointsPerHit; 
+            const effectiveMultiplier = (target.m === 0) ? mult : 1;
+            pointsForDart = this.pointsPerHit * effectiveMultiplier; 
+
             this.stats.hits++;
             if (mult === 1) this.stats.singles++;
             if (mult === 2) this.stats.doubles++;
@@ -204,7 +209,6 @@ export class NumbersWarmup {
         if (this.round < this.maxRounds) {
             this.round++;
             this.currentRoundThrows = [];
-            // Generiert neue Ziele (prüft jetzt auch den Runden-Wechsel)
             this.activeTargets = this._generateTargetsForRound();
         } else {
             this.isFinished = true;

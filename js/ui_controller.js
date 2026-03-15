@@ -207,7 +207,7 @@ const UIController = {
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <h3 style="color: var(--neon-cyan); margin: 0;">Daily Workout</h3>
-                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele • Volles Training</p>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele • ca 10-15mins</p>
                             </div>
                             <i class="ri-calendar-check-line" style="font-size: 2rem; color: var(--neon-cyan);"></i>
                         </div>

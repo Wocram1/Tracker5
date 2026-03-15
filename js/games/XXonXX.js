@@ -44,7 +44,7 @@ export class XXonXX {
         this.id = 'XXonXX';
         this.name = "XXonXX";
         this.interfaceType = "x01-warmup"; 
-        this.srCategory = "finishing";
+        this.srCategory = "scoring";
         this.isTraining = isTraining;
         this.level = level;
 
