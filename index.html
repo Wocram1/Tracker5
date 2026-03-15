@@ -194,13 +194,82 @@
 
             <div id="view-game-x01" class="view hidden"></div>
             
-            <div id="view-stats" class="view hidden">
-                <div class="sub-page-header">
-                    <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2>Statistiken</h2>
+        
+  <div id="view-stats" class="view hidden">
+    <div class="sub-page-header">
+        <button class="back-nav-btn" onclick="navigate('dashboard')">
+            <i class="ri-arrow-left-s-line"></i>
+        </button>
+        <h2>Statistiken</h2>
+    </div>
+
+    <div class="stats-header">
+        <h2><i class="ri-bar-chart-box-line"></i> Performance Dashboard</h2>
+        <div class="stats-nav-pills">
+            <button class="stat-pill active" onclick="StatsController.switchMainTab('overview')">Übersicht</button>
+            <button class="stat-pill" onclick="StatsController.switchMainTab('deepdive')">Deep Dive</button>
+            <button class="stat-pill" onclick="StatsController.switchMainTab('leaderboard')">Leaderboard</button>
+        </div>
+    </div>
+
+    <div class="stats-body scrollable-content">
+        <div id="tab-overview" class="stat-main-tab active">
+            <div class="stats-dashboard-grid">
+                <div class="glass-card stat-card span-2">
+                    <h3><i class="ri-line-chart-line"></i> XP Verlauf (7 Tage)</h3>
+                    <div class="xp-chart-wrapper">
+                        <div id="xp-trend-chart" class="chart-container"></div>
+                    </div>
+                    <div class="trend-summary">
+                        <span>Ø <span id="stat-trend-avg" class="neon-text">0</span> XP/Tag</span>
+                    </div>
+                </div>
+
+                <div class="glass-card stat-card">
+                    <h3><i class="ri-focus-3-line"></i> Hit Heatmap</h3>
+                    <div id="heatmap-svg-container" style="max-width: 180px; margin: 0 auto;"></div>
+                </div>
+
+                <div class="glass-card stat-card">
+                    <h3><i class="ri-trophy-line"></i> Letzte Erfolge</h3>
+                    <div id="achievements-container" class="achievements-mini-list"></div>
                 </div>
             </div>
+        </div>
 
+        <div id="tab-deepdive" class="stat-main-tab hidden">
+            <div class="stats-dashboard-grid">
+                <div class="glass-card stat-card">
+                    <h3 class="x01-color">X01 Scoring</h3>
+                    <div class="stat-grid-2col">
+                        <div class="stat-box"><span>Ø Average</span><strong id="stat-f9-avg">--</strong></div>
+                        <div class="stat-box"><span>Checkout %</span><strong id="stat-co-pct">--</strong></div>
+                        <div class="stat-box"><span>180s</span><strong id="stat-180s">--</strong></div>
+                        <div class="stat-box"><span>Best Leg</span><strong id="stat-best-leg">--</strong></div>
+                    </div>
+                </div>
+                <div class="glass-card stat-card">
+                    <h3 class="bc-color">Board Control</h3>
+                    <div id="stat-grid-board" class="stat-grid-2col"></div>
+                </div>
+                <div class="glass-card stat-card span-2">
+                    <h3 class="finishing-color">Finishing</h3>
+                    <div id="stat-grid-finish" class="stat-grid-2col"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-leaderboard" class="stat-main-tab hidden">
+            <div class="glass-card stat-card">
+                <h3><i class="ri-global-line"></i> Global Ranking</h3>
+                <p class="text-muted" style="font-size: 0.8rem; margin-bottom: 15px;">Ranking = Level + (SR Gesamt / 100)</p>
+                <div id="leaderboard-container" class="leaderboard-list">
+                    <div class="loading-spinner"><i class="ri-loader-4-line ri-spin"></i> Lade Leaderboard...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
            <div id="modal-game-result" class="modal-overlay hidden">
                 <div class="modal-content glass-card animated-in result-card">
                     <div id="modal-hud-placeholder"></div>

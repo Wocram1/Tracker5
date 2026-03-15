@@ -30,7 +30,7 @@ const LEVEL_CONFIG = {
     'daily':  { 
         rounds: 7,  
         minPoints: 3,  
-        malus: 1, 
+        malus: 0.5, 
         pointsPerHit: 1, 
         xpBase: 630,
         targets: {

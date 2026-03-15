@@ -1,5 +1,6 @@
 import { htmlX01 } from './views/view-x01.js';
 import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung hinzugefügt
+import { StatsController } from './stats-controller.js';
 
 const UIController = {
     DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
@@ -45,6 +46,7 @@ const UIController = {
         if (target === 'stats') {
             views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
             document.getElementById('view-stats').classList.remove('hidden');
+            if(window.StatsController) window.StatsController.loadStats();
             return;
         }
 

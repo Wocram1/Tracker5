@@ -342,7 +342,8 @@ export class Game121 {
             sr = Math.min(180, Math.floor(sr));
         }
 
-        let baseXP = 700 + (this.level * 20); 
+        const numericLevel = isNaN(this.level) ? 5 : parseInt(this.level);
+        let baseXP = 700 + (numericLevel * 20); 
         let bonusXP = 0;
         const win = this.points >= (this.minPointsRequired || 0);
         

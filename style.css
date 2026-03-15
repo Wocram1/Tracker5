@@ -934,3 +934,234 @@ input[type=number]::-webkit-outer-spin-button {
     0%   { width: 0%; }
     100% { width: 100%; background: rgba(52, 199, 89, 1); }
 }
+
+/* ==========================================================================
+   STATISTIK SEITE
+   ========================================================================== */
+.stat-section {
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.stat-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 10px;
+}
+
+.stat-section-header h3 {
+    font-size: 1rem;
+    color: var(--neon-cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stat-badge {
+    font-size: 0.65rem;
+    background: rgba(255,255,255,0.1);
+    padding: 3px 8px;
+    border-radius: 8px;
+    color: var(--text-muted);
+}
+
+/* Custom CSS Bar Chart */
+.css-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 120px;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+}
+
+.chart-bar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    gap: 5px;
+}
+
+.chart-bar {
+    width: 100%;
+    max-width: 25px;
+    background: var(--cyan-glow);
+    border-radius: 4px 4px 0 0;
+    transition: height 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    min-height: 5px;
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+}
+
+.chart-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+/* Stat Mini Boxes */
+.stat-summary-row {
+    display: flex;
+    gap: 10px;
+}
+
+.stat-mini-box {
+    flex: 1;
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    padding: 10px;
+    text-align: center;
+}
+
+.stat-mini-box label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.stat-mini-box span {
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Tabs */
+.stat-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.2);
+    padding: 5px;
+    border-radius: 12px;
+}
+
+.stat-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.stat-tab.active {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.stat-tab-content.hidden {
+    display: none;
+}
+
+/* Heatmap SVG Container */
+.heatmap-container {
+    width: 100%;
+    max-width: 250px;
+    margin: 0 auto;
+    position: relative;
+}
+
+/* Achievements */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+.achievement-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+    filter: grayscale(100%);
+}
+
+.ach-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--purple-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 0 15px rgba(163, 53, 243, 0.4);
+}
+
+.achievement-card.locked .ach-icon {
+    background: rgba(255,255,255,0.1);
+    box-shadow: none;
+}
+
+.ach-info h4 {
+    font-size: 0.9rem;
+    margin-bottom: 3px;
+    color: #fff;
+}
+
+.ach-info p {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* --- MODERNE STATS DASHBOARD STYLES --- */
+.stats-header { margin-bottom: 20px; text-align: center; }
+.stats-nav-pills { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+.stat-pill {
+    background: var(--glass-bg); border: 1px solid var(--glass-border);
+    color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer;
+    transition: all 0.3s ease; font-weight: 600; font-size: 0.9rem;
+}
+.stat-pill.active { background: var(--target-blue-2); border-color: var(--target-blue-1); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+.stat-main-tab.hidden { display: none; }
+
+/* Grid System */
+.stats-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+}
+@media (min-width: 768px) { .span-2 { grid-column: span 2; } }
+
+.stat-card { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.stat-card h3 { font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 10px;}
+
+/* Stat-Boxes für Deep Dive */
+.stat-grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-box { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 10px; text-align: center; display: flex; flex-direction: column; }
+.stat-box span { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+.stat-box strong { font-size: 1.3rem; font-weight: 900; color: white; margin-top: 5px; }
+
+/* Leaderboard Styles */
+.leaderboard-list { display: flex; flex-direction: column; gap: 10px; }
+.lb-item {
+    display: flex; align-items: center; background: rgba(255,255,255,0.05);
+    padding: 12px 15px; border-radius: 12px; border-left: 4px solid var(--text-muted);
+}
+.lb-item.rank-1 { border-left-color: #fbbf24; background: linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, transparent 100%); }
+.lb-item.rank-2 { border-left-color: #94a3b8; }
+.lb-item.rank-3 { border-left-color: #b45309; }
+.lb-rank { font-size: 1.2rem; font-weight: 900; width: 30px; color: rgba(255,255,255,0.5); }
+.lb-info { flex: 1; display: flex; flex-direction: column; }
+.lb-name { font-weight: 700; font-size: 1.1rem; }
+.lb-level { font-size: 0.8rem; color: var(--neon-green); }
+.lb-score { font-size: 1.2rem; font-weight: 900; color: white; text-align: right; }

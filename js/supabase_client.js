@@ -9,7 +9,7 @@ const SB_URL = 'https://ujccdnduolqyzjoeghrl.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqY2NkbmR1b2xxeXpqb2VnaHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3MjI5NTIsImV4cCI6MjA4NjI5ODk1Mn0.4P_H3vrvOnfNGK4TKjas75pu3HpNT3OSMAPzK9Ok64s';
 const INVITE_REQUIRED = '123';
 
-const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
+export const supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 
 // --- CO-OP SERVICE (FÜR ZWEITEN BENUTZER) ---
 // Wir halten den Co-Op Client isoliert, um die Haupt-Session nicht zu überschreiben.
@@ -351,3 +351,5 @@ function flashError(msg) {
 }
 
 init();
+window.supabaseClient = supabase;
+export { supabaseClient as supabase };

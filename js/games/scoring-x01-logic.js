@@ -16,15 +16,15 @@ export const ScoringX01LevelMapper = (playerLevel) => {
  */
 const LEVEL_CONFIG = {
 
-    1:  { sScore: 301, maxRounds: 6, doubleOut: false, xpBase: 350 }, 
-    2:  { sScore: 301, maxRounds: 5, doubleOut: false,  xpBase: 400 },
-    3:  { sScore: 301, maxRounds: 4, doubleOut: false,  xpBase: 500 }, 
-    5:  { sScore: 301, maxRounds: 3, doubleOut: false,  xpBase: 600 },
-    6:  { sScore: 301, maxRounds: 6, doubleOut: true,  xpBase: 799 }, 
+    1:  { sScore: 301, maxRounds: 10, doubleOut: false, xpBase: 350 }, 
+    2:  { sScore: 301, maxRounds: 9, doubleOut: false,  xpBase: 400 },
+    3:  { sScore: 301, maxRounds: 8, doubleOut: false,  xpBase: 500 }, 
+    5:  { sScore: 301, maxRounds: 7, doubleOut: false,  xpBase: 600 },
+    6:  { sScore: 301, maxRounds: 8, doubleOut: true,  xpBase: 799 }, 
     10: { sScore: 501, maxRounds: 15, doubleOut: false,  xpBase: 900 },
     15: { sScore: 701, maxRounds: 25, doubleOut: true,  xpBase: 1300 },
     20: { sScore: 1001, maxRounds: 30, doubleOut: true, xpBase: 2000 },
-    'daily': { sScore: 301, maxRounds: 8, doubleOut: false, xpBase: 750 } // Spezieller Modus für tägliche Herausforderungen
+    'daily': { sScore: 301, maxRounds: 7, doubleOut: false, xpBase: 750 } // Spezieller Modus für tägliche Herausforderungen
 };
 
 export class ScoringX01Logic {
