@@ -704,6 +704,7 @@ export const GameManager = {
    closeResultModal() {
         const profileHeader = document.getElementById('user-profile-header');
         const dashboardView = document.getElementById('view-dashboard');
+        const appHeader = document.querySelector('.app-top-bar');
         if (profileHeader && dashboardView) {
             dashboardView.insertBefore(profileHeader, dashboardView.firstChild);
         }
@@ -718,6 +719,7 @@ export const GameManager = {
         this.players = [];
 
         document.body.classList.remove('game-active', 'hide-app-header');
+        if (appHeader) appHeader.classList.remove('hidden');
         
         document.getElementById('modal-game-result').classList.add('hidden');
         window.navigate('dashboard');

@@ -20,36 +20,36 @@ export class WarmupController {
 
             // DOM-Elemente einmalig suchen und "cachen"
             this.ui = {
-                score: document.getElementById('x01-score'),
-                round: document.getElementById('x01-round'),
-                playerName: document.getElementById('x01-player-name'),
-                challengeTitle: document.getElementById('x01-challenge-title'),
-                scoringStats: document.getElementById('x01-scoring-stats'),
-                challengeHeader: document.getElementById('x01-challenge-header'),
+                score: this.appContainer.querySelector('#x01-score'),
+                round: this.appContainer.querySelector('#x01-round'),
+                playerName: this.appContainer.querySelector('#x01-player-name'),
+                challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
+                scoringStats: this.appContainer.querySelector('#x01-scoring-stats'),
+                challengeHeader: this.appContainer.querySelector('#x01-challenge-header'),
                 
                 // Neue Status-Elemente in der unteren Bar
-                targetContainer: document.getElementById('x01-target-progress-container'),
-                targetProgress: document.getElementById('x01-target-progress'),
-                minPtsContainer: document.getElementById('x01-min-pts-container'),
-                minPtsVal: document.getElementById('x01-min-pts-val'),
+                targetContainer: this.appContainer.querySelector('#x01-target-progress-container'),
+                targetProgress: this.appContainer.querySelector('#x01-target-progress'),
+                minPtsContainer: this.appContainer.querySelector('#x01-min-pts-container'),
+                minPtsVal: this.appContainer.querySelector('#x01-min-pts-val'),
                 
-                statsBar: document.getElementById('x01-stats-bar'),
-                points: document.getElementById('x01-points'),
-                malus: document.getElementById('x01-malus'),
-                pointsContainer: document.getElementById('x01-points-container'),
-                malusContainer: document.getElementById('x01-malus-container'),
-                flashOverlay: document.getElementById('board-flash-overlay'),
+                statsBar: this.appContainer.querySelector('#x01-stats-bar'),
+                points: this.appContainer.querySelector('#x01-points'),
+                malus: this.appContainer.querySelector('#x01-malus'),
+                pointsContainer: this.appContainer.querySelector('#x01-points-container'),
+                malusContainer: this.appContainer.querySelector('#x01-malus-container'),
+                flashOverlay: this.appContainer.querySelector('#board-flash-overlay'),
                 // Throw-Boxes als Array
                 throws: [
-                    document.getElementById('th-1'),
-                    document.getElementById('th-2'),
-                    document.getElementById('th-3')
+                    this.appContainer.querySelector('#th-1'),
+                    this.appContainer.querySelector('#th-2'),
+                    this.appContainer.querySelector('#th-3')
                 ],
                 // Dart-Icons (3 Darts Anzeige)
                 dartIcons: [
-                    document.getElementById('dart-1'),
-                    document.getElementById('dart-2'),
-                    document.getElementById('dart-3')
+                    this.appContainer.querySelector('#dart-1'),
+                    this.appContainer.querySelector('#dart-2'),
+                    this.appContainer.querySelector('#dart-3')
                 ]
             };
         }

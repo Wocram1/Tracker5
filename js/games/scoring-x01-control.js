@@ -17,30 +17,32 @@ export class ScoringX01Control {
             
             // UI Referenzen cachen
             this.ui = {
-                score: document.getElementById('x01-score'),
-                playerName: document.getElementById('x01-player-name'),
-                challengeTitle: document.getElementById('x01-challenge-title'),
-                round: document.getElementById('x01-round'),
+                score: this.appContainer.querySelector('#x01-score'),
+                playerName: this.appContainer.querySelector('#x01-player-name'),
+                challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
+                round: this.appContainer.querySelector('#x01-round'),
 
-                checkoutBadge: document.getElementById('x01-checkout-badge'),
+                checkoutBadge: this.appContainer.querySelector('#x01-checkout-badge'),
                 // Scoring Elemente (X01)
-                avgContainer: document.getElementById('x01-avg-container'),
-                avgVal: document.getElementById('x01-avg-val'),
-                lastContainer: document.getElementById('x01-last-container'),
-                lastVal: document.getElementById('x01-last-val'),
+                avgContainer: this.appContainer.querySelector('#x01-avg-container'),
+                avgVal: this.appContainer.querySelector('#x01-avg-val'),
+                lastContainer: this.appContainer.querySelector('#x01-last-container'),
+                lastVal: this.appContainer.querySelector('#x01-last-val'),
                 
                 // Challenge Elemente (Warmup / Finishing)
-                challengeHeader: document.getElementById('x01-challenge-header'),
-                malusVal: document.getElementById('x01-malus-val'),
-                pointsVal: document.getElementById('x01-total-points'),
-                progressContainer: document.getElementById('x01-progress-container'),
-                progressVal: document.getElementById('x01-target-progress'),
-                minPtsContainer: document.getElementById('x01-min-pts-container'),
-                minPtsVal: document.getElementById('x01-min-pts-val'),
-                livesContainer: document.getElementById('x01-lives-container'),
+                challengeHeader: this.appContainer.querySelector('#x01-challenge-header'),
+                malusVal: this.appContainer.querySelector('#x01-malus-val'),
+                pointsVal: this.appContainer.querySelector('#x01-total-points'),
+                progressContainer: this.appContainer.querySelector('#x01-progress-container'),
+                progressVal: this.appContainer.querySelector('#x01-target-progress'),
+                minPtsContainer: this.appContainer.querySelector('#x01-min-pts-container'),
+                minPtsVal: this.appContainer.querySelector('#x01-min-pts-val'),
+                livesContainer: this.appContainer.querySelector('#x01-lives-container'),
                 
                 throws: [
-                    document.getElementById('th-1'), document.getElementById('th-2'), document.getElementById('th-3')
+                    this.appContainer.querySelector('#th-1'),
+                    this.appContainer.querySelector('#th-2'),
+                    this.appContainer.querySelector('#th-3')
                 ]
             };
 
