@@ -134,6 +134,21 @@ export class Catch40 {
         };
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Catch 40 ist eine Finish-Leiter. Du spielst dich Ziel für Ziel durch einen Zahlenbereich und versuchst, so viele Checkouts wie möglich mitzunehmen.',
+            facts: [`Start ${this.startTarget}`, `Ende ${this.endTarget}`, `Schritt ${this.step}`, `${this.maxRoundsPerTarget} Runden pro Ziel`],
+            sections: [
+                { label: 'Ziel', text: 'Checke die aktuelle Zahl und wandere danach zur nächsten Zielzahl weiter.' },
+                { label: 'Ablauf', text: 'Der Zielwert steigt je nach Schrittweite an oder bleibt im Training bewusst stehen. Pro Ziel hast du nur wenige Aufnahmen.' },
+                { label: 'Checkout', text: this.checkMode === 'double' ? 'Das Finish muss per Double Out gelöst werden.' : 'Die Zahl darf per Single Out geschlossen werden.' },
+                { label: 'Sieg', text: `Für einen erfolgreichen Run musst du genug Checkouts schaffen und mindestens ${this.minPointsRequired} Punkte sammeln.` }
+            ]
+        };
+    }
+
     _getEffectiveConfig(level, custom) {
         if (custom) {
             // Wenn Schrittweite 0 ist, nutzen wir direkt die gewählte Anzahl an Targets

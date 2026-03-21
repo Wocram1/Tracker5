@@ -47,7 +47,7 @@ export class ScoringBoardControl {
         // Rendert das HTML einmalig, um die Struktur zu schaffen
         this.appContainer.innerHTML = htmlBoardControl(
             "", [], 0, 0, 0, 0, 1, 10, 0, 
-            this.playerName, this.displayLevel
+            this.playerName, this.displayLevel, this.game.displayName || this.game.name || 'Board Control'
         );
 
         // Cache alle wichtigen Update-Elemente basierend auf den IDs in view-board-control.js
@@ -78,6 +78,7 @@ export class ScoringBoardControl {
         const bolts = this.game.bolts !== undefined ? this.game.bolts : 0;
         const round = this.game.round || 1;
         const maxRounds = this.game.maxRounds || 10;
+        const minPoints = this.game.config?.minPoints ?? this.game.minPoints ?? 0;
 
         // 3. DOM UPDATES
         if (this.elements['main-target']) {
@@ -85,11 +86,16 @@ export class ScoringBoardControl {
         }
 
         if (this.elements['bc-points-display']) {
-            const pointsDisplay = this.game.minPoints > 0 ? `${score} / ${this.game.minPoints}` : `${score}`;
+            const pointsDisplay = `${score}`;
             this.elements['bc-points-display'].innerHTML = `
                 <span class="ani-next-score" style="font-weight: 900; font-size: 0.9rem; color: var(--target-blue-1);">${pointsDisplay}</span>
                 ${malus > 0 ? `<span style="color: var(--neon-red); font-size: 0.75rem; font-weight: 800;">(-${malus})</span>` : ''}
             `;
+        }
+
+        const minPointsEl = document.getElementById('bc-min-points-display');
+        if (minPointsEl) {
+            minPointsEl.textContent = minPoints > 0 ? `${minPoints}` : '--';
         }
 
         if (this.elements['x01-round']) {

@@ -35,6 +35,21 @@ export class JDCWarmup {
         this.reset();
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Der JDC Challenge Mix kombiniert Shanghai-Phasen mit Doppel-Phasen und verlangt Rhythmuswechsel innerhalb eines Runs.',
+            facts: [`${this.maxRounds || 0} Runden`, `Mind. ${this.minPointsRequired} Punkte`, `${this.pointsPerDouble} Punkte pro Double`],
+            sections: [
+                { label: 'Ziel', text: 'Arbeite den kompletten JDC-Plan Runde für Runde ab und sammle dabei sowohl Shanghai- als auch Double-Punkte.' },
+                { label: 'Ablauf', text: 'Je nach Phase spielst du entweder drei Darts auf dieselbe Zahl oder eine definierte Doppel-Sequenz.' },
+                { label: 'Wertung', text: 'Doppeltreffer geben den festgelegten Double-Wert. Saubere Shanghais und Serien treiben den Score zusätzlich.' },
+                { label: 'Sieg', text: `Für einen erfolgreichen Run musst du den Plan durchspielen und mindestens ${this.minPointsRequired} Punkte erreichen.` }
+            ]
+        };
+    }
+
     _getEffectiveConfig(level, custom) {
         if (custom) return this.setupTraining(custom);
         const keys = Object.keys(LEVEL_CONFIG).map(Number).sort((a, b) => b - a);

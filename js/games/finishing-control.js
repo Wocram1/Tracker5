@@ -37,6 +37,7 @@ export class FinishingController {
     modeBadge: this.appContainer.querySelector('#x01-checkout-badge'),
     hint: this.appContainer.querySelector('#x01-checkout-hint'),
     playerName: this.appContainer.querySelector('#x01-player-name'),
+    gameName: this.appContainer.querySelector('#x01-game-name'),
     challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
     
     // Header-Sichtbarkeitselemente
@@ -81,6 +82,10 @@ export class FinishingController {
             }
         } catch (e) {
             if (this.ui.playerName) this.ui.playerName.textContent = "PLAYER 1";
+        }
+
+        if (this.ui.gameName) {
+            this.ui.gameName.textContent = this.game.displayName || this.game.name || 'Finishing';
         }
 
         if (this.ui.challengeTitle) {

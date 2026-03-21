@@ -93,6 +93,22 @@ export class Bermuda {
         };
     }
 
+    getInfoBlock() {
+        const minPoints = this.config?.minPoints ?? 0;
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Bermuda führt dich durch eine feste Folge aus Zahlen und Spezialzielen. Wer das Ziel verfehlt, riskiert harte Punktverluste.',
+            facts: [`${this.config?.rounds || 0} Runden`, `${this.targets?.length || 0} Stationen`, `Mind. ${minPoints} Punkte`],
+            sections: [
+                { label: 'Ziel', text: 'Treffe pro Runde das vorgegebene Bermuda-Ziel. Das kann eine Zahl, ein Double, ein Triple oder Bull sein.' },
+                { label: 'Ablauf', text: 'Das Spiel wandert Ziel für Ziel durch die Liste. Nach drei Darts endet die Runde und das nächste Bermudafeld wird aktiv.' },
+                { label: 'Wertung', text: 'Treffer geben normale Punkte. Ein kompletter Fehlschlag auf das aktuelle Bermudafeld kann deinen bisherigen Score halbieren.' },
+                { label: 'Sieg', text: `Du gewinnst, wenn du bis zum Ende der Sequenz kommst und mindestens ${minPoints} Punkte behältst.` }
+            ]
+        };
+    }
+
     get currentTargets() {
         const t = this.targets[this.currentIndex];
         return [t, t, t];

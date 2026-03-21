@@ -368,3 +368,96 @@ body.game-active .app-top-bar { display: none !important; }
     /* Verhindert, dass Text markiert wird, wenn man schnell tippt */
     user-select: none; 
 }
+
+/* --- BOARD CONTROL IN UNIFIED SHELL --- */
+.board-top-meta .board-score-pill {
+    min-width: 84px;
+}
+
+.board-top-meta #bc-points-display {
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: var(--target-blue-1);
+}
+
+.board-primary-card {
+    background: linear-gradient(180deg, rgba(0, 210, 255, 0.06), rgba(255,255,255,0.03));
+}
+
+.board-primary-card .dart-indicator-row {
+    margin-top: 2px;
+}
+
+.board-stage-solo {
+    grid-template-columns: 1fr;
+}
+
+.board-stage-solo .bc-svg-container {
+    padding: 4px 0 0;
+}
+
+.board-status-rail {
+    justify-content: flex-start;
+}
+
+.board-status-pill {
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    gap: 8px;
+}
+
+.board-status-pill .label {
+    margin-right: 2px;
+}
+
+.board-status-pill .icon-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 0;
+}
+
+@media (max-width: 520px) {
+    .board-top-meta .board-score-pill {
+        min-width: 74px;
+    }
+
+    .board-primary-card {
+        padding: 12px 14px;
+    }
+
+    .board-status-rail {
+        gap: 6px;
+    }
+
+    .board-status-pill {
+        padding: 7px 10px;
+    }
+}
+
+/* --- FINAL BOARD PRIMARY CARD TUNING --- */
+.board-primary-card {
+    padding: 10px 14px;
+    gap: 6px;
+}
+
+.board-primary-card .game-primary-label {
+    font-size: 0.6rem;
+}
+
+.board-primary-card .bc-target-value {
+    font-size: 2.65rem;
+    margin-bottom: 6px;
+}
+
+@media (max-width: 520px) {
+    .board-primary-card {
+        padding: 9px 12px;
+    }
+
+    .board-primary-card .bc-target-value {
+        font-size: 2.35rem;
+    }
+}

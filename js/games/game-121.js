@@ -124,6 +124,21 @@ export class Game121 {
         };
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Du spielst eine Folge an Finish-Zahlen und musst jede Zahl innerhalb weniger Aufnahmen sauber checken.',
+            facts: [`Start bei ${this.startTarget}`, `${this.maxRoundsPerTarget} Runden pro Zahl`, `${this.totalTargetsToPlay} Ziele`, `Mind. ${this.minPointsRequired} Punkte`],
+            sections: [
+                { label: 'Ziel', text: 'Checke jede Zielzahl in der vorgegebenen Reihenfolge. Danach springt das Spiel zur nächsten Zahl.' },
+                { label: 'Checkout', text: this.checkMode === 'double' ? 'Jede Zahl muss über Double Out beendet werden.' : this.checkMode === 'single-double' ? `Bis ${this.switchTarget - 1} gilt Single Out, ab ${this.switchTarget} Double Out.` : 'Die Ziele dürfen per Single Out geschlossen werden.' },
+                { label: 'Fail-Regel', text: this.resetToStart ? 'Wenn du eine Zahl nicht rechtzeitig schaffst, startet der Lauf wieder am Anfang.' : 'Wenn du eine Zahl nicht schaffst, endet nur dieses Ziel erfolglos und du spielst weiter.' },
+                { label: 'Sieg', text: `Gewonnen ist die Challenge, wenn du genug Ziele abschließt und mindestens ${this.minPointsRequired} Punkte sammelst.` }
+            ]
+        };
+    }
+
     _getEffectiveConfig(level, custom) {
         if (custom) return custom;
         if (this.levelConfig[level]) return this.levelConfig[level];

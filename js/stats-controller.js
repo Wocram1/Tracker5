@@ -64,6 +64,15 @@ function formatDateShort(value) {
     return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 }
 
+function dayKeyLocal(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function categoryLabel(overview) {
     const entries = [
         ['Scoring', num(overview.matches_x01)],
@@ -77,6 +86,7 @@ function categoryLabel(overview) {
 
 export const StatsController = {
     currentOverviewPanel: 'snapshot',
+    currentDeepDivePanel: 'x01',
 
     async loadStats() {
         const playerId = window.appState?.user?.id;
@@ -121,6 +131,7 @@ export const StatsController = {
             this.renderAchievements(overview, x01, board, finish, fallbackData);
             this.renderLeaderboard(leaderboard);
             this.switchOverviewPanel(this.currentOverviewPanel);
+            this.switchDeepDivePanel(this.currentDeepDivePanel);
         } catch (err) {
             console.error('Fehler beim Laden der Statistiken:', err);
         }
@@ -248,6 +259,8 @@ export const StatsController = {
         setText('stats-cat-finishing', formatCompact(overview.matches_finishing));
         setText('stats-cat-warmup', formatCompact(overview.matches_warmup));
         setText('stats-last-match', formatDateShort(overview.last_match_at));
+        setText('overview-chip-snapshot-meta', `${formatCompact(overview.total_matches)} Sessions`);
+        setText('overview-chip-insights-meta', `${categoryLabel(overview)} Fokus`);
     },
 
     renderProgressChart(xpRows, fallbackData) {
@@ -260,14 +273,14 @@ export const StatsController = {
         const last7 = Array.from({ length: 7 }, (_, index) => {
             const date = new Date(today);
             date.setDate(today.getDate() - (6 - index));
-            const key = date.toISOString().slice(0, 10);
+            const key = dayKeyLocal(date);
             return { key, label: daysShort[date.getDay()], xp: 0, matches: 0 };
         });
 
         if (xpRows && xpRows.length > 0) {
             const map = new Map(
                 xpRows.map(row => {
-                    const key = new Date(row.day).toISOString().slice(0, 10);
+                    const key = dayKeyLocal(row.day);
                     return [key, row];
                 })
             );
@@ -291,6 +304,7 @@ export const StatsController = {
             const heightPct = (day.xp / maxXP) * 100;
             container.insertAdjacentHTML('beforeend', `
                 <div class="chart-bar-group">
+                    <span class="chart-value">${day.xp > 0 ? formatCompact(day.xp) : ''}</span>
                     <div class="chart-bar" style="height: 0px;" data-target-height="${heightPct}%"></div>
                     <span class="chart-label">${day.label}</span>
                 </div>
@@ -307,6 +321,7 @@ export const StatsController = {
         const totalMatches = last7.reduce((sum, day) => sum + day.matches, 0) || fallbackData.matchesLast7 || 0;
         setText('stat-trend-avg', Math.round(totalXp / 7).toString());
         setText('stat-trend-matches', totalMatches.toString());
+        setText('overview-chip-trend-meta', `${totalMatches} Sessions`);
     },
 
     renderDeepDiveStats(x01Data, boardData, finishData) {
@@ -320,6 +335,9 @@ export const StatsController = {
         setText('stat-total-points', formatCompact(x01.total_points));
         setText('stat-140s', formatCompact(x01.total_triples));
         setText('stat-co-pct', formatCompact(x01.total_doubles));
+        setText('deepdive-chip-x01-meta', `${formatCompact(x01.matches_played)} Matches`);
+        setText('deepdive-chip-board-meta', `${num(board.avg_hit_rate).toFixed(0)}% Hit Rate`);
+        setText('deepdive-chip-finishing-meta', `${formatCompact(finish.total_checkouts)} Checkouts`);
 
         const boardGrid = document.getElementById('stat-grid-board');
         if (boardGrid) {
@@ -471,14 +489,28 @@ export const StatsController = {
     switchOverviewPanel(panelId) {
         this.currentOverviewPanel = panelId;
 
-        document.querySelectorAll('.overview-chip').forEach(btn => {
+        document.querySelectorAll('#tab-overview .overview-chip').forEach(btn => {
             const isActive = btn.dataset.panel === panelId;
             btn.classList.toggle('active', Boolean(isActive));
         });
 
-        document.querySelectorAll('.overview-panel').forEach(panel => {
+        document.querySelectorAll('#tab-overview .overview-panel').forEach(panel => {
             panel.classList.toggle('hidden', panel.id !== `overview-panel-${panelId}`);
             panel.classList.toggle('active', panel.id === `overview-panel-${panelId}`);
+        });
+    },
+
+    switchDeepDivePanel(panelId) {
+        this.currentDeepDivePanel = panelId;
+
+        document.querySelectorAll('#tab-deepdive .deepdive-chip').forEach(btn => {
+            const isActive = btn.dataset.deepdivePanel === panelId;
+            btn.classList.toggle('active', Boolean(isActive));
+        });
+
+        document.querySelectorAll('#tab-deepdive .deepdive-panel').forEach(panel => {
+            panel.classList.toggle('hidden', panel.id !== `deepdive-panel-${panelId}`);
+            panel.classList.toggle('active', panel.id === `deepdive-panel-${panelId}`);
         });
     },
 
@@ -496,6 +528,10 @@ export const StatsController = {
 
         if (tabId === 'overview') {
             this.switchOverviewPanel(this.currentOverviewPanel || 'snapshot');
+        }
+
+        if (tabId === 'deepdive') {
+            this.switchDeepDivePanel(this.currentDeepDivePanel || 'x01');
         }
     }
 };

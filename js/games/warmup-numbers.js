@@ -92,6 +92,21 @@ export class NumbersWarmup {
         this.activeTargets = this._generateTargetsForRound();
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Jede Runde zeigt dir drei konkrete Ziele für Dart 1 bis 3. Du trainierst damit Rhythmus, Zielwechsel und saubere Reihenfolgen.',
+            facts: [`${this.maxRounds} Runden`, `Mind. ${this.minPointsRequired} Punkte`, `Malus ${this.malusAmount || 0}`],
+            sections: [
+                { label: 'Ziel', text: 'Triff die drei vorgegebenen Ziele der Runde möglichst in der angezeigten Reihenfolge.' },
+                { label: 'Ablauf', text: 'Das Board hebt die nächsten drei Zielwürfe hervor. Nach jeder Runde werden neue Targets geladen.' },
+                { label: 'Wertung', text: `Treffer geben ${this.pointsPerHit} Punkt(e). Fehlwürfe erzeugen den konfigurierten Malus.` },
+                { label: 'Sieg', text: `Gewonnen ist die Challenge, wenn du nach allen Runden mindestens ${this.minPointsRequired} Punkte erreicht hast.` }
+            ]
+        };
+    }
+
     get currentTargets() {
         if (this.isFinished || !this.activeTargets) return [];
         return this.activeTargets.map(t => t.v);

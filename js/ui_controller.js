@@ -40,6 +40,7 @@ const UIController = {
             'view-game-active', 
             'view-game-x01',
             'modal-game-setup',
+            'modal-game-info',
             'modal-game-result'
         ];
         
@@ -280,6 +281,10 @@ window.UIController = UIController;
 window.closeSetupModal = () => {
     document.getElementById('modal-game-setup').classList.add('hidden');
     UIController.navigate('dashboard');
+};
+
+window.closeGameInfoModal = () => {
+    document.getElementById('modal-game-info')?.classList.add('hidden');
 };
 
 window.selectGame = (id) => {

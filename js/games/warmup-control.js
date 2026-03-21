@@ -23,6 +23,7 @@ export class WarmupController {
                 score: this.appContainer.querySelector('#x01-score'),
                 round: this.appContainer.querySelector('#x01-round'),
                 playerName: this.appContainer.querySelector('#x01-player-name'),
+                gameName: this.appContainer.querySelector('#x01-game-name'),
                 challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
                 scoringStats: this.appContainer.querySelector('#x01-scoring-stats'),
                 challengeHeader: this.appContainer.querySelector('#x01-challenge-header'),
@@ -96,6 +97,7 @@ export class WarmupController {
         }
 
         if (this.ui.playerName) this.ui.playerName.textContent = displayName.toUpperCase();
+        if (this.ui.gameName) this.ui.gameName.textContent = this.game.displayName || this.game.name || 'Warmup';
         if (this.ui.challengeTitle) this.ui.challengeTitle.textContent = displayLevel;
     }
 

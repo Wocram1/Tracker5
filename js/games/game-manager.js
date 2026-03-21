@@ -85,10 +85,12 @@ export const GameManager = {
     players: [],
     activePlayerIndex: 0,
     isMultiplayer: false,
+    multiplayerPromptOpen: false,
+    coopUndoPromptOpen: false,
 
     // --- NAVIGATION & VIEWS ---
     hideAllViews() {
-        const views = ['view-dashboard', 'view-training', 'view-challenge', 'view-games-list', 'view-game-active', 'view-game-x01', 'view-stats'];
+        const views = ['view-dashboard', 'view-training', 'view-challenge', 'view-games-list', 'view-game-active', 'view-game-x01', 'view-stats', 'modal-game-info'];
         views.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
@@ -276,6 +278,7 @@ export const GameManager = {
                     <label>Spieler 2 (Quick Login oder Leer = Gast)</label>
                     <input type="email" id="p2-email" placeholder="E-Mail" class="glass-input" style="margin-bottom: 5px; padding: 10px;">
                     <input type="password" id="p2-password" placeholder="Passwort" class="glass-input" style="padding: 10px;">
+                    <p style="font-size: 0.78rem; opacity: 0.75; margin-top: 8px;">Hotseat: Beide Spieler spielen nacheinander ihren eigenen Run. Ohne Login wird Spieler 2 nur lokal als Gast gewertet.</p>
                 </div>
 
                 <div class="setup-actions" style="margin-top: 20px;">
@@ -320,7 +323,8 @@ export const GameManager = {
             name: window.appState?.profile?.username || "Player 1", 
             gameId: gameId,
             level: finalLevel,
-            isBot: false 
+            isBot: false,
+            isGuest: false
         });
 
         if (mode === 'solo') {
@@ -336,10 +340,13 @@ export const GameManager = {
                 gameId: gameId,
                 level: finalLevel,
                 isBot: true, 
-                botDifficulty: botDiff 
+                botDifficulty: botDiff,
+                isGuest: false
             });
        } else if (mode === 'local') {
             let p2Name = "Gast";
+            let p2Level = finalLevel;
+            let isGuest = true;
             
             // Prüfen, ob bereits ein Co-Op Partner aus dem vorherigen Spiel eingeloggt ist
             const existingPartner = CoopService.getCoopPartner();
@@ -348,21 +355,32 @@ export const GameManager = {
                 try {
                     // Nutze den vorbereiteten Service. Das setzt den globalen coopClient für den späteren Sync!
                     const profile = await CoopService.loginCoopPartner(p2Email, p2Pass);
-                    if (profile) p2Name = profile.username;
+                    if (profile) {
+                        p2Name = profile.username;
+                        isGuest = false;
+                        if (LEVEL_MAPPERS[gameId]) {
+                            p2Level = LEVEL_MAPPERS[gameId](LevelSystem.calcLevel(profile.xp || 0));
+                        }
+                    }
                 } catch (err) { 
                     console.error("P2 Login failed", err); 
                 }
             } else if (existingPartner) {
                 // Wenn die Felder leer sind, aber noch ein Partner eingeloggt ist
                 p2Name = existingPartner.username;
+                isGuest = false;
+                if (LEVEL_MAPPERS[gameId]) {
+                    p2Level = LEVEL_MAPPERS[gameId](LevelSystem.calcLevel(existingPartner.xp || 0));
+                }
             } else {
                 // Wenn bewusst als Gast gespielt wird, alten Co-Op State bereinigen
                 CoopService.logoutCoop();
             }
 
-            this.players.push({ id: 2, name: p2Name, gameId: gameId, level: finalLevel, isBot: false });
+            this.players.push({ id: 2, name: p2Name, gameId: gameId, level: p2Level, isBot: false, isGuest });
         }
         this.activePlayerIndex = 0;
+        this.multiplayerPromptOpen = false;
         this.startMultiplayerSequence(gameId, finalLevel, false);
     },
 
@@ -431,6 +449,137 @@ export const GameManager = {
     switchTurn() {
         if (!this.isMultiplayer) return;
         this.activePlayerIndex = 1 - this.activePlayerIndex;
+        this.applyActivePlayerView();
+    },
+
+    getPlayerResultSummary(player) {
+        const logic = player?.logicInstance;
+        if (!logic || typeof logic.getFinalStats !== 'function') return null;
+
+        const final = logic.getFinalStats();
+        const score = final?.stats?.finalScore ?? final?.stats?.points ?? final?.stats?.totalPoints ?? 0;
+
+        return {
+            id: player.id,
+            name: player.name,
+            isBot: !!player.isBot,
+            isGuest: !!player.isGuest,
+            won: !!final?.won,
+            xp: final?.xp || 0,
+            sr: final?.sr || 0,
+            score,
+            stats: final?.stats || {}
+        };
+    },
+
+    comparePlayerSummaries(a, b) {
+        if (!a) return b;
+        if (!b) return a;
+        if (a.won !== b.won) return a.won ? a : b;
+        if ((a.score || 0) !== (b.score || 0)) return (a.score || 0) > (b.score || 0) ? a : b;
+        if ((a.xp || 0) !== (b.xp || 0)) return (a.xp || 0) > (b.xp || 0) ? a : b;
+        return a;
+    },
+
+    showMultiplayerContinuePrompt(finishedPlayer, nextPlayer) {
+        const modal = document.getElementById('modal-game-setup');
+        if (!modal) return;
+
+        this.multiplayerPromptOpen = true;
+        modal.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="setup-container glass-panel animate-pop">
+                <div class="setup-header">
+                    <h2>${finishedPlayer.name} ist fertig</h2>
+                    <p>${nextPlayer.name}${nextPlayer.isGuest ? ' (Gast)' : ''} kann jetzt seinen Run zu Ende spielen.</p>
+                </div>
+                <div class="setup-actions" style="margin-top: 20px;">
+                    <button class="glass-btn" onclick="GameManager.finishMultiplayerEarly()">Duell beenden</button>
+                    <button class="glass-btn primary" onclick="GameManager.continueMultiplayerAfterFinish()">Weiter spielen</button>
+                </div>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    },
+
+    continueMultiplayerAfterFinish() {
+        document.getElementById('modal-game-setup')?.classList.add('hidden');
+        this.multiplayerPromptOpen = false;
+        this.coopUndoPromptOpen = false;
+
+        const unfinishedIndex = this.players.findIndex(player => !player.logicInstance?.isFinished);
+        if (unfinishedIndex >= 0) {
+            this.activePlayerIndex = unfinishedIndex;
+            this.applyActivePlayerView();
+        } else {
+            this.completeGame(true);
+        }
+    },
+
+    finishMultiplayerEarly() {
+        document.getElementById('modal-game-setup')?.classList.add('hidden');
+        this.multiplayerPromptOpen = false;
+        this.coopUndoPromptOpen = false;
+        this.completeGame(true);
+    },
+
+    getCurrentTurnThrowCount() {
+        const logic = this.currentGame?.game || this.currentGame;
+        if (!logic) return 0;
+        if (Array.isArray(logic.currentRoundThrows)) return logic.currentRoundThrows.length;
+        if (Array.isArray(logic.roundDarts)) return logic.roundDarts.length;
+        return 0;
+    },
+
+    shouldOfferMultiplayerUndoTurnRevert() {
+        if (!this.isMultiplayer || this.players.length < 2) return false;
+        if (this.multiplayerPromptOpen || this.coopUndoPromptOpen) return false;
+        if (this.getCurrentTurnThrowCount() > 0) return false;
+
+        const previousPlayer = this.players[this.activePlayerIndex === 0 ? 1 : 0];
+        return !!previousPlayer?.controller?.undo;
+    },
+
+    showMultiplayerUndoPrompt() {
+        const currentPlayer = this.players[this.activePlayerIndex];
+        const previousPlayer = this.players[this.activePlayerIndex === 0 ? 1 : 0];
+        const modal = document.getElementById('modal-game-setup');
+        if (!modal || !currentPlayer || !previousPlayer) return;
+
+        this.coopUndoPromptOpen = true;
+        modal.innerHTML = `
+            <div class="modal-backdrop"></div>
+            <div class="setup-container glass-panel animate-pop">
+                <div class="setup-header">
+                    <h2>Undo macht den Spielerwechsel rueckgaengig</h2>
+                    <p>
+                        ${currentPlayer.name} hat in dieser Runde noch nichts eingetragen.
+                        Wenn du jetzt Undo nutzt, wechselst du zurueck zu ${previousPlayer.name}
+                        und nimmst dort den letzten Dart wieder raus.
+                    </p>
+                </div>
+                <div class="setup-actions" style="margin-top: 20px;">
+                    <button class="glass-btn" onclick="GameManager.cancelMultiplayerUndoPrompt()">Abbrechen</button>
+                    <button class="glass-btn primary" onclick="GameManager.confirmMultiplayerUndoTurnRevert()">Spielerwechsel rueckgaengig</button>
+                </div>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    },
+
+    cancelMultiplayerUndoPrompt() {
+        document.getElementById('modal-game-setup')?.classList.add('hidden');
+        this.coopUndoPromptOpen = false;
+    },
+
+    confirmMultiplayerUndoTurnRevert() {
+        document.getElementById('modal-game-setup')?.classList.add('hidden');
+        this.coopUndoPromptOpen = false;
+        const previousPlayerIndex = this.activePlayerIndex === 0 ? 1 : 0;
+        const previousPlayer = this.players[previousPlayerIndex];
+        window.SoundManager?.play('undo');
+        previousPlayer?.controller?.undo?.();
+        this.activePlayerIndex = previousPlayerIndex;
         this.applyActivePlayerView();
     },
 
@@ -528,7 +677,15 @@ export const GameManager = {
     },
 
   
-    undoBC() { window.SoundManager?.play('undo'); this.currentGame?.undo?.(); },
+    undoBC() {
+        if (this.shouldOfferMultiplayerUndoTurnRevert()) {
+            window.SoundManager?.play('click');
+            this.showMultiplayerUndoPrompt();
+            return;
+        }
+        window.SoundManager?.play('undo');
+        this.currentGame?.undo?.();
+    },
     
     
     // ANGEPASST FÜR TURN-SWITCH
@@ -555,15 +712,101 @@ export const GameManager = {
         if (this.currentGame && this.currentGame.setModifier) this.currentGame.setModifier(m);
     },
 
-    undoX01() { window.SoundManager?.play('undo');this.currentGame?.undo?.(); },
+    undoX01() {
+        if (this.shouldOfferMultiplayerUndoTurnRevert()) {
+            window.SoundManager?.play('click');
+            this.showMultiplayerUndoPrompt();
+            return;
+        }
+        window.SoundManager?.play('undo');
+        this.currentGame?.undo?.();
+    },
+
+    getActiveGameInfo() {
+        const activeGame = this.currentGame?.game || this.currentGame;
+        if (!activeGame) return null;
+
+        if (typeof activeGame.getInfoBlock === 'function') {
+            return activeGame.getInfoBlock();
+        }
+
+        return {
+            title: activeGame.displayName || activeGame.name || 'Spiel',
+            subtitle: activeGame.isTraining ? 'Training Mode' : `Level ${activeGame.level || 1}`,
+            summary: 'Zu diesem Spiel sind noch keine detailierten Hinweise hinterlegt.',
+            sections: [
+                { label: 'Ziel', text: 'Spiele die aktuelle Challenge nach den Ziel- und Rundenregeln zu Ende.' }
+            ]
+        };
+    },
+
+    openGameInfo() {
+        const info = this.getActiveGameInfo();
+        const modal = document.getElementById('modal-game-info');
+        if (!info || !modal) return;
+
+        const factsHtml = (info.facts || []).map(fact => `<span class="game-info-fact">${fact}</span>`).join('');
+        const sectionsHtml = (info.sections || []).map(section => {
+            const items = Array.isArray(section.text) ? section.text : [section.text];
+            return `
+                <div class="game-info-section">
+                    <h4>${section.label}</h4>
+                    ${items.map(item => `<p>${item}</p>`).join('')}
+                </div>
+            `;
+        }).join('');
+
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="GameManager.closeGameInfo()"></div>
+            <div class="setup-container glass-panel animate-pop game-info-modal">
+                <div class="setup-header game-info-header">
+                    <div>
+                        <h2>${info.title}</h2>
+                        <p>${info.subtitle || ''}</p>
+                    </div>
+                    <button class="icon-only-btn game-info-close" onclick="GameManager.closeGameInfo()">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="game-info-summary">${info.summary || ''}</div>
+                ${factsHtml ? `<div class="game-info-facts">${factsHtml}</div>` : ''}
+                <div class="game-info-sections">${sectionsHtml}</div>
+                <div class="qp-actions">
+                    <button class="glass-btn primary" onclick="GameManager.closeGameInfo()">Zurück zum Spiel</button>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+    },
+
+    closeGameInfo() {
+        document.getElementById('modal-game-info')?.classList.add('hidden');
+    },
 
     // --- FINISH & STATS ---
-    async completeGame() {
+    async completeGame(forceFinalize = false) {
         const activeLogic = this.currentGame.game || this.currentGame;
         const res = activeLogic.getFinalStats();
+
+        if (this.multiplayerPromptOpen && !forceFinalize) return;
+
+        if (this.isMultiplayer && this.players.length >= 2 && !forceFinalize) {
+            const allFinished = this.players.every(player => player.logicInstance?.isFinished);
+            if (!allFinished) {
+                const finishedPlayer = this.players[this.activePlayerIndex];
+                const nextPlayer = this.players.find(player => !player.logicInstance?.isFinished);
+                if (finishedPlayer && nextPlayer) {
+                    this.showMultiplayerContinuePrompt(finishedPlayer, nextPlayer);
+                    return;
+                }
+            }
+        }
         
         let p1FinalData = { xp: res.xp, stats: res.stats, sr: res.sr };
         let p2SyncPayload = null;
+        let playerSummaries = [];
+        let winnerSummary = null;
 
         // --- NEU: CO-OP LOGIK FÜR GETRENNTE STATS ---
         if (this.isMultiplayer && this.players.length >= 2) {
@@ -596,6 +839,9 @@ export const GameManager = {
                     };
                 }
             }
+
+            playerSummaries = this.players.map(player => this.getPlayerResultSummary(player)).filter(Boolean);
+            winnerSummary = playerSummaries.reduce((best, current) => this.comparePlayerSummaries(best, current), null);
         } else {
             // Solo Logik (Bestand)
             const srCategory = activeLogic.srCategory || 'boardcontrol';
@@ -640,7 +886,7 @@ export const GameManager = {
         const titleEl = document.getElementById('res-title');
         titleEl.textContent = res.won ? "MISSION ACCOMPLISHED" : "MISSION FAILED";
         if (this.isMultiplayer) {
-            titleEl.textContent = `${activePlayer.name.toUpperCase()} WINS!`;
+            titleEl.textContent = winnerSummary ? `${winnerSummary.name.toUpperCase()} GEWINNT!` : "HOTSEAT BEENDET";
         }
         titleEl.style.color = res.won ? "var(--neon-green)" : "var(--neon-red)";
         
@@ -686,7 +932,11 @@ export const GameManager = {
             }
         }
 
-        if(this.renderDynamicStats) this.renderDynamicStats(res.stats);
+        if (this.isMultiplayer && playerSummaries.length >= 2) {
+            this.renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary);
+        } else if(this.renderDynamicStats) {
+            this.renderDynamicStats(res.stats);
+        }
 
         this.hideAllViews(); 
         modal.classList.remove('hidden');
@@ -717,11 +967,15 @@ export const GameManager = {
         // Multiplay State aufräumen
         this.isMultiplayer = false;
         this.players = [];
+        this.multiplayerPromptOpen = false;
+        this.coopUndoPromptOpen = false;
 
         document.body.classList.remove('game-active', 'hide-app-header');
         if (appHeader) appHeader.classList.remove('hidden');
         
         document.getElementById('modal-game-result').classList.add('hidden');
+        document.getElementById('modal-game-info')?.classList.add('hidden');
+        document.getElementById('modal-game-setup')?.classList.add('hidden');
         window.navigate('dashboard');
     },
 
@@ -742,6 +996,7 @@ export const GameManager = {
     renderDynamicStats(stats) {
         const grid = document.getElementById('dynamic-stats-grid');
         if (!grid) return;
+        grid.classList.remove('coop-results-grid');
         grid.innerHTML = ''; 
         
         const statLabels = {
@@ -774,6 +1029,55 @@ export const GameManager = {
                 box.style.transform = 'translateY(0)';
             }, Math.random() * 500 + 300);
         });
+    },
+
+    renderMultiplayerSummary(playerSummaries, winnerSummary) {
+        const grid = document.getElementById('dynamic-stats-grid');
+        if (!grid) return;
+
+        grid.innerHTML = playerSummaries.map(summary => `
+            <div class="res-dyn-stat" style="${winnerSummary?.id === summary.id ? 'border-color: rgba(52,199,89,0.45); box-shadow: 0 0 18px rgba(52,199,89,0.16);' : ''}">
+                <span class="label">${summary.name}${summary.isGuest ? ' (Gast)' : ''}${summary.isBot ? ' (Bot)' : ''}</span>
+                <span class="value">${summary.won ? 'WIN' : 'DONE'}</span>
+                <span class="label">Score ${summary.score}</span>
+                <span class="label">XP ${summary.xp} • SR ${summary.sr}</span>
+            </div>
+        `).join('');
+    },
+
+    renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary) {
+        const grid = document.getElementById('dynamic-stats-grid');
+        if (!grid) return;
+        grid.classList.add('coop-results-grid');
+
+        grid.innerHTML = playerSummaries.map(summary => {
+            const tags = [];
+            if (summary.isGuest) tags.push('Gast');
+            if (summary.isBot) tags.push('Bot');
+            if (!summary.isGuest && !summary.isBot) tags.push('Lokaler Spieler');
+
+            return `
+                <div class="res-dyn-stat coop-summary-card ${winnerSummary?.id === summary.id ? 'coop-summary-winner' : ''}">
+                    <div class="coop-summary-head">
+                        <span class="coop-summary-name">${summary.name}</span>
+                        <span class="coop-summary-badge">${winnerSummary?.id === summary.id ? 'Sieger' : 'Finish'}</span>
+                    </div>
+                    <div class="coop-summary-subline">${tags.map(tag => `<span>${tag}</span>`).join('')}</div>
+                    <div class="coop-summary-score">${summary.score}</div>
+                    <div class="coop-summary-score-label">Final Score</div>
+                    <div class="coop-summary-metrics">
+                        <div class="coop-summary-metric">
+                            <span class="label">XP</span>
+                            <span class="value">${summary.xp}</span>
+                        </div>
+                        <div class="coop-summary-metric">
+                            <span class="label">SR</span>
+                            <span class="value">${summary.sr}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     },
 
     animateValue(id, start, end, duration, suffix = "") {

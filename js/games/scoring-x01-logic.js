@@ -30,6 +30,7 @@ const LEVEL_CONFIG = {
 export class ScoringX01Logic {
     constructor(level = 1, isTraining = false, customSettings = null) {
         this.name = "X01";
+        this.displayName = "X01";
         this.interfaceType = "x01"; 
         this.srCategory = "scoring";
         this.isTraining = isTraining;
@@ -66,6 +67,21 @@ export class ScoringX01Logic {
             doubles: 0,
             oneEighty: 0,
             checkoutAttempts: 0
+        };
+    }
+
+    getInfoBlock() {
+        return {
+            title: this.displayName,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Klassisches X01: Du spielst deinen Startscore auf exakt 0 herunter und musst dabei das jeweilige Checkout-Format respektieren.',
+            facts: [`Startscore ${this.startScore}`, `${this.maxRounds} Runden`, this.isDoubleOut ? 'Double Out' : 'Single Out'],
+            sections: [
+                { label: 'Ziel', text: 'Bringe deinen Score exakt auf 0, bevor das Rundenlimit erreicht ist.' },
+                { label: 'Ablauf', text: 'Jeder Dart zieht Punkte vom Restscore ab. Busts setzen die Aufnahme effektiv auf den Stand zu Beginn der Runde zurück.' },
+                { label: 'Checkout', text: this.isDoubleOut ? 'Das letzte Dart muss ein Double sein, sonst zählt der Checkout nicht.' : 'Das Spiel endet, sobald du exakt 0 erreichst.' },
+                { label: 'Sieg', text: 'Gewonnen ist die Partie, wenn du 0 sauber checkst. Alles andere endet als verlorene Challenge oder Trainingsresultat.' }
+            ]
         };
     }
 

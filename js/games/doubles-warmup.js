@@ -35,6 +35,22 @@ export class DoublesWarmup {
         this.reset();
     }
 
+    getInfoBlock() {
+        const targets = (this.fixedTargets || []).join(' / ');
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Double Mastery fokussiert sich komplett auf feste Doppel-Felder und belohnt sauberes Wiederholen unter leichtem Druck.',
+            facts: [`${this.maxRounds} Runden`, `Ziele ${targets}`, `Mind. ${this.minPointsRequired} Punkte`],
+            sections: [
+                { label: 'Ziel', text: `Spiele wiederholt auf die Doppel ${targets} und sammle damit Punkte.` },
+                { label: 'Ablauf', text: 'Die Zielreihe bleibt pro Modus fest. Jeder Dart muss auf das aktuell markierte Double gespielt werden.' },
+                { label: 'Wertung', text: `Jeder Treffer bringt ${this.pointsPerHit} Punkte. Misses erzeugen den jeweiligen Malus des Levels.` },
+                { label: 'Sieg', text: `Nach allen Runden brauchst du mindestens ${this.minPointsRequired} Punkte für einen erfolgreichen Run.` }
+            ]
+        };
+    }
+
     static getTrainingConfig() {
         return {
             gameId: 'doubles-warmup',

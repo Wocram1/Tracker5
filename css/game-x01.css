@@ -28,8 +28,8 @@ body.game-active {
 .x01-main-display {
     display: flex !important;
     flex-direction: column;
-    gap: 12px;
-    padding: 15px !important;
+    gap: 8px;
+    padding: 12px !important;
     background: var(--glass-bg);
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -128,7 +128,7 @@ body.game-active {
 .score-sub-stats {
     display: flex;
     gap: 12px;
-    margin-top: 4px;
+    margin-top: 2px;
 }
 
 .sub-stat-item {
@@ -390,4 +390,470 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 .target-only-triple .triple-path {
     fill: var(--neon-purple, #bd00ff) !important;
     filter: drop-shadow(0 0 10px var(--neon-purple));
+}
+
+/* --- UNIFIED GAME SHELL OVERRIDES --- */
+.unified-game-shell {
+    gap: 8px;
+}
+
+.game-top-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 60px;
+}
+
+.game-top-meta-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+}
+
+.game-top-meta-lower {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+}
+
+.game-top-meta-center {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 2px;
+    min-width: 0;
+}
+
+.game-top-meta-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: min(100%, 220px);
+}
+
+.game-top-meta-side {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-left: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.game-top-meta-side-empty {
+    min-width: 40px;
+}
+
+.unified-game-shell .bc-exit-mini {
+    position: static;
+    top: auto;
+    right: auto;
+    justify-self: start;
+    z-index: 1;
+}
+
+.game-meta-pill {
+    min-width: 62px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: white;
+    font-weight: 800;
+    font-size: 0.82rem;
+}
+
+.game-meta-pill .meta-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+}
+
+.game-player-kicker {
+    color: rgba(255, 255, 255, 0.6);
+    font-family: var(--font-main);
+    font-weight: 800;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.game-mode-kicker {
+    color: var(--neon-cyan);
+    font-family: var(--font-main);
+    font-weight: 700;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.game-name-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #eef6ff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.game-name-info-btn {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    font: inherit;
+}
+
+.game-focus-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.game-primary-card {
+    padding: 10px 14px;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top center, rgba(255,255,255,0.06), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    position: relative;
+}
+
+.game-primary-label {
+    font-size: 0.66rem;
+    color: rgba(255,255,255,0.48);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 800;
+}
+
+.game-board-stage {
+    display: grid;
+    grid-template-columns: 1fr 45px;
+    align-items: center;
+    gap: 10px;
+}
+
+.game-status-rail {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 2px;
+}
+
+.game-status-rail .status-item .label {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.48);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.game-status-rail .status-item {
+    min-height: 40px;
+    padding: 7px 10px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
+}
+
+.x01-status-pill {
+    gap: 6px;
+}
+
+.game-status-rail .mode-badge-compact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    line-height: 1;
+}
+
+.unified-game-shell .mini-score-display {
+    margin: 0;
+    letter-spacing: -0.03em;
+}
+
+.unified-game-shell #x01-challenge-header {
+    margin-top: 0;
+}
+
+.unified-game-shell .x01-primary-card #x01-challenge-header {
+    position: static;
+    margin-top: 0;
+    gap: 6px;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 100%;
+}
+
+.unified-game-shell .x01-primary-card .sub-stat-item {
+    min-height: 22px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    line-height: 1;
+    gap: 4px;
+    backdrop-filter: blur(8px);
+}
+
+.unified-game-shell .x01-primary-card .sub-stat-item i {
+    font-size: 0.72rem;
+}
+
+.unified-game-shell .x01-primary-card .mini-score-display {
+    padding-top: 0;
+}
+
+.x01-inline-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    margin-top: 2px;
+}
+
+.x01-primary-card #x01-stats-bar .status-item {
+    min-height: 26px;
+    padding: 5px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex: unset;
+}
+
+.x01-primary-card #x01-stats-bar .label {
+    margin-right: auto;
+}
+
+.x01-primary-card #x01-stats-bar .mode-badge-compact {
+    min-width: 36px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    font-size: 0.62rem;
+}
+
+.x01-primary-card #x01-stats-bar #x01-lives-container {
+    justify-content: space-between;
+}
+
+.unified-game-shell .mode-badge-compact {
+    font-size: 0.7rem;
+    padding: 8px 10px;
+    border-radius: 14px;
+}
+
+@media (max-width: 520px) {
+    .game-top-meta {
+        min-height: 56px;
+        gap: 4px;
+    }
+
+    .game-top-meta-lower {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+        gap: 6px;
+    }
+
+    .game-top-meta-side {
+        gap: 6px;
+    }
+
+    .game-top-meta-title {
+        max-width: min(100%, 180px);
+    }
+
+    .game-meta-pill {
+        min-width: 56px;
+        padding: 7px 8px;
+        font-size: 0.76rem;
+    }
+
+    .game-name-pill {
+        padding: 4px 8px;
+        font-size: 0.62rem;
+    }
+
+    .unified-game-shell .mini-score-display {
+        font-size: 2.35rem !important;
+    }
+
+    .game-board-stage {
+        grid-template-columns: 1fr 40px;
+        gap: 8px;
+    }
+}
+
+/* --- FINAL HEADER / CHALLENGE STAT TUNING --- */
+.unified-game-shell .game-top-meta-center {
+    gap: 0;
+    min-height: 30px;
+}
+
+.unified-game-shell .game-top-meta-inline {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    flex-wrap: nowrap;
+    min-height: 30px;
+    overflow: hidden;
+}
+
+.unified-game-shell .game-top-meta-identity {
+    max-width: 100%;
+}
+
+.unified-game-shell .game-player-kicker,
+.unified-game-shell .game-mode-kicker {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unified-game-shell .game-subline-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.28);
+}
+
+.unified-game-shell .game-player-kicker {
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+}
+
+.unified-game-shell .game-name-pill {
+    padding: 6px 12px;
+    background: linear-gradient(135deg, rgba(0,242,255,0.12), rgba(59,130,246,0.08));
+    border-color: rgba(0,242,255,0.16);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+.unified-game-shell .score-sub-stats {
+    margin-top: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.unified-game-shell .sub-stat-item {
+    min-height: 30px;
+    padding: 6px 9px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.05);
+    font-size: 0.72rem;
+    font-weight: 800;
+    gap: 6px;
+}
+
+.unified-game-shell .stat-malus {
+    color: #ffd7d3;
+    background: linear-gradient(135deg, rgba(255,59,48,0.18), rgba(255,59,48,0.08));
+    border-color: rgba(255,59,48,0.22);
+}
+
+.unified-game-shell .stat-points {
+    color: #eef6ff;
+    background: linear-gradient(135deg, rgba(0,242,255,0.14), rgba(59,130,246,0.08));
+    border-color: rgba(0,242,255,0.16);
+}
+
+@media (max-width: 520px) {
+    .unified-game-shell .game-top-meta-inline {
+        min-height: 28px;
+        gap: 5px;
+    }
+
+    .unified-game-shell .game-name-pill {
+        padding: 4px 8px;
+        font-size: 0.62rem;
+    }
+
+    .unified-game-shell .sub-stat-item {
+        min-height: 28px;
+        padding: 5px 8px;
+        font-size: 0.68rem;
+    }
+
+    .unified-game-shell .x01-primary-card #x01-challenge-header {
+        gap: 4px;
+        max-width: 100%;
+    }
+
+    .unified-game-shell .x01-primary-card .sub-stat-item {
+        min-height: 20px;
+        padding: 2px 6px;
+        font-size: 0.58rem;
+    }
+
+    .unified-game-shell .x01-primary-card .sub-stat-item i {
+        font-size: 0.66rem;
+    }
+
+    .x01-inline-meta-grid {
+        gap: 5px;
+    }
+
+    .x01-primary-card #x01-stats-bar .status-item {
+        min-height: 24px;
+        padding: 4px 7px;
+    }
+
+    .x01-primary-card #x01-stats-bar .mode-badge-compact {
+        min-width: 32px;
+        padding: 2px 6px;
+        font-size: 0.58rem;
+    }
+
+    .game-status-rail {
+        gap: 6px;
+    }
+
+    .game-status-rail .status-item {
+        flex: 1 1 calc(50% - 6px);
+        min-height: 38px;
+        padding: 7px 9px;
+    }
+
+    .x01-status-pill {
+        order: -1;
+    }
 }

@@ -77,22 +77,34 @@
             <div class="xp-label-row" id="display-xp">0 / 0 XP</div>
         </div>
     </div>
+</div>
 
-    <div class="sr-badge-grid" style="margin-top: 25px;">
-      <div class="sr-card sco">
-    <div class="sr-icon-slot" id="icon-scoring"></div> <label>SCO</label>
-    <span id="sr-scoring">0</span>
-</div>
-<div class="sr-card fin">
-    <div class="sr-icon-slot" id="icon-finishing"></div>
-    <label>FIN</label>
-    <span id="sr-finishing">0</span>
-</div>
-<div class="sr-card brd">
-    <div class="sr-icon-slot" id="icon-boardcontrol"></div>
-    <label>BRD</label>
-    <span id="sr-boardcontrol">0</span>
-</div>
+<div class="profile-sr-strip glass-panel">
+    <div class="profile-sr-head">
+        <span class="profile-sr-label">Skill Rating</span>
+    </div>
+    <div class="sr-badge-grid">
+        <div class="sr-card sco">
+            <div class="sr-icon-slot" id="icon-scoring"></div>
+            <div class="sr-card-meta">
+                <label>SCO</label>
+                <span id="sr-scoring">0</span>
+            </div>
+        </div>
+        <div class="sr-card fin">
+            <div class="sr-icon-slot" id="icon-finishing"></div>
+            <div class="sr-card-meta">
+                <label>FIN</label>
+                <span id="sr-finishing">0</span>
+            </div>
+        </div>
+        <div class="sr-card brd">
+            <div class="sr-icon-slot" id="icon-boardcontrol"></div>
+            <div class="sr-card-meta">
+                <label>BRD</label>
+                <span id="sr-boardcontrol">0</span>
+            </div>
+        </div>
     </div>
 </div>
                 <div class="action-grid">
@@ -205,7 +217,7 @@
 
     <div class="stats-header">
         <h2><i class="ri-bar-chart-box-line"></i> Performance Dashboard</h2>
-        <p class="stats-subtitle">Fortschritt, Stärken und Form in einer mobilen Übersicht.</p>
+        <p class="stats-subtitle">Deine Formkurve, Lieblingsfelder und Trainingssignale kompakt für Mobile aufbereitet.</p>
         <div class="stats-nav-pills">
             <button class="stat-pill active" onclick="StatsController.switchMainTab('overview')">Übersicht</button>
             <button class="stat-pill" onclick="StatsController.switchMainTab('deepdive')">Deep Dive</button>
@@ -218,15 +230,24 @@
             <div class="stats-overview-switcher">
                 <button class="overview-chip active" data-panel="snapshot" onclick="StatsController.switchOverviewPanel('snapshot')">
                     <i class="ri-dashboard-line"></i>
-                    Snapshot
+                    <span class="overview-chip-copy">
+                        <strong>Snapshot</strong>
+                        <small id="overview-chip-snapshot-meta">30 Tage</small>
+                    </span>
                 </button>
                 <button class="overview-chip" data-panel="trend" onclick="StatsController.switchOverviewPanel('trend')">
                     <i class="ri-line-chart-line"></i>
-                    Trend
+                    <span class="overview-chip-copy">
+                        <strong>Trend</strong>
+                        <small id="overview-chip-trend-meta">7 Tage</small>
+                    </span>
                 </button>
                 <button class="overview-chip" data-panel="insights" onclick="StatsController.switchOverviewPanel('insights')">
                     <i class="ri-sparkling-line"></i>
-                    Insights
+                    <span class="overview-chip-copy">
+                        <strong>Insights</strong>
+                        <small id="overview-chip-insights-meta">Heatmap</small>
+                    </span>
                 </button>
             </div>
 
@@ -241,21 +262,22 @@
                                 </div>
                                 <div class="stats-inline-badge" id="stats-last-match">Keine Session</div>
                             </div>
+                            <p class="stats-card-copy">So sah dein Trainingsmix zuletzt aus: Volumen, Fokus und welche Kategorie gerade am stärksten vertreten ist.</p>
                             <div class="stats-kpi-grid">
                                 <div class="stats-kpi">
-                                    <span class="stats-kpi-label">Matches</span>
+                                    <span class="stats-kpi-label">Sessions</span>
                                     <strong id="stats-total-matches">0</strong>
                                 </div>
                                 <div class="stats-kpi">
-                                    <span class="stats-kpi-label">XP</span>
+                                    <span class="stats-kpi-label">XP gesammelt</span>
                                     <strong id="stats-total-xp-history">0</strong>
                                 </div>
                                 <div class="stats-kpi">
-                                    <span class="stats-kpi-label">Darts</span>
+                                    <span class="stats-kpi-label">Darts geworfen</span>
                                     <strong id="stats-total-darts-history">0</strong>
                                 </div>
                                 <div class="stats-kpi">
-                                    <span class="stats-kpi-label">Scoring Mix</span>
+                                    <span class="stats-kpi-label">Lieblingsmodus</span>
                                     <strong id="stats-favorite-category">--</strong>
                                 </div>
                             </div>
@@ -290,6 +312,7 @@
                                     <h3><i class="ri-line-chart-line"></i> XP Trend (7 Tage)</h3>
                                 </div>
                             </div>
+                            <p class="stats-card-copy">Hier siehst du, an welchen Tagen du wirklich Momentum aufgebaut hast und wann eher nur kurze Sessions dabei waren.</p>
                             <div class="xp-chart-wrapper">
                                 <div id="xp-trend-chart" class="chart-container"></div>
                             </div>
@@ -321,6 +344,7 @@
                                     <h3><i class="ri-trophy-line"></i> Erfolge</h3>
                                 </div>
                             </div>
+                            <p class="stats-card-copy">Kleine Ziele, die zeigen, ob du gerade Volumen, Präzision oder Nervenstärke aufbaust.</p>
                             <div id="achievements-container" class="achievements-mini-list"></div>
                         </div>
                     </div>
@@ -329,40 +353,81 @@
         </div>
 
         <div id="tab-deepdive" class="stat-main-tab hidden">
-            <div class="stats-dashboard-grid deepdive-grid">
-                <div class="glass-card stat-card">
-                    <div class="stats-section-head">
-                        <div>
-                            <span class="stats-eyebrow x01-color">Scoring</span>
-                            <h3 class="x01-color">X01 Profil</h3>
+            <div class="stats-overview-switcher deepdive-switcher">
+                <button class="overview-chip deepdive-chip active" data-deepdive-panel="x01" onclick="StatsController.switchDeepDivePanel('x01')">
+                    <i class="ri-numbers-line"></i>
+                    <span class="overview-chip-copy">
+                        <strong>X01</strong>
+                        <small id="deepdive-chip-x01-meta">Scoring</small>
+                    </span>
+                </button>
+                <button class="overview-chip deepdive-chip" data-deepdive-panel="board" onclick="StatsController.switchDeepDivePanel('board')">
+                    <i class="ri-focus-3-line"></i>
+                    <span class="overview-chip-copy">
+                        <strong>Board</strong>
+                        <small id="deepdive-chip-board-meta">Precision</small>
+                    </span>
+                </button>
+                <button class="overview-chip deepdive-chip" data-deepdive-panel="finishing" onclick="StatsController.switchDeepDivePanel('finishing')">
+                    <i class="ri-check-double-line"></i>
+                    <span class="overview-chip-copy">
+                        <strong>Finishing</strong>
+                        <small id="deepdive-chip-finishing-meta">Closing</small>
+                    </span>
+                </button>
+            </div>
+
+            <div class="stats-overview-panels deepdive-panels">
+                <div id="deepdive-panel-x01" class="overview-panel deepdive-panel active">
+                    <div class="stats-dashboard-grid deepdive-grid">
+                        <div class="glass-card stat-card span-2">
+                            <div class="stats-section-head">
+                                <div>
+                                    <span class="stats-eyebrow x01-color">Scoring</span>
+                                    <h3 class="x01-color">X01 Profil</h3>
+                                </div>
+                            </div>
+                            <p class="stats-card-copy">Wie sauber du Punkte baust, Druckphasen spielst und deine hohen Scores stabil hältst.</p>
+                            <div class="stat-grid-2col">
+                                <div class="stat-box"><span>Ø Average</span><strong id="stat-f9-avg">--</strong></div>
+                                <div class="stat-box"><span>Matches</span><strong id="stat-x01-matches">--</strong></div>
+                                <div class="stat-box"><span>180s</span><strong id="stat-180s">--</strong></div>
+                                <div class="stat-box"><span>Gesamtpunkte</span><strong id="stat-total-points">--</strong></div>
+                                <div class="stat-box"><span>Triples</span><strong id="stat-140s">--</strong></div>
+                                <div class="stat-box"><span>Doubles</span><strong id="stat-co-pct">--</strong></div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-grid-2col">
-                        <div class="stat-box"><span>Ø Average</span><strong id="stat-f9-avg">--</strong></div>
-                        <div class="stat-box"><span>Matches</span><strong id="stat-x01-matches">--</strong></div>
-                        <div class="stat-box"><span>180s</span><strong id="stat-180s">--</strong></div>
-                        <div class="stat-box"><span>Gesamtpunkte</span><strong id="stat-total-points">--</strong></div>
-                        <div class="stat-box"><span>Triples</span><strong id="stat-140s">--</strong></div>
-                        <div class="stat-box"><span>Doubles</span><strong id="stat-co-pct">--</strong></div>
                     </div>
                 </div>
-                <div class="glass-card stat-card">
-                    <div class="stats-section-head">
-                        <div>
-                            <span class="stats-eyebrow bc-color">Präzision</span>
-                            <h3 class="bc-color">Board Control</h3>
+
+                <div id="deepdive-panel-board" class="overview-panel deepdive-panel hidden">
+                    <div class="stats-dashboard-grid deepdive-grid">
+                        <div class="glass-card stat-card span-2">
+                            <div class="stats-section-head">
+                                <div>
+                                    <span class="stats-eyebrow bc-color">Präzision</span>
+                                    <h3 class="bc-color">Board Control</h3>
+                                </div>
+                            </div>
+                            <p class="stats-card-copy">Wie zuverlässig du Segmente triffst und ob dein Rhythmus über mehrere Darts stabil bleibt.</p>
+                            <div id="stat-grid-board" class="stat-grid-2col"></div>
                         </div>
                     </div>
-                    <div id="stat-grid-board" class="stat-grid-2col"></div>
                 </div>
-                <div class="glass-card stat-card span-2">
-                    <div class="stats-section-head">
-                        <div>
-                            <span class="stats-eyebrow finishing-color">Closing</span>
-                            <h3 class="finishing-color">Finishing</h3>
+
+                <div id="deepdive-panel-finishing" class="overview-panel deepdive-panel hidden">
+                    <div class="stats-dashboard-grid deepdive-grid">
+                        <div class="glass-card stat-card span-2">
+                            <div class="stats-section-head">
+                                <div>
+                                    <span class="stats-eyebrow finishing-color">Closing</span>
+                                    <h3 class="finishing-color">Finishing</h3>
+                                </div>
+                            </div>
+                            <p class="stats-card-copy">Wie stark dein Checkout-Spiel ist und wie effizient du Chancen in echte Abschlüsse verwandelst.</p>
+                            <div id="stat-grid-finish" class="stat-grid-2col"></div>
                         </div>
                     </div>
-                    <div id="stat-grid-finish" class="stat-grid-2col"></div>
                 </div>
             </div>
         </div>
@@ -412,6 +477,7 @@
             </div>
             
             <div id="modal-game-setup" class="view hidden overlay-view"></div>
+            <div id="modal-game-info" class="view hidden overlay-view"></div>
             
         </section>
     </main>

@@ -101,6 +101,22 @@ get currentTargetNumber() {
         };
     }
 
+    getInfoBlock() {
+        const minPoints = this.config?.minPoints ?? 0;
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Du spielst nacheinander auf feste Zahlen. Pro Runde bleibt das Ziel gleich und du holst möglichst viele Punkte aus Single, Double und Triple.',
+            facts: [`${this.maxRounds} Runden`, `${this.targets?.length || 0} Zielzahlen`, `Mind. ${minPoints} Punkte`, this.config?.shanghaiOut ? 'Shanghai Out aktiv' : 'Kein Shanghai Out'],
+            sections: [
+                { label: 'Ziel', text: 'Spiele jede Zielzahl der Reihe nach. Innerhalb einer Runde wirfst du alle drei Darts auf dieselbe Zahl.' },
+                { label: 'Ablauf', text: 'Nach jeder Runde springt das Spiel auf das nächste Ziel weiter. Mit Shanghai Out gewinnst du sofort, wenn du in einer Runde Single, Double und Triple der aktuellen Zahl triffst.' },
+                { label: 'Wertung', text: 'Die Punktzahl ergibt sich aus Zahl x Multiplikator. In schwierigeren Varianten kommen Blitz oder Herzen als zusätzliche Fehlertoleranz dazu.' },
+                { label: 'Sieg', text: `Gewonnen ist das Spiel, wenn du das Ziel-Set im Rundenlimit abschließt und mindestens ${minPoints} Punkte erreichst.` }
+            ]
+        };
+    }
+
     registerThrow(multiplier) {
         if (this.isFinished || this.roundDarts.length >= 3) return;
         this.saveHistory();

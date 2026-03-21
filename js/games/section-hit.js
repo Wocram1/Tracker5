@@ -83,6 +83,23 @@ export class SectionHit {
         };
     }
 
+    getInfoBlock() {
+        const minPoints = this.config?.minPoints ?? 0;
+        const requiredHits = this.config?.requiredHits || this.REQUIRED_HITS || 3;
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Hier musst du dieselbe Zahl mehrfach sauber treffen, bevor das Spiel dich auf das nächste Segment weiterlässt.',
+            facts: [`${this.maxRounds} Runden`, `${requiredHits} Treffer pro Feld`, `Mind. ${minPoints} Punkte`],
+            sections: [
+                { label: 'Ziel', text: `Jede Zielzahl muss ${requiredHits}x getroffen werden, bevor das nächste Feld freigeschaltet wird.` },
+                { label: 'Ablauf', text: 'Das Spiel arbeitet die Ziel-Liste nacheinander ab. Die Anzeige springt erst weiter, wenn du die benötigten Treffer auf dem aktuellen Abschnitt gesammelt hast.' },
+                { label: 'Wertung', text: 'Singles, Doubles und Triples geben je 1, 2 oder 3 Punkte. Misses kosten je nach Modus Malus oder zuerst Blitz/Herzen.' },
+                { label: 'Sieg', text: `Gewonnen ist das Spiel, wenn alle Sections abgeschlossen sind und dein Endscore mindestens ${minPoints} Punkte beträgt.` }
+            ]
+        };
+    }
+
     generateRandomTargets(count) {
         const pool = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 25];
         return Array.from({ length: count }, () => pool[Math.floor(Math.random() * pool.length)]);

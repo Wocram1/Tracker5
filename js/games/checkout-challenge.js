@@ -122,6 +122,21 @@ export class CheckoutChallenge {
         };
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Für jede Runde wird ein neues Finish im gewählten Zahlenbereich erzeugt. Du versuchst, möglichst viele davon in wenigen Aufnahmen zu lösen.',
+            facts: [`Bereich ${this.range?.[0]}-${this.range?.[1]}`, `${this.attemptsTotal} Ziele`, `${this.maxRoundsPerTarget} Runden pro Ziel`, `Mind. ${this.minPointsRequired} Punkte`],
+            sections: [
+                { label: 'Ziel', text: 'Checke so viele zufällige Finish-Zahlen wie möglich aus dem aktuellen Bereich.' },
+                { label: 'Checkout', text: this.checkMode === 'double' ? 'Jedes Finish muss mit einem Double enden.' : this.checkMode === 'single-double' ? `Bis ${this.switchTarget - 1} gilt Single Out, ab ${this.switchTarget} Double Out.` : 'Die Ziele dürfen per Single Out gelöst werden.' },
+                { label: 'Ablauf', text: 'Für jedes Ziel stehen dir nur wenige Aufnahmen zur Verfügung. Danach wird die nächste Zahl generiert.' },
+                { label: 'Sieg', text: `Je mehr erfolgreiche Checkouts du sammelst, desto höher dein Score. Für einen Challenge-Sieg musst du mindestens ${this.minPointsRequired} Punkte erreichen.` }
+            ]
+        };
+    }
+
     setupTraining(settings) {
         const rangeMap = {
             '2-40': [2, 40],

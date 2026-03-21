@@ -76,6 +76,21 @@ export class XXonXX {
         this.activeTargets = this._generateTargetsForRound();
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'XXonXX arbeitet mit drei fest definierten Zielfeldern pro Runde. Je nach Level sind das Singles, Doubles, Triples oder zufällige Kombinationen.',
+            facts: [`${this.maxRounds} Runden`, `Mind. ${this.minPointsRequired} Punkte`, `Malus ${this.malusAmount || 0}`],
+            sections: [
+                { label: 'Ziel', text: 'Triff die drei hervorgehobenen Zielwürfe der Runde möglichst präzise.' },
+                { label: 'Ablauf', text: 'Die Ziele können über alle Segmente oder ring-spezifisch vorgegeben sein. Nach jeder Runde wird das Pattern neu gesetzt.' },
+                { label: 'Wertung', text: `Jeder gültige Treffer bringt ${this.pointsPerHit} Punkt(e). Misses kosten den hinterlegten Malus.` },
+                { label: 'Sieg', text: `Du gewinnst, wenn dein Endscore nach allen Runden mindestens ${this.minPointsRequired} Punkte erreicht.` }
+            ]
+        };
+    }
+
     get currentTargets() {
         if (this.isFinished || !this.activeTargets) return [];
         return this.activeTargets.map(t => t.v);

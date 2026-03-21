@@ -19,6 +19,7 @@ export class ScoringX01Control {
             this.ui = {
                 score: this.appContainer.querySelector('#x01-score'),
                 playerName: this.appContainer.querySelector('#x01-player-name'),
+                gameName: this.appContainer.querySelector('#x01-game-name'),
                 challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
                 round: this.appContainer.querySelector('#x01-round'),
 
@@ -180,6 +181,7 @@ const currentDarts = this.game.dartsThrown;
     updateModifierUI() { document.querySelectorAll('.mod-btn').forEach(btn => { const m = parseInt(btn.dataset.mult); btn.classList.toggle('active', m === this.modifier && this.modifier !== 1); }); }
     async updateHeaderInfo() {
         try { await LevelSystem.getUserStats(); if(this.ui.playerName) this.ui.playerName.textContent = window.appState?.profile?.username || "Player 1"; } catch (e) { if(this.ui.playerName) this.ui.playerName.textContent = "Player 1"; }
+        if(this.ui.gameName) this.ui.gameName.textContent = this.game.displayName || this.game.name || 'Game';
         if(this.ui.challengeTitle) this.ui.challengeTitle.textContent = this.game.isTraining ? "Training Mode" : `Level ${this.game.level || 1}`;
     }
 }

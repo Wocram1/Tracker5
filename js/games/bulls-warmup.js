@@ -48,6 +48,21 @@ export class BullsWarmup {
         this.reset();
     }
 
+    getInfoBlock() {
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Dieses Warmup baut rund um Bull und Follow-up-Felder auf. Du trainierst Zentrierung und das direkte Umschalten auf Anschlussziele.',
+            facts: [`${this.maxRounds} Runden`, `Mind. ${this.minPointsRequired} Punkte`, `${this.pointsDouble}/${this.pointsSingle} Punkte pro Hit`],
+            sections: [
+                { label: 'Ziel', text: 'Treffe Bull und die daraus entstehenden Anschlussziele so sauber wie möglich.' },
+                { label: 'Ablauf', text: 'Die Zielanzeige reagiert auf deine vorherigen Würfe und leitet daraus den nächsten Wurf derselben Runde ab.' },
+                { label: 'Wertung', text: `Bull-/Double-Treffer sind mehr wert als einfache Anschlussfelder. So baust du deinen Score Schritt für Schritt auf.` },
+                { label: 'Sieg', text: `Nach allen Runden brauchst du mindestens ${this.minPointsRequired} Punkte.` }
+            ]
+        };
+    }
+
     static getTrainingConfig() {
         return {
             gameId: 'bulls-warmup',

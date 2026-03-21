@@ -103,6 +103,23 @@ export class AroundTheClock {
         };
     }
 
+    getInfoBlock() {
+        const minPoints = this.config?.minPoints ?? 0;
+        const hitsPerTarget = this.config?.hitsPerTarget || 1;
+        return {
+            title: this.name,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Treffe die Zielzahlen der Reihe nach und sammle genug Punkte, um das Level erfolgreich abzuschließen.',
+            facts: [`${this.maxRounds} Runden`, `${hitsPerTarget} Treffer pro Zahl`, `Mind. ${minPoints} Punkte`],
+            sections: [
+                { label: 'Ziel', text: `Arbeite die Zahlenfolge nacheinander ab. Jede Zielzahl muss ${hitsPerTarget}x getroffen werden.` },
+                { label: 'Ablauf', text: 'Jeder gültige Treffer bringt dich auf das aktuelle oder nächste Ziel weiter. Nach drei Darts endet die Runde.' },
+                { label: 'Wertung', text: 'Singles, Doubles und Triples zählen den normalen Zahlenwert. Fehlwürfe geben je nach Modus Malus oder kosten zuerst Blitz/Herzen.' },
+                { label: 'Sieg', text: `Du gewinnst, wenn alle Ziele vor dem Rundenlimit geschafft sind und mindestens ${minPoints} Punkte übrig bleiben.` }
+            ]
+        };
+    }
+
     get currentTargets() {
         const result = [];
         let tempIndex = this.roundStartIndex;

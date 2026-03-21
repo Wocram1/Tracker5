@@ -57,6 +57,21 @@ export class CountUpLogic {
         };
     }
 
+    getInfoBlock() {
+        return {
+            title: this.displayName,
+            subtitle: this.isTraining ? 'Training Mode' : `Level ${this.level}`,
+            summary: 'Count Up ist die offensive Variante: Jeder Treffer addiert Punkte. Ziel ist es, in begrenzten Runden den Zielscore zu knacken.',
+            facts: [`${this.maxRounds} Runden`, `Zielscore ${this.targetScore}`, 'Kein Bust'],
+            sections: [
+                { label: 'Ziel', text: `Sammle in ${this.maxRounds} Runden mindestens ${this.targetScore} Punkte.` },
+                { label: 'Ablauf', text: 'Anders als in X01 wird hier nichts abgezogen. Jeder Treffer erhöht deinen Gesamtstand.' },
+                { label: 'Wertung', text: 'Hohe Aufnahmen, 100+, 140+ und 180er werden separat getrackt und belohnen konstantes Scoring.' },
+                { label: 'Sieg', text: 'Gewonnen ist die Challenge, wenn du den Zielscore innerhalb des vorgegebenen Rundenlimits erreichst.' }
+            ]
+        };
+    }
+
     updateCheckouts(uiElement) {
         if (uiElement) {
             uiElement.textContent = this.checkoutText;
