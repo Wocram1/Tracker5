@@ -17,6 +17,7 @@ import { CountUpLogic, CountUpLevelMapper } from './countup-logic.js';
 import { Catch40, Catch40LevelMapper } from './catch40.js'; 
 import { XXonXX, XXonXXLevelMapper } from './XXonXX.js';
 import { LevelSystem, CoopService } from '../supabase_client.js';
+import { OnlineRoomService } from '../online/online-room-service.js';
 
 
 const GAME_CLASSES = {
@@ -87,10 +88,11 @@ export const GameManager = {
     isMultiplayer: false,
     multiplayerPromptOpen: false,
     coopUndoPromptOpen: false,
+    isOnlineMatch: false,
 
     // --- NAVIGATION & VIEWS ---
     hideAllViews() {
-        const views = ['view-dashboard', 'view-training', 'view-challenge', 'view-games-list', 'view-game-active', 'view-game-x01', 'view-stats', 'modal-game-info'];
+        const views = ['view-dashboard', 'view-training', 'view-challenge', 'view-games-list', 'view-online-setup', 'view-online-lobby', 'view-game-active', 'view-game-x01', 'view-stats', 'modal-game-info'];
         views.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
@@ -591,6 +593,7 @@ export const GameManager = {
             await requestWakeLock();
         }
         if (!GameClass) return;
+        this.isOnlineMatch = false;
 
         let finalLevel = requestedLevel;
 
@@ -664,6 +667,34 @@ export const GameManager = {
         else if (this.currentGame.updateUI) this.currentGame.updateUI();
     },
 
+    startOnlineX01Match() {
+        const snapshot = OnlineRoomService.getOnlineMatchSnapshot();
+        const settings = snapshot.state?.settings || {};
+        const instance = new ScoringX01Logic(1, false, {
+            score: settings.startScore || 501,
+            doubleOut: !!settings.doubleOut,
+            doubleIn: !!settings.doubleIn,
+            maxRounds: 99
+        });
+
+        this.isOnlineMatch = true;
+        this.isMultiplayer = false;
+        this.currentGame = new ScoringX01Control(instance);
+        if (typeof this.currentGame.setOnlineMode === 'function') {
+            this.currentGame.setOnlineMode(OnlineRoomService);
+        }
+        this.currentGame.init();
+        this.applyOnlineRoomSnapshot();
+
+        this.hideAllViews();
+        document.getElementById('view-game-x01')?.classList.remove('hidden');
+    },
+
+    applyOnlineRoomSnapshot() {
+        if (!this.isOnlineMatch || !this.currentGame || typeof this.currentGame.applyOnlineSnapshot !== 'function') return;
+        this.currentGame.applyOnlineSnapshot(OnlineRoomService.getOnlineMatchSnapshot());
+    },
+
     // --- INPUTS ---
     handleBCInput(m) { this.currentGame?.handleInput?.(m); },
     
@@ -691,6 +722,10 @@ export const GameManager = {
     // ANGEPASST FÜR TURN-SWITCH
     nextRoundX01() { 
         window.SoundManager?.play('next');
+        if (this.isOnlineMatch && this.currentGame?.submitOnlineTurn) {
+            this.currentGame.submitOnlineTurn();
+            return;
+        }
         if (this.currentGame && this.currentGame.nextRound) {
             this.currentGame.nextRound(); 
         } else if (this.currentGame && this.currentGame.game && this.currentGame.game.nextRound) {
@@ -704,11 +739,13 @@ export const GameManager = {
 
     handleInputX01(val) {
         if (!this.currentGame) return;
+        if (this.isOnlineMatch && this.currentGame?.isInputLocked) return;
         if (this.currentGame.handleInput) this.currentGame.handleInput(val, this.currentGame.modifier || 1);
         else if (this.currentGame.registerHit) this.currentGame.registerHit(val);
     },
 
     handleModifier(m) { window.SoundManager?.play('click');
+        if (this.isOnlineMatch && this.currentGame?.isInputLocked) return;
         if (this.currentGame && this.currentGame.setModifier) this.currentGame.setModifier(m);
     },
 
@@ -786,6 +823,11 @@ export const GameManager = {
 
     // --- FINISH & STATS ---
     async completeGame(forceFinalize = false) {
+        if (this.isOnlineMatch) {
+            this.renderOnlineMatchResult();
+            return;
+        }
+
         const activeLogic = this.currentGame.game || this.currentGame;
         const res = activeLogic.getFinalStats();
 
@@ -951,6 +993,62 @@ export const GameManager = {
         }
     },
 
+    renderOnlineMatchResult() {
+        const snapshot = OnlineRoomService.getOnlineMatchSnapshot();
+        const modal = document.getElementById('modal-game-result');
+        if (!modal) {
+            window.navigate('dashboard');
+            return;
+        }
+
+        const players = [
+            snapshot.currentPlayer,
+            snapshot.opponent
+        ].filter(Boolean).map(player => {
+            const state = snapshot.state?.players?.[player.player_id] || {};
+            return {
+                id: player.player_id,
+                name: player.username || player.name || 'Spieler',
+                score: state.score ?? '--',
+                xp: 0,
+                sr: 0,
+                isGuest: false,
+                isBot: false
+            };
+        });
+
+        const winnerId = snapshot.room?.winner_id || null;
+        const winnerSummary = players.find(player => player.id === winnerId) || null;
+
+        const profileHeader = document.getElementById('user-profile-header');
+        const hudPlaceholder = document.getElementById('modal-hud-placeholder');
+        if (profileHeader && hudPlaceholder) {
+            hudPlaceholder.appendChild(profileHeader);
+        }
+
+        const titleEl = document.getElementById('res-title');
+        titleEl.textContent = winnerSummary ? `${winnerSummary.name.toUpperCase()} GEWINNT!` : 'ONLINE MATCH BEENDET';
+        titleEl.style.color = 'var(--neon-cyan)';
+        titleEl.classList.toggle('neon-glow', !!winnerSummary);
+
+        const btnDone = document.querySelector('button[onclick="GameManager.closeResultModal()"]');
+        const btnNext = document.getElementById('btn-quickplay-next');
+        const btnLevelDown = document.getElementById('btn-level-down');
+        if (btnDone) {
+            btnDone.classList.remove('hidden');
+            btnDone.innerHTML = `ZURUECK ZUM DASHBOARD <i class="ri-arrow-right-double-line"></i>`;
+        }
+        if (btnNext) btnNext.classList.add('hidden');
+        if (btnLevelDown) btnLevelDown.classList.add('hidden');
+
+        this.renderMultiplayerSummaryEnhanced(players, winnerSummary);
+        this.hideAllViews();
+        modal.classList.remove('hidden');
+
+        const xpTotal = document.getElementById('xp-total');
+        if (xpTotal) xpTotal.innerHTML = 'ONLINE MATCH';
+    },
+
    closeResultModal() {
         const profileHeader = document.getElementById('user-profile-header');
         const dashboardView = document.getElementById('view-dashboard');
@@ -966,6 +1064,7 @@ export const GameManager = {
         
         // Multiplay State aufräumen
         this.isMultiplayer = false;
+        this.isOnlineMatch = false;
         this.players = [];
         this.multiplayerPromptOpen = false;
         this.coopUndoPromptOpen = false;
@@ -976,6 +1075,7 @@ export const GameManager = {
         document.getElementById('modal-game-result').classList.add('hidden');
         document.getElementById('modal-game-info')?.classList.add('hidden');
         document.getElementById('modal-game-setup')?.classList.add('hidden');
+        OnlineRoomService.leaveRoom?.();
         window.navigate('dashboard');
     },
 

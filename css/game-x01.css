@@ -545,6 +545,66 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     position: relative;
 }
 
+.x01-score-layout {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(62px, 74px) 1fr minmax(62px, 74px);
+    grid-template-areas:
+        "top-left center top-right"
+        "bottom-left center bottom-right";
+    align-items: center;
+    gap: 4px 8px;
+}
+
+.x01-score-center {
+    grid-area: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+.x01-score-side-top-left { grid-area: top-left; }
+.x01-score-side-top-right { grid-area: top-right; }
+.x01-score-side-bottom-left { grid-area: bottom-left; }
+.x01-score-side-bottom-right { grid-area: bottom-right; }
+
+.x01-score-side-item {
+    min-height: 34px;
+    padding: 5px 6px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    text-align: center;
+}
+
+.x01-score-side-item i {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.78);
+    line-height: 1;
+}
+
+.x01-score-side-item .label {
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.46);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1;
+}
+
+.x01-score-side-item > span:last-child {
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1.05;
+    color: #f8fbff;
+}
+
 .game-primary-label {
     font-size: 0.66rem;
     color: rgba(255,255,255,0.48);
@@ -634,6 +694,35 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 
 .unified-game-shell .x01-primary-card .mini-score-display {
     padding-top: 0;
+}
+
+.x01-score-side-item .mode-badge-compact {
+    min-width: auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+    font-size: 0.72rem;
+    line-height: 1.05;
+    border-radius: 0;
+    color: #f8fbff;
+}
+
+.x01-score-side-item .mode-badge-compact.mode-double {
+    color: #ffd2ce;
+    animation: none;
+}
+
+.x01-score-side-item .mode-badge-compact.mode-single {
+    color: #bdf8ff;
+}
+
+.num-btn.disabled,
+.mod-btn.disabled,
+.next-btn-side.disabled,
+.undo-btn.disabled {
+    opacity: 0.38;
+    pointer-events: none;
+    filter: grayscale(0.2);
 }
 
 .x01-inline-meta-grid {
@@ -826,6 +915,30 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 
     .unified-game-shell .x01-primary-card .sub-stat-item i {
         font-size: 0.66rem;
+    }
+
+    .x01-score-layout {
+        grid-template-columns: minmax(54px, 66px) 1fr minmax(54px, 66px);
+        gap: 2px 6px;
+    }
+
+    .x01-score-side-item {
+        min-height: 31px;
+        padding: 4px 5px;
+        border-radius: 10px;
+    }
+
+    .x01-score-side-item i {
+        font-size: 0.7rem;
+    }
+
+    .x01-score-side-item .label {
+        font-size: 0.46rem;
+    }
+
+    .x01-score-side-item > span:last-child,
+    .x01-score-side-item .mode-badge-compact {
+        font-size: 0.64rem;
     }
 
     .x01-inline-meta-grid {

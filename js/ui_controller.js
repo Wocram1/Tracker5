@@ -1,6 +1,7 @@
 import { htmlX01 } from './views/view-x01.js';
 import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung hinzugefügt
 import { StatsController } from './stats-controller.js';
+import { OnlineRoomService } from './online/online-room-service.js';
 
 const UIController = {
     DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
@@ -36,6 +37,8 @@ const UIController = {
             'view-training', 
             'view-games-list', 
             'view-challenge', 
+            'view-online-setup',
+            'view-online-lobby',
             'view-stats', 
             'view-game-active', 
             'view-game-x01',
@@ -64,6 +67,167 @@ const UIController = {
 
         if (target === 'challenge') {
             this.showChallengeCategories();
+        }
+    },
+
+    showOnlineSetup() {
+        const errorEl = document.getElementById('online-setup-error');
+        const codeInput = document.getElementById('online-room-code-input');
+        if (errorEl) {
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+        if (codeInput) codeInput.value = '';
+        this.navigate('online-setup');
+    },
+
+    showOnlineSetupError(message) {
+        const errorEl = document.getElementById('online-setup-error');
+        if (!errorEl) return;
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+    },
+
+    async createOnlineRoom() {
+        try {
+            await OnlineRoomService.createRoom({
+                startScore: 501,
+                doubleOut: false,
+                doubleIn: false
+            });
+            this.navigate('online-lobby');
+            this.renderOnlineLobby(OnlineRoomService.getLobbyViewModel());
+        } catch (error) {
+            console.error(error);
+            this.showOnlineSetupError(error.message || 'Raum konnte nicht erstellt werden.');
+        }
+    },
+
+    async joinOnlineRoom() {
+        const input = document.getElementById('online-room-code-input');
+        const code = input?.value?.trim()?.toUpperCase();
+        if (!code) {
+            this.showOnlineSetupError('Bitte gib einen 6-stelligen Raumcode ein.');
+            return;
+        }
+
+        try {
+            await OnlineRoomService.joinRoom(code);
+            this.navigate('online-lobby');
+            this.renderOnlineLobby(OnlineRoomService.getLobbyViewModel());
+        } catch (error) {
+            console.error(error);
+            this.showOnlineSetupError(error.message || 'Raum konnte nicht betreten werden.');
+        }
+    },
+
+    async toggleOnlineReady() {
+        try {
+            const vm = OnlineRoomService.getLobbyViewModel();
+            await OnlineRoomService.setReady(!vm.currentUserReady);
+        } catch (error) {
+            console.error(error);
+            this.renderOnlineLobby(OnlineRoomService.getLobbyViewModel(error.message || 'Ready-Status konnte nicht aktualisiert werden.'));
+        }
+    },
+
+    async startOnlineMatch() {
+        try {
+            await OnlineRoomService.startMatch();
+        } catch (error) {
+            console.error(error);
+            this.renderOnlineLobby(OnlineRoomService.getLobbyViewModel(error.message || 'Match konnte nicht gestartet werden.'));
+        }
+    },
+
+    async leaveOnlineRoom() {
+        try {
+            await OnlineRoomService.leaveRoom();
+        } catch (error) {
+            console.error(error);
+        }
+        this.navigate('dashboard');
+    },
+
+    renderOnlineLobby(viewModel) {
+        const container = document.getElementById('online-lobby-content');
+        if (!container) return;
+
+        const vm = viewModel || OnlineRoomService.getLobbyViewModel();
+        const playersHtml = vm.players.map(player => `
+            <div class="online-player-card ${player.isSelf ? 'online-player-self' : ''}">
+                <div class="online-player-head">
+                    <div>
+                        <span class="online-seat-badge">Seat ${player.seat}</span>
+                        <h3>${player.name}</h3>
+                    </div>
+                    <span class="online-ready-pill ${player.ready ? 'ready' : 'waiting'}">${player.ready ? 'Ready' : 'Wartet'}</span>
+                </div>
+                <div class="online-player-meta">
+                    <span>${player.isHost ? 'Host' : 'Gastspieler'}</span>
+                    <span>${player.connected ? 'Verbunden' : 'Offline'}</span>
+                </div>
+            </div>
+        `).join('');
+
+        const canStart = vm.isHost && vm.playerCount === 2 && vm.allReady && vm.status !== 'live';
+        const lobbyCopy = vm.status === 'live'
+            ? 'Der Raum ist live. Der Gameplay-Hook fuer Online-X01 wird als naechster Schritt an die bestehende X01-Ansicht gebunden.'
+            : 'Sobald beide Spieler bereit sind, kann der Host das Match starten.';
+
+        container.innerHTML = `
+            <div class="glass-panel online-room-card">
+                <div class="online-room-topline">
+                    <div>
+                        <span class="online-eyebrow">Privater Raum</span>
+                        <h3>X01 Duel Lobby</h3>
+                    </div>
+                    <span class="online-status-pill status-${vm.status}">${vm.statusLabel}</span>
+                </div>
+
+                <div class="online-room-code-block">
+                    <span class="online-room-code-label">Room Code</span>
+                    <div class="online-room-code">${vm.roomCode || '------'}</div>
+                    <button class="glass-btn online-copy-btn" onclick="UIController.copyOnlineRoomCode()">Code kopieren</button>
+                </div>
+
+                <div class="online-room-settings">
+                    <div class="online-setting-pill"><span>Mode</span><strong>X01</strong></div>
+                    <div class="online-setting-pill"><span>Start</span><strong>${vm.settings.startScore}</strong></div>
+                    <div class="online-setting-pill"><span>Out</span><strong>${vm.settings.doubleOut ? 'Double' : 'Single'}</strong></div>
+                </div>
+
+                <p class="online-room-copy">${lobbyCopy}</p>
+                ${vm.error ? `<div class="error-msg">${vm.error}</div>` : ''}
+            </div>
+
+            <div class="online-player-grid">
+                ${playersHtml}
+            </div>
+
+            <div class="glass-panel online-room-card">
+                <div class="online-room-topline">
+                    <div>
+                        <span class="online-eyebrow">Aktionen</span>
+                        <h3>Lobby Controls</h3>
+                    </div>
+                </div>
+                <div class="online-lobby-actions">
+                    <button class="glass-btn" onclick="UIController.toggleOnlineReady()">${vm.currentUserReady ? 'Ready entfernen' : 'Ready setzen'}</button>
+                    <button class="primary-btn ${canStart ? 'flash-btn' : ''}" ${canStart ? '' : 'disabled'} onclick="UIController.startOnlineMatch()">Match starten</button>
+                </div>
+                <button class="glass-btn online-leave-btn" onclick="UIController.leaveOnlineRoom()">Raum verlassen</button>
+            </div>
+        `;
+    },
+
+    async copyOnlineRoomCode() {
+        const code = OnlineRoomService.getLobbyViewModel().roomCode;
+        if (!code) return;
+        try {
+            await navigator.clipboard.writeText(code);
+        } catch (error) {
+            console.error('Clipboard failed', error);
         }
     },
 

@@ -228,7 +228,7 @@ export class WarmupController {
     }
 
     renderDisplayStats() {
-        if (this.ui.statsBar) this.ui.statsBar.style.display = 'flex';
+        if (this.ui.statsBar) this.ui.statsBar.style.display = 'none';
         if (this.ui.points) this.ui.points.textContent = this.game.points;
         
         // Malus Anzeige (im Challenge Header)

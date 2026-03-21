@@ -7,6 +7,12 @@ export class ScoringX01Control {
         this.appContainer = document.getElementById('view-game-x01');
         this.modifier = 1;
         this.ui = {};
+        this.onlineService = null;
+        this.isInputLocked = false;
+    }
+
+    setOnlineMode(service) {
+        this.onlineService = service;
     }
 
     async init() {
@@ -59,6 +65,15 @@ export class ScoringX01Control {
      * bekommen das Challenge Layout.
      */
     configureLayout() {
+        if (this.onlineService) {
+            if(this.ui.avgContainer) this.ui.avgContainer.style.display = 'flex';
+            if(this.ui.lastContainer) this.ui.lastContainer.style.display = 'flex';
+            if(this.ui.challengeHeader) this.ui.challengeHeader.style.display = 'none';
+            if(this.ui.progressContainer) this.ui.progressContainer.style.display = 'none';
+            if(this.ui.minPtsContainer) this.ui.minPtsContainer.style.display = 'none';
+            if(this.ui.livesContainer) this.ui.livesContainer.classList.add('hidden');
+            return;
+        }
         // Prüft strikt, ob es das Standard X01 Spiel ist
         const isStandardX01 = this.game.name === 'X01';
 
@@ -134,11 +149,12 @@ export class ScoringX01Control {
             }
         });
         this.updateModifierUI();
-        if (this.game.isFinished && window.GameManager) window.GameManager.completeGame();
+        if (!this.onlineService && this.game.isFinished && window.GameManager) window.GameManager.completeGame();
     }
 
     // Standard Methoden bleiben unverändert
   handleInput(val, mult) {
+        if (this.isInputLocked) return;
         if (this.game.isFinished || this.game.dartsThrown >= 3) return;
         const finalMult = this.modifier !== 1 ? this.modifier : mult;
         
@@ -167,9 +183,10 @@ const currentDarts = this.game.dartsThrown;
             }, 1100); // Auf 1100ms erhöht
         }
     }
-    setModifier(m) { this.modifier = (this.modifier === m) ? 1 : m; this.updateModifierUI(); }
+    setModifier(m) { if (this.isInputLocked) return; this.modifier = (this.modifier === m) ? 1 : m; this.updateModifierUI(); }
     nextRound() { if (this.game.nextRound) { this.game.nextRound(); this.updateUI(); } }
     undo() { 
+        if (this.isInputLocked) return;
         clearTimeout(this.autoNextTimeout);
         const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
         if (nextBtn) nextBtn.classList.remove('auto-next-anim');
@@ -183,5 +200,86 @@ const currentDarts = this.game.dartsThrown;
         try { await LevelSystem.getUserStats(); if(this.ui.playerName) this.ui.playerName.textContent = window.appState?.profile?.username || "Player 1"; } catch (e) { if(this.ui.playerName) this.ui.playerName.textContent = "Player 1"; }
         if(this.ui.gameName) this.ui.gameName.textContent = this.game.displayName || this.game.name || 'Game';
         if(this.ui.challengeTitle) this.ui.challengeTitle.textContent = this.game.isTraining ? "Training Mode" : `Level ${this.game.level || 1}`;
+    }
+
+    applyOnlineSnapshot(snapshot) {
+        if (!snapshot?.currentPlayerState) return;
+
+        const playerState = snapshot.currentPlayerState;
+        const opponentState = snapshot.opponentState || {};
+        const settings = snapshot.state?.settings || {};
+
+        this.game.startScore = settings.startScore || this.game.startScore;
+        this.game.isDoubleOut = !!settings.doubleOut;
+        this.game.isDoubleIn = !!settings.doubleIn;
+        this.game.currentScore = playerState.score ?? this.game.currentScore;
+        this.game.round = playerState.round ?? this.game.round;
+        this.game.lastScore = playerState.lastScore ?? 0;
+        this.game.hasStartedScoring = playerState.hasStartedScoring ?? true;
+        this.game.isFinished = !!playerState.finished;
+        this.game.currentRoundThrows = Array.isArray(playerState.currentThrows)
+            ? playerState.currentThrows.map(t => ({
+                base: t.base ?? t.val ?? 0,
+                mult: t.mult ?? 1,
+                points: t.points ?? ((t.base ?? t.val ?? 0) * (t.mult ?? 1)),
+                scoreBefore: t.scoreBefore ?? this.game.currentScore
+            }))
+            : [];
+        this.game.dartsThrown = this.game.currentRoundThrows.length;
+        this.game.totalDarts = this.game.currentRoundThrows.length;
+
+        this.isInputLocked = !snapshot.isMyTurn || snapshot.isFinished;
+
+        if (this.ui.playerName) {
+            this.ui.playerName.textContent = snapshot.currentPlayer?.username || snapshot.currentPlayer?.name || window.appState?.profile?.username || 'You';
+        }
+
+        if (this.ui.gameName) {
+            this.ui.gameName.textContent = snapshot.room?.room_code ? `ONLINE X01 • ${snapshot.room.room_code}` : 'ONLINE X01';
+        }
+
+        if (this.ui.challengeTitle) {
+            const opponentName = snapshot.opponent?.username || snapshot.opponent?.name || 'Gegner';
+            const turnText = snapshot.isMyTurn ? 'Du bist dran' : `${opponentName} ist dran`;
+            const oppScore = opponentState?.score ?? '--';
+            this.ui.challengeTitle.textContent = `${turnText} • Opp ${oppScore}`;
+        }
+
+        if (this.ui.checkoutBadge) {
+            this.ui.checkoutBadge.textContent = this.game.isDoubleOut ? 'D/O' : 'S/O';
+            this.ui.checkoutBadge.classList.toggle('mode-double', this.game.isDoubleOut);
+            this.ui.checkoutBadge.classList.toggle('mode-single', !this.game.isDoubleOut);
+        }
+
+        this.updateUI();
+
+        const targets = [
+            ...Array.from(document.querySelectorAll('.num-btn')),
+            ...Array.from(document.querySelectorAll('.mod-btn')),
+            document.getElementById('x01-next-btn'),
+            document.querySelector('.undo-btn')
+        ].filter(Boolean);
+
+        targets.forEach(el => {
+            el.classList.toggle('disabled', this.isInputLocked);
+            if ('disabled' in el) el.disabled = this.isInputLocked;
+        });
+
+        if (snapshot.isFinished && window.GameManager) {
+            window.GameManager.completeGame(true);
+        }
+    }
+
+    async submitOnlineTurn() {
+        if (!this.onlineService || this.isInputLocked) return;
+        const throws = this.game.currentRoundThrows || [];
+        if (throws.length === 0) return;
+
+        try {
+            await this.onlineService.submitTurn(throws);
+            this.modifier = 1;
+        } catch (error) {
+            console.error(error);
+        }
     }
 }

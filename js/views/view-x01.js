@@ -28,8 +28,48 @@ export const htmlX01 = `
 
         <div class="game-focus-stage">
             <div class="game-primary-card x01-primary-card">
-                <span class="game-primary-label">Score</span>
-                <div id="x01-score" class="mini-score-display">501</div>
+                <div class="x01-score-layout">
+                    <div class="status-item x01-score-side-item x01-score-side-top-left">
+                        <i class="ri-refresh-line"></i>
+                        <span class="label">Round</span>
+                        <span id="x01-round">R1</span>
+                    </div>
+
+                    <div class="x01-score-center">
+                        <span class="game-primary-label">Score</span>
+                        <div id="x01-score" class="mini-score-display">501</div>
+                    </div>
+
+                    <div class="status-item x01-score-side-item x01-score-side-top-right">
+                        <i class="ri-flag-line"></i>
+                        <span class="label">Out</span>
+                        <span id="x01-checkout-badge" class="mode-badge-compact">S/O</span>
+                    </div>
+
+                    <div class="status-item x01-score-side-item x01-score-side-bottom-left" id="x01-avg-container" style="display: none;">
+                        <i class="ri-line-chart-line"></i>
+                        <span class="label">AVG</span>
+                        <span id="x01-avg-val">0.0</span>
+                    </div>
+
+                    <div class="status-item x01-score-side-item x01-score-side-bottom-left" id="x01-target-progress-container" style="display: none;">
+                        <i class="ri-focus-2-line"></i>
+                        <span class="label">TRIES</span>
+                        <span id="x01-target-progress">0/0</span>
+                    </div>
+
+                    <div class="status-item x01-score-side-item x01-score-side-bottom-right" id="x01-last-container" style="display: none;">
+                        <i class="ri-history-line"></i>
+                        <span class="label">LAST</span>
+                        <span id="x01-last-val">0</span>
+                    </div>
+
+                    <div class="status-item x01-score-side-item x01-score-side-bottom-right min-pts-badge" id="x01-min-pts-container" style="display: none;">
+                        <i class="ri-medal-line"></i>
+                        <span class="label">MIN</span>
+                        <span id="x01-min-pts-val">0</span>
+                    </div>
+                </div>
 
                 <div id="x01-challenge-header" class="score-sub-stats">
                     <div class="sub-stat-item stat-malus">
@@ -42,37 +82,7 @@ export const htmlX01 = `
                     </div>
                 </div>
 
-                <div id="x01-stats-bar" class="x01-inline-meta-grid">
-                    <div class="status-item x01-status-pill">
-                        <span class="label">Round</span>
-                        <span id="x01-round">R1</span>
-                    </div>
-
-                    <div class="status-item x01-status-pill">
-                        <span class="label">Out</span>
-                        <span id="x01-checkout-badge" class="mode-badge-compact">S/O</span>
-                    </div>
-
-                    <div class="status-item" id="x01-avg-container" style="display: none;">
-                        <span class="label">AVG</span>
-                        <span id="x01-avg-val">0.0</span>
-                    </div>
-
-                    <div class="status-item" id="x01-last-container" style="display: none;">
-                        <span class="label">LAST</span>
-                        <span id="x01-last-val">0</span>
-                    </div>
-
-                    <div class="status-item" id="x01-target-progress-container" style="display: none;">
-                        <span class="label">TRIES</span>
-                        <span id="x01-target-progress">0/0</span>
-                    </div>
-
-                    <div class="status-item min-pts-badge" id="x01-min-pts-container" style="display: none;">
-                        <span class="label">MIN</span>
-                        <span id="x01-min-pts-val">0</span>
-                    </div>
-
+                <div id="x01-stats-bar" class="x01-inline-meta-grid hidden">
                     <div class="status-item hidden" id="x01-lives-container">
                         <span class="label">Lives</span>
                         <span id="lives-val">3</span>
