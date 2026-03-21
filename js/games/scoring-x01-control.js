@@ -208,25 +208,31 @@ const currentDarts = this.game.dartsThrown;
         const playerState = snapshot.currentPlayerState;
         const opponentState = snapshot.opponentState || {};
         const settings = snapshot.state?.settings || {};
+        const hasLocalDraft = (this.game.currentRoundThrows || []).length > 0;
+        const serverHasDraft = Array.isArray(playerState.currentThrows) && playerState.currentThrows.length > 0;
+        const shouldPreserveLocalDraft = snapshot.isMyTurn && hasLocalDraft && !serverHasDraft && !snapshot.isFinished;
 
         this.game.startScore = settings.startScore || this.game.startScore;
         this.game.isDoubleOut = !!settings.doubleOut;
         this.game.isDoubleIn = !!settings.doubleIn;
-        this.game.currentScore = playerState.score ?? this.game.currentScore;
-        this.game.round = playerState.round ?? this.game.round;
-        this.game.lastScore = playerState.lastScore ?? 0;
         this.game.hasStartedScoring = playerState.hasStartedScoring ?? true;
         this.game.isFinished = !!playerState.finished;
-        this.game.currentRoundThrows = Array.isArray(playerState.currentThrows)
-            ? playerState.currentThrows.map(t => ({
-                base: t.base ?? t.val ?? 0,
-                mult: t.mult ?? 1,
-                points: t.points ?? ((t.base ?? t.val ?? 0) * (t.mult ?? 1)),
-                scoreBefore: t.scoreBefore ?? this.game.currentScore
-            }))
-            : [];
-        this.game.dartsThrown = this.game.currentRoundThrows.length;
-        this.game.totalDarts = this.game.currentRoundThrows.length;
+
+        if (!shouldPreserveLocalDraft) {
+            this.game.currentScore = playerState.score ?? this.game.currentScore;
+            this.game.round = playerState.round ?? this.game.round;
+            this.game.lastScore = playerState.lastScore ?? 0;
+            this.game.currentRoundThrows = Array.isArray(playerState.currentThrows)
+                ? playerState.currentThrows.map(t => ({
+                    base: t.base ?? t.val ?? 0,
+                    mult: t.mult ?? 1,
+                    points: t.points ?? ((t.base ?? t.val ?? 0) * (t.mult ?? 1)),
+                    scoreBefore: t.scoreBefore ?? this.game.currentScore
+                }))
+                : [];
+            this.game.dartsThrown = this.game.currentRoundThrows.length;
+            this.game.totalDarts = this.game.currentRoundThrows.length;
+        }
 
         this.isInputLocked = !snapshot.isMyTurn || snapshot.isFinished;
 

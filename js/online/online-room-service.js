@@ -13,10 +13,23 @@ export const OnlineRoomService = {
     players: [],
     state: null,
     subscription: null,
+    pollTimer: null,
+    activePollingIntervalMs: null,
     currentUserId: null,
     lastError: '',
     refreshPromise: null,
     startHandled: false,
+    lobbyPollingIntervalMs: 1500,
+    inMatchPollingIntervalMs: 1200,
+
+    normalizeId(id) {
+        return typeof id === 'string' ? id.toLowerCase() : id;
+    },
+
+    getResolvedCurrentUserId() {
+        const userId = this.currentUserId || window.appState?.user?.id || null;
+        return this.normalizeId(userId);
+    },
 
     async ensureCurrentUser() {
         if (window.appState?.user?.id) {
@@ -99,6 +112,8 @@ export const OnlineRoomService = {
             await supabase.removeChannel(this.subscription);
         }
 
+        this.stopPolling();
+
         this.room = null;
         this.players = [];
         this.state = null;
@@ -111,6 +126,8 @@ export const OnlineRoomService = {
         if (this.subscription) {
             await supabase.removeChannel(this.subscription);
         }
+
+        this.startPolling(this.lobbyPollingIntervalMs);
 
         this.subscription = supabase
             .channel(`online-room-${roomId}`)
@@ -132,7 +149,28 @@ export const OnlineRoomService = {
                 table: 'online_room_state',
                 filter: `room_id=eq.${roomId}`
             }, () => this.queueRefresh())
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    this.queueRefresh();
+                }
+            });
+    },
+
+    startPolling(intervalMs = 1500) {
+        this.stopPolling();
+        this.activePollingIntervalMs = intervalMs;
+        this.pollTimer = window.setInterval(() => {
+            if (!this.room?.id) return;
+            this.queueRefresh();
+        }, intervalMs);
+    },
+
+    stopPolling() {
+        if (this.pollTimer) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+        this.activePollingIntervalMs = null;
     },
 
     async queueRefresh() {
@@ -154,6 +192,9 @@ export const OnlineRoomService = {
 
     async refreshSnapshot() {
         if (!this.room?.id) return null;
+        if (!this.currentUserId && window.appState?.user?.id) {
+            this.currentUserId = window.appState.user.id;
+        }
 
         const roomId = this.room.id;
         const [
@@ -191,6 +232,18 @@ export const OnlineRoomService = {
         this.state = stateRes.data?.state || null;
         this.lastError = '';
 
+        if (this.room?.status === 'live') {
+            const desiredLiveInterval = this.inMatchPollingIntervalMs;
+            if (!this.pollTimer || this.activePollingIntervalMs !== desiredLiveInterval) {
+                this.startPolling(desiredLiveInterval);
+            }
+        } else {
+            const desiredLobbyInterval = this.lobbyPollingIntervalMs;
+            if (!this.pollTimer || this.activePollingIntervalMs !== desiredLobbyInterval) {
+                this.startPolling(desiredLobbyInterval);
+            }
+        }
+
         if (this.room?.status === 'live' && !this.startHandled) {
             this.startHandled = true;
             window.GameManager?.startOnlineX01Match?.();
@@ -220,31 +273,38 @@ export const OnlineRoomService = {
     },
 
     isMyTurn() {
-        const currentUserId = this.currentUserId || window.appState?.user?.id || null;
-        return !!currentUserId && this.state?.currentTurnPlayerId === currentUserId;
+        const currentUserId = this.getResolvedCurrentUserId();
+        const activePlayerId = this.normalizeId(this.state?.currentTurnPlayerId || this.room?.active_player_id || null);
+        return !!currentUserId && !!activePlayerId && activePlayerId === currentUserId;
     },
 
     getCurrentPlayerRecord() {
-        const currentUserId = this.currentUserId || window.appState?.user?.id || null;
-        return this.players.find(player => player.player_id === currentUserId) || null;
+        const currentUserId = this.getResolvedCurrentUserId();
+        return this.players.find(player => this.normalizeId(player.player_id) === currentUserId) || null;
     },
 
     getOpponentRecord() {
-        const currentUserId = this.currentUserId || window.appState?.user?.id || null;
-        return this.players.find(player => player.player_id !== currentUserId) || null;
+        const currentUserId = this.getResolvedCurrentUserId();
+        return this.players.find(player => this.normalizeId(player.player_id) !== currentUserId) || null;
     },
 
     getCurrentPlayerState() {
-        const currentUserId = this.currentUserId || window.appState?.user?.id || null;
-        return currentUserId ? (this.state?.players?.[currentUserId] || null) : null;
+        const currentUserId = this.getResolvedCurrentUserId();
+        if (!currentUserId || !this.state?.players) return null;
+        const entry = Object.entries(this.state.players).find(([playerId]) => this.normalizeId(playerId) === currentUserId);
+        return entry ? entry[1] : null;
     },
 
     getOpponentState() {
         const opponent = this.getOpponentRecord();
-        return opponent ? (this.state?.players?.[opponent.player_id] || null) : null;
+        if (!opponent || !this.state?.players) return null;
+        const opponentId = this.normalizeId(opponent.player_id);
+        const entry = Object.entries(this.state.players).find(([playerId]) => this.normalizeId(playerId) === opponentId);
+        return entry ? entry[1] : null;
     },
 
     getOnlineMatchSnapshot() {
+        const activePlayerId = this.normalizeId(this.state?.currentTurnPlayerId || this.room?.active_player_id || null);
         return {
             room: this.room,
             state: this.state,
@@ -252,6 +312,7 @@ export const OnlineRoomService = {
             opponent: this.getOpponentRecord(),
             currentPlayerState: this.getCurrentPlayerState(),
             opponentState: this.getOpponentState(),
+            activePlayerId,
             isMyTurn: this.isMyTurn(),
             isFinished: this.isRoomFinished()
         };
@@ -276,9 +337,9 @@ export const OnlineRoomService = {
     },
 
     getLobbyViewModel(errorMessage = '') {
-        const currentUserId = this.currentUserId || window.appState?.user?.id || null;
-        const currentPlayer = this.players.find(player => player.player_id === currentUserId);
-        const isHost = !!this.room && this.room.host_id === currentUserId;
+        const currentUserId = this.getResolvedCurrentUserId();
+        const currentPlayer = this.players.find(player => this.normalizeId(player.player_id) === currentUserId);
+        const isHost = !!this.room && this.normalizeId(this.room.host_id) === currentUserId;
         const settings = {
             startScore: this.room?.settings?.startScore || this.state?.settings?.startScore || 501,
             doubleOut: !!(this.room?.settings?.doubleOut || this.state?.settings?.doubleOut),
@@ -302,8 +363,8 @@ export const OnlineRoomService = {
                 seat: player.seat,
                 ready: !!player.ready,
                 connected: !!player.connected,
-                isHost: this.room?.host_id === player.player_id,
-                isSelf: currentUserId === player.player_id
+                isHost: this.normalizeId(this.room?.host_id) === this.normalizeId(player.player_id),
+                isSelf: currentUserId === this.normalizeId(player.player_id)
             }))
         };
     }
