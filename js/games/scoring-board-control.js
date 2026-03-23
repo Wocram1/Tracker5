@@ -6,11 +6,18 @@ export class ScoringBoardControl {
         this.game = gameInstance;
         this.appContainer = document.getElementById('view-game-active');
         this.frozenTargetDisplay = null;
-        this.playerName = "PLAYER";
-        this.displayLevel = "CHALLENGE ACTIVE";
-        
-        // Cache für DOM-Elemente
+        this.playerName = 'PLAYER';
+        this.displayLevel = 'CHALLENGE ACTIVE';
+        this.onlineService = null;
+        this.isInputLocked = false;
+        this.isSubmittingOnlineTurn = false;
+        this.onlineDraftDarts = [];
+        this.autoNextTimeout = null;
         this.elements = {};
+    }
+
+    setOnlineMode(service) {
+        this.onlineService = service;
     }
 
     async init() {
@@ -35,43 +42,55 @@ export class ScoringBoardControl {
         } else if (this.game.level || this.game.difficulty) {
             this.displayLevel = `LEVEL ${this.game.level || this.game.difficulty}`;
         } else {
-            this.displayLevel = this.game.name || "CHALLENGE ACTIVE";
+            this.displayLevel = this.game.name || 'CHALLENGE ACTIVE';
         }
 
-        // Initiales Rendern des Grundgerüsts
         this.renderInitialLayout();
         this.updateView();
     }
 
     renderInitialLayout() {
-        // Rendert das HTML einmalig, um die Struktur zu schaffen
         this.appContainer.innerHTML = htmlBoardControl(
-            "", [], 0, 0, 0, 0, 1, 10, 0, 
-            this.playerName, this.displayLevel, this.game.displayName || this.game.name || 'Board Control'
+            '',
+            [],
+            0,
+            0,
+            0,
+            0,
+            1,
+            10,
+            0,
+            this.playerName,
+            this.displayLevel,
+            this.game.displayName || this.game.name || 'Board Control'
         );
 
-        // Cache alle wichtigen Update-Elemente basierend auf den IDs in view-board-control.js
         const ids = [
-            'main-target', 'bc-points-display', 'x01-round', 
-            'bc-heart-container', 'bc-bolt-container',
-            'bc-dart-1', 'bc-dart-2', 'bc-dart-3'
+            'main-target',
+            'bc-points-display',
+            'x01-round',
+            'bc-heart-container',
+            'bc-bolt-container',
+            'bc-dart-1',
+            'bc-dart-2',
+            'bc-dart-3'
         ];
-        
+
         ids.forEach(id => {
             this.elements[id] = document.getElementById(id);
         });
     }
 
     updateView() {
-        // 1. TARGET LOGIK
-        const currentTarget = this.game.targets ? this.game.targets[this.game.currentIndex] : (this.game.targetDisplay || "FIN");
-        
+        const currentTarget = this.game.targets
+            ? this.game.targets[this.game.currentIndex]
+            : (this.game.targetDisplay || 'FIN');
+
         const target = (this.game.roundDarts.length === 3 && this.frozenTargetDisplay !== null)
             ? this.frozenTargetDisplay
             : currentTarget;
 
-        // 2. DATEN AUS GAME-INSTANZ
-        const roundDarts = this.game.roundDarts || []; 
+        const roundDarts = this.game.roundDarts || [];
         const score = this.game.points || 0;
         const malus = this.game.malusScore || 0;
         const lives = this.game.lives !== undefined ? this.game.lives : 0;
@@ -80,15 +99,13 @@ export class ScoringBoardControl {
         const maxRounds = this.game.maxRounds || 10;
         const minPoints = this.game.config?.minPoints ?? this.game.minPoints ?? 0;
 
-        // 3. DOM UPDATES
         if (this.elements['main-target']) {
             this.elements['main-target'].textContent = target === 25 ? 'BULL' : target;
         }
 
         if (this.elements['bc-points-display']) {
-            const pointsDisplay = `${score}`;
             this.elements['bc-points-display'].innerHTML = `
-                <span class="ani-next-score" style="font-weight: 900; font-size: 0.9rem; color: var(--target-blue-1);">${pointsDisplay}</span>
+                <span class="ani-next-score" style="font-weight: 900; font-size: 0.9rem; color: var(--target-blue-1);">${score}</span>
                 ${malus > 0 ? `<span style="color: var(--neon-red); font-size: 0.75rem; font-weight: 800;">(-${malus})</span>` : ''}
             `;
         }
@@ -102,35 +119,31 @@ export class ScoringBoardControl {
             this.elements['x01-round'].textContent = `${round}/${maxRounds}`;
         }
 
-        // 4. DART PILLS (S-X / D-X / T-X Anzeige)
         const activeTargets = this.game.currentTargets || [target, target, target];
-        
         for (let i = 0; i < 3; i++) {
-            const el = this.elements[`bc-dart-${i+1}`];
-            if (el) {
-                const val = roundDarts[i];
-                if (val !== undefined) {
-                    let text = 'M';
-                    if (val > 0) {
-                        const prefix = val === 1 ? 'S' : (val === 2 ? 'D' : 'T');
-                        // Wir holen uns das spezifische Ziel für DIESEN Pfeil
-                        const dartTarget = activeTargets[i] || target;
-                        const tNum = dartTarget === 25 ? 'BULL' : dartTarget;
-                        text = `${prefix}-${tNum}`;
-                    }
-                    el.textContent = text;
-                    el.className = `dart-dot filled ${val > 0 ? 'hit' : 'miss'}`;
-                    const bgColors = ['var(--target-blue-1)', 'var(--target-blue-2)', 'var(--target-blue-3)'];
-                    if (val > 0) el.style.background = bgColors[i];
-                } else {
-                    el.textContent = '-';
-                    el.className = 'dart-dot empty';
-                    el.style.background = '';
+            const el = this.elements[`bc-dart-${i + 1}`];
+            if (!el) continue;
+
+            const val = roundDarts[i];
+            if (val !== undefined) {
+                let text = 'M';
+                if (val > 0) {
+                    const prefix = val === 1 ? 'S' : (val === 2 ? 'D' : 'T');
+                    const dartTarget = activeTargets[i] || target;
+                    const tNum = dartTarget === 25 ? 'BULL' : dartTarget;
+                    text = `${prefix}-${tNum}`;
                 }
+                el.textContent = text;
+                el.className = `dart-dot filled ${val > 0 ? 'hit' : 'miss'}`;
+                const bgColors = ['var(--target-blue-1)', 'var(--target-blue-2)', 'var(--target-blue-3)'];
+                el.style.background = val > 0 ? bgColors[i] : '';
+            } else {
+                el.textContent = '-';
+                el.className = 'dart-dot empty';
+                el.style.background = '';
             }
         }
 
-        // 5. ICONS (HERZEN & BLITZE)
         if (this.elements['bc-heart-container']) {
             this.elements['bc-heart-container'].innerHTML = this.generateIconHtml(lives, 'ri-heart-fill', 'icon-heart');
         }
@@ -138,17 +151,32 @@ export class ScoringBoardControl {
             this.elements['bc-bolt-container'].innerHTML = this.generateIconHtml(bolts, 'ri-flashlight-fill', 'icon-bolt');
         }
 
-        // Highlights & Effekte
         requestAnimationFrame(() => {
             this.highlightBoard();
             this.highlightNextButton(roundDarts.length >= 3);
         });
 
-        if (this.game.isFinished && window.GameManager?.completeGame) {
+        this.updateOnlineInteractionState();
+
+        if (!this.onlineService && this.game.isFinished && window.GameManager?.completeGame) {
             setTimeout(() => {
                 window.GameManager.completeGame();
             }, 600);
         }
+    }
+
+    updateOnlineInteractionState() {
+        if (!this.onlineService) return;
+
+        const controlsDisabled = this.isInputLocked || this.isSubmittingOnlineTurn;
+        document.querySelectorAll('.bc-btn-small').forEach(btn => {
+            btn.disabled = controlsDisabled;
+        });
+
+        const undoBtn = document.getElementById('bc-undo-btn');
+        const nextBtn = document.getElementById('bc-next-btn');
+        if (undoBtn) undoBtn.disabled = controlsDisabled || this.onlineDraftDarts.length === 0;
+        if (nextBtn) nextBtn.disabled = controlsDisabled || this.onlineDraftDarts.length === 0;
     }
 
     generateIconHtml(count, iconClass, activeClass) {
@@ -179,7 +207,7 @@ export class ScoringBoardControl {
             const num = targets[i];
             if (num === undefined) continue;
             if (!segmentMap[num]) segmentMap[num] = [];
-            segmentMap[num].push(i + 1); 
+            segmentMap[num].push(i + 1);
         }
 
         for (const [num, dartIndices] of Object.entries(segmentMap)) {
@@ -188,7 +216,7 @@ export class ScoringBoardControl {
 
             const paths = segmentGroup.querySelectorAll('.segment-path');
             paths.forEach(path => {
-                const sorted = dartIndices.sort((a, b) => a - b);
+                const sorted = [...dartIndices].sort((a, b) => a - b);
                 if (sorted.length === 3) path.classList.add('toggle-color-1-2-3');
                 else if (sorted.length === 2) path.classList.add(`toggle-color-${sorted[0]}-${sorted[1]}`);
                 else if (sorted.length === 1) path.classList.add(`target-dart-${sorted[0]}`);
@@ -196,50 +224,69 @@ export class ScoringBoardControl {
         }
     }
 
-   handleInput(multiplier) {
-        if (this.game.roundDarts.length < 3 && !this.game.isFinished) {
-            const displayBefore = this.game.targetDisplay || this.game.currentTargetNumber;
-            const roundBefore = this.game.round;
+    handleInput(multiplier) {
+        if (this.onlineService) {
+            if (this.isInputLocked || this.isSubmittingOnlineTurn || this.onlineDraftDarts.length >= 3 || this.game.isFinished) {
+                return;
+            }
 
-            this.game.registerThrow(multiplier);
-            
-            // SOUND: Hit oder Miss
-            window.SoundManager?.play(multiplier > 0 ? 'hit' : 'miss');
-
+            this.onlineDraftDarts.push(multiplier);
+            this.game.roundDarts = [...this.onlineDraftDarts];
             if (this.game.roundDarts.length === 3) {
-                this.frozenTargetDisplay = this.game.targetDisplay || displayBefore;
+                this.frozenTargetDisplay = this.game.targetDisplay || this.game.currentTargetNumber;
             }
 
-            if (this.game.round > roundBefore && this.game.bolts === 0) {
-                this.game.bolts = this.game.config?.startBlitz || 0;
-                this.triggerBurnoutEffect();
-            }
-
+            window.SoundManager?.play(multiplier > 0 ? 'hit' : 'miss');
             this.triggerHitEffect(multiplier);
             this.updateView();
+            return;
+        }
 
-            const currentDarts = this.game.roundDarts.length; // In Finishing oft: this.game.currentRoundThrows.length etc.
-        
+        if (this.game.roundDarts.length >= 3 || this.game.isFinished) return;
+
+        const displayBefore = this.game.targetDisplay || this.game.currentTargetNumber;
+        const roundBefore = this.game.round;
+
+        this.game.registerThrow(multiplier);
+        window.SoundManager?.play(multiplier > 0 ? 'hit' : 'miss');
+
+        if (this.game.roundDarts.length === 3) {
+            this.frozenTargetDisplay = this.game.targetDisplay || displayBefore;
+        }
+
+        if (this.game.round > roundBefore && this.game.bolts === 0) {
+            this.game.bolts = this.game.config?.startBlitz || 0;
+            this.triggerBurnoutEffect();
+        }
+
+        this.triggerHitEffect(multiplier);
+        this.updateView();
+
+        const currentDarts = this.game.roundDarts.length;
         if (currentDarts === 3 && !this.game.isFinished) {
-            const nextBtn = document.getElementById('bc-next-btn') || document.querySelector('.next-btn-side');
+            const nextBtn = document.getElementById('bc-next-btn');
             if (nextBtn) {
                 nextBtn.classList.remove('auto-next-anim');
-                void nextBtn.offsetWidth; // Repaint
+                void nextBtn.offsetWidth;
                 nextBtn.classList.add('auto-next-anim');
             }
 
             clearTimeout(this.autoNextTimeout);
             this.autoNextTimeout = setTimeout(() => {
                 if (nextBtn) nextBtn.classList.remove('auto-next-anim');
-                if (currentDarts === 3) { // Bedingung passend zur Datei
-                    window.GameManager.nextRoundX01();
+                if (currentDarts === 3) {
+                    window.GameManager.nextRoundBC();
                 }
-            }, 1100); // Auf 1100ms erhöht
+            }, 1100);
         }
     }
-}
 
     nextRound() {
+        if (this.onlineService) {
+            this.submitOnlineTurn();
+            return;
+        }
+
         if (!this.game) return;
         const btn = document.getElementById('bc-next-btn');
         if (btn) btn.classList.add('ani-next-score');
@@ -253,17 +300,34 @@ export class ScoringBoardControl {
         }
 
         this.updateView();
-        
+
         setTimeout(() => {
             const scoreDisplay = document.getElementById('bc-points-display');
-            if(scoreDisplay) scoreDisplay.classList.remove('ani-next-score');
+            if (scoreDisplay) scoreDisplay.classList.remove('ani-next-score');
         }, 500);
     }
 
     undo() {
+        if (this.onlineService) {
+            if (this.isInputLocked || this.isSubmittingOnlineTurn || this.onlineDraftDarts.length === 0) return;
+
+            clearTimeout(this.autoNextTimeout);
+            const btn = document.getElementById('bc-undo-btn');
+            if (btn) btn.classList.add('ani-undo');
+
+            this.onlineDraftDarts.pop();
+            this.game.roundDarts = [...this.onlineDraftDarts];
+            if (this.onlineDraftDarts.length < 3) this.frozenTargetDisplay = null;
+            this.updateView();
+
+            setTimeout(() => {
+                if (btn) btn.classList.remove('ani-undo');
+            }, 400);
+            return;
+        }
 
         clearTimeout(this.autoNextTimeout);
-        const nextBtn = document.getElementById('bc-next-btn') || document.querySelector('.next-btn-side');
+        const nextBtn = document.getElementById('bc-next-btn');
         if (nextBtn) nextBtn.classList.remove('auto-next-anim');
 
         const btn = document.getElementById('bc-undo-btn');
@@ -272,11 +336,11 @@ export class ScoringBoardControl {
         this.frozenTargetDisplay = null;
         if (this.game.undo) this.game.undo();
         else if (this.game.roundDarts.length > 0) this.game.roundDarts.pop();
-        
+
         this.updateView();
 
         setTimeout(() => {
-            if(btn) btn.classList.remove('ani-undo');
+            if (btn) btn.classList.remove('ani-undo');
         }, 400);
     }
 
@@ -294,7 +358,98 @@ export class ScoringBoardControl {
         const overlay = document.getElementById('board-flash-overlay');
         if (!overlay) return;
         overlay.classList.remove('flash-active', 'flash-miss');
-        void overlay.offsetWidth; 
+        void overlay.offsetWidth;
         overlay.classList.add(multiplier > 0 ? 'flash-active' : 'flash-miss');
+    }
+
+    applyOnlineSnapshot(snapshot) {
+        if (!this.onlineService || !snapshot?.currentPlayerState) return;
+
+        const playerState = snapshot.currentPlayerState;
+        const settings = snapshot.state?.settings || {};
+        const opponentName = snapshot.opponent?.username || snapshot.opponent?.name || 'Gegner';
+        const gameId = snapshot.gameId || snapshot.room?.game_id || 'shanghai';
+        const serverRoundDarts = Array.isArray(playerState.roundDarts) ? playerState.roundDarts : [];
+        const shouldKeepDraft = snapshot.isMyTurn
+            && this.onlineDraftDarts.length > 0
+            && serverRoundDarts.length === 0
+            && !snapshot.isFinished
+            && !this.isSubmittingOnlineTurn;
+
+        this.playerName = snapshot.currentPlayer?.username?.toUpperCase()
+            || window.appState?.profile?.username?.toUpperCase()
+            || 'PLAYER';
+        this.displayLevel = snapshot.opponentConnected === false
+            ? `${opponentName.toUpperCase()} OFFLINE`
+            : (snapshot.isMyTurn ? 'DU BIST DRAN' : `${opponentName.toUpperCase()} IST DRAN`);
+
+        this.game.level = settings.level || this.game.level;
+        this.game.config = { ...(this.game.config || {}), ...settings };
+        this.game.targets = Array.isArray(settings.targets) ? settings.targets : (this.game.targets || []);
+        this.game.targetHitsNeeded = settings.hitsPerTarget || this.game.targetHitsNeeded || 1;
+        this.game.currentIndex = playerState.currentIndex ?? this.game.currentIndex;
+        this.game.currentHitsOnTarget = playerState.currentHitsOnTarget ?? this.game.currentHitsOnTarget ?? 0;
+        this.game.points = playerState.points ?? 0;
+        this.game.malusScore = playerState.malusScore ?? 0;
+        this.game.bolts = playerState.bolts ?? 0;
+        this.game.lives = playerState.lives ?? 0;
+        this.game.round = playerState.round ?? 1;
+        this.game.maxRounds = playerState.maxRounds ?? settings.rounds ?? this.game.maxRounds;
+        this.game.roundStartIndex = playerState.roundStartIndex ?? this.game.currentIndex ?? 0;
+        this.game.roundStartHits = playerState.roundStartHits ?? this.game.currentHitsOnTarget ?? 0;
+        this.game.isFinished = !!playerState.isFinished;
+        this.game.stats = { ...(this.game.stats || {}), ...(playerState.stats || {}) };
+
+        if (!shouldKeepDraft) {
+            this.onlineDraftDarts = [...serverRoundDarts];
+        }
+
+        this.game.roundDarts = shouldKeepDraft ? [...this.onlineDraftDarts] : [...serverRoundDarts];
+        this.isInputLocked = !snapshot.isMyTurn || snapshot.isFinished || !!playerState.isFinished;
+
+        if (!snapshot.isMyTurn || snapshot.isFinished) {
+            this.onlineDraftDarts = [];
+            this.game.roundDarts = [];
+        }
+
+        if (this.game.roundDarts.length < 3) {
+            this.frozenTargetDisplay = null;
+        }
+
+        const playerNameEl = document.getElementById('x01-player-name');
+        const titleEl = document.getElementById('x01-challenge-title');
+        const gameNameEl = document.getElementById('x01-game-name');
+        if (playerNameEl) playerNameEl.textContent = this.playerName;
+        if (titleEl) titleEl.textContent = this.displayLevel;
+        if (gameNameEl) {
+            gameNameEl.textContent = snapshot.room?.room_code
+                ? `ONLINE SHANGHAI • ${snapshot.room.room_code}`
+                : 'ONLINE SHANGHAI';
+        }
+
+        this.updateView();
+
+        if (snapshot.isFinished && window.GameManager) {
+            window.GameManager.completeGame(true);
+        }
+    }
+
+    async submitOnlineTurn() {
+        if (!this.onlineService || this.isInputLocked || this.isSubmittingOnlineTurn) return;
+        if (this.onlineDraftDarts.length === 0) return;
+
+        try {
+            this.isSubmittingOnlineTurn = true;
+            this.updateOnlineInteractionState();
+            await this.onlineService.submitTurn([...this.onlineDraftDarts]);
+            this.onlineDraftDarts = [];
+            this.game.roundDarts = [];
+            this.frozenTargetDisplay = null;
+        } catch (error) {
+            console.error(error);
+        } finally {
+            this.isSubmittingOnlineTurn = false;
+            this.updateOnlineInteractionState();
+        }
     }
 }

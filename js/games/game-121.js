@@ -22,13 +22,26 @@ export class Game121 {
         this.levelConfig = {
             1:  { start: 61,  rounds: 3, check: 'single', totalTargets: 3,  minPoints: 5, resetToStart: false,  malus: 1 },
             2:  { start: 65,  rounds: 3, check: 'single', totalTargets: 4,  minPoints: 9, resetToStart: false,  malus: 1 },
+            3:  { start: 76,  rounds: 3, check: 'single', totalTargets: 5,  minPoints: 5, resetToStart: false,  malus: 1 },
             'daily':  { start: 121,  rounds: 3, check: 'single', totalTargets: 5,  minPoints: 10, resetToStart: true,  malus: 1 },
             4:  { start: 75,  rounds: 2, check: 'single', totalTargets: 6,  minPoints: 35, resetToStart: true,  malus: 1 },
             5:  { start: 80,  rounds: 2, check: 'single', totalTargets: 7,  minPoints: 45, resetToStart: true,  malus: 2 },
-           
+            6:  { start: 91,  rounds: 2, check: 'single', totalTargets: 6,  minPoints: 5, resetToStart: false,  malus: 1 },
+            7:  { start: 96,  rounds: 2, check: 'single', totalTargets: 6,  minPoints: 5, resetToStart: false,  malus: 1 },
+            8:  { start: 101, rounds: 2, check: 'single', totalTargets: 6,  minPoints: 5, resetToStart: false,  malus: 1 },
+
             9:  { start: 81,  rounds: 3, check: 'single-double', switchTarget: 82, totalTargets: 6,  minPoints: 35, resetToStart: true,  malus: 5 },
             // Beispiel für Hybrid-Modus: Bis 122 Single Out, ab 123 Double Out
             10: { start: 121, rounds: 9, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            11: { start: 121, rounds: 8, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            12: { start: 121, rounds: 7, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            13: { start: 121, rounds: 6, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            14: { start: 121, rounds: 5, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            15: { start: 121, rounds: 5, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            16: { start: 121, rounds: 4, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            17: { start: 121, rounds: 3, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            18: { start: 121, rounds: 2, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
+            19: { start: 121, rounds: 2, check: 'single-double', switchTarget: 123, totalTargets: 7,  minPoints: 30, resetToStart: true,  malus: 6, minTargetToReach: 123 },
             20: { start: 121, rounds: 2, check: 'double', totalTargets: 10, minPoints: 60, resetToStart: true,  malus: 10, minTargetToReach: 125 }
         };
 
@@ -145,10 +158,9 @@ export class Game121 {
         
         const base = this.levelConfig[1];
         if (level < 10) {
-            return { ...base, start: 61 + (level * 5), totalTargets: 5 + Math.floor(level/5) };
-        } else {
-            return { ...this.levelConfig[10], rounds: Math.max(2, 10 - (level - 10)) };
+            return { ...base, start: 61 + (level * 5), totalTargets: 5 + Math.floor(level / 5) };
         }
+        return { ...this.levelConfig[10], rounds: Math.max(2, 10 - (level - 10)) };
     }
 
     /**
@@ -341,7 +353,7 @@ export class Game121 {
     // roundsUsedForTarget zählt die bereits beendeten Runden. 
     // Wir addieren 1 für die laufende Runde.
     const current = this.roundsUsedForTarget + 1;
-    const max = this.levelConfig[this.level]?.rounds || 3;
+    const max = this.maxRoundsPerTarget || this.levelConfig[this.level]?.rounds || 3;
     return `${current}/${max}`;
 }
 

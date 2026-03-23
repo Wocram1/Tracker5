@@ -8,6 +8,12 @@ const EMPTY_OVERVIEW = {
     matches_boardcontrol: 0,
     matches_finishing: 0,
     matches_warmup: 0,
+    online_x01_matches: 0,
+    online_x01_wins: 0,
+    online_shanghai_matches: 0,
+    online_shanghai_wins: 0,
+    online_atc_matches: 0,
+    online_atc_wins: 0,
     last_match_at: null
 };
 
@@ -17,7 +23,9 @@ const EMPTY_X01 = {
     total_180s: 0,
     total_triples: 0,
     total_doubles: 0,
-    total_points: 0
+    total_points: 0,
+    online_matches: 0,
+    online_wins: 0
 };
 
 const EMPTY_BOARD = {
@@ -29,7 +37,9 @@ const EMPTY_BOARD = {
     total_singles: 0,
     total_doubles: 0,
     total_triples: 0,
-    total_first_dart_hits: 0
+    total_first_dart_hits: 0,
+    online_matches: 0,
+    online_wins: 0
 };
 
 const EMPTY_FINISH = {
@@ -101,7 +111,8 @@ export const StatsController = {
                 finishRes,
                 leaderboardRes,
                 heatmapRes,
-                fallbackHistoryRes
+                fallbackHistoryRes,
+                onlineResultsRes
             ] = await Promise.all([
                 supabase.from('stats_overview_user').select('*').eq('player_id', playerId).maybeSingle(),
                 supabase.from('stats_xp_daily_30d').select('*').eq('player_id', playerId).order('day', { ascending: true }),
@@ -110,16 +121,18 @@ export const StatsController = {
                 supabase.from('stats_deep_dive_finishing').select('*').eq('player_id', playerId).maybeSingle(),
                 supabase.from('leaderboard_power').select('*').order('power_score', { ascending: false }).limit(50),
                 supabase.from('throw_events').select('hit_number').eq('player_id', playerId).eq('was_hit', true).limit(5000),
-                supabase.from('match_history').select('game_mode, xp_earned, played_at, match_stats').eq('player_id', playerId).order('played_at', { ascending: false }).limit(150)
+                supabase.from('match_history').select('game_mode, xp_earned, played_at, match_stats').eq('player_id', playerId).order('played_at', { ascending: false }).limit(150),
+                supabase.from('online_room_results').select('won, darts_thrown, xp_earned, sr_value, result_stats, created_at, game_id').eq('player_id', playerId).in('game_id', ['x01', 'shanghai', 'atc']).order('created_at', { ascending: false }).limit(200)
             ]);
 
             const historyRows = fallbackHistoryRes.data || [];
             const fallbackData = this.processMatchHistory(historyRows);
+            const onlineStats = this.processOnlineResults(onlineResultsRes.data || []);
 
-            const overview = overviewRes.data || this.buildOverviewFallback(fallbackData);
+            const overview = this.mergeOverviewData(overviewRes.data || this.buildOverviewFallback(fallbackData), onlineStats);
             const xpDaily = xpDailyRes.data || [];
-            const x01 = x01Res.data || this.buildX01Fallback(fallbackData);
-            const board = boardRes.data || this.buildBoardFallback(fallbackData);
+            const x01 = this.mergeX01Data(x01Res.data || this.buildX01Fallback(fallbackData), onlineStats);
+            const board = this.mergeBoardData(boardRes.data || this.buildBoardFallback(fallbackData), onlineStats);
             const finish = finishRes.data || this.buildFinishFallback(fallbackData);
             const leaderboard = leaderboardRes.data || [];
             const heatmapCounts = this.buildHeatmapCounts(heatmapRes.data, fallbackData.heatmapCounts);
@@ -128,13 +141,113 @@ export const StatsController = {
             this.renderProgressChart(xpDaily, fallbackData);
             this.renderDeepDiveStats(x01, board, finish);
             this.renderHeatmap(heatmapCounts);
-            this.renderAchievements(overview, x01, board, finish, fallbackData);
+            this.renderAchievements(overview, x01, board, finish, fallbackData, onlineStats);
             this.renderLeaderboard(leaderboard);
             this.switchOverviewPanel(this.currentOverviewPanel);
             this.switchDeepDivePanel(this.currentDeepDivePanel);
         } catch (err) {
             console.error('Fehler beim Laden der Statistiken:', err);
         }
+    },
+
+    processOnlineResults(rows) {
+        const stats = {
+            totalWins: 0,
+            x01: {
+                matches: 0,
+                wins: 0,
+                darts: 0,
+                xp: 0,
+                avgScoreSum: 0,
+                total180s: 0,
+                totalTriples: 0,
+                totalDoubles: 0,
+                totalPoints: 0
+            },
+            shanghai: {
+                matches: 0,
+                wins: 0,
+                darts: 0,
+                xp: 0,
+                hitRateSum: 0,
+                totalHits: 0,
+                totalMisses: 0,
+                totalPoints: 0,
+                totalMalus: 0,
+                bestStreak: 0
+            },
+            atc: {
+                matches: 0,
+                wins: 0,
+                darts: 0,
+                xp: 0,
+                hitRateSum: 0,
+                totalHits: 0,
+                totalMisses: 0,
+                totalPoints: 0,
+                totalMalus: 0,
+                bestStreak: 0
+            }
+        };
+
+        rows.forEach(row => {
+            const resultStats = row.result_stats || {};
+            const bucket = row.game_id === 'shanghai'
+                ? stats.shanghai
+                : row.game_id === 'atc'
+                    ? stats.atc
+                    : stats.x01;
+            bucket.matches += 1;
+            bucket.wins += row.won ? 1 : 0;
+            bucket.darts += num(row.darts_thrown);
+            bucket.xp += num(row.xp_earned);
+            stats.totalWins += row.won ? 1 : 0;
+
+            if (row.game_id === 'shanghai' || row.game_id === 'atc') {
+                bucket.hitRateSum += num(String(resultStats.hitRate || '0').replace('%', ''));
+                bucket.totalHits += num(resultStats.hits);
+                bucket.totalMisses += num(resultStats.misses);
+                bucket.totalPoints += num(resultStats.points);
+                bucket.totalMalus += num(resultStats.malus);
+                bucket.bestStreak = Math.max(bucket.bestStreak, num(resultStats.maxStreak));
+            } else {
+                bucket.avgScoreSum += num(resultStats.avg);
+                bucket.total180s += num(resultStats.oneEighty);
+                bucket.totalTriples += num(resultStats.triples);
+                bucket.totalDoubles += num(resultStats.doubles);
+                bucket.totalPoints += num(resultStats.totalPoints);
+            }
+        });
+
+        stats.x01.avgScore = stats.x01.matches > 0 ? (stats.x01.avgScoreSum / stats.x01.matches) : 0;
+        stats.shanghai.avgHitRate = stats.shanghai.matches > 0 ? (stats.shanghai.hitRateSum / stats.shanghai.matches) : 0;
+        stats.atc.avgHitRate = stats.atc.matches > 0 ? (stats.atc.hitRateSum / stats.atc.matches) : 0;
+        return stats;
+    },
+
+    mergeOverviewData(baseOverview, onlineStats) {
+        const overview = { ...EMPTY_OVERVIEW, ...baseOverview };
+        overview.online_x01_matches = num(onlineStats.x01?.matches);
+        overview.online_x01_wins = num(onlineStats.x01?.wins);
+        overview.online_shanghai_matches = num(onlineStats.shanghai?.matches);
+        overview.online_shanghai_wins = num(onlineStats.shanghai?.wins);
+        overview.online_atc_matches = num(onlineStats.atc?.matches);
+        overview.online_atc_wins = num(onlineStats.atc?.wins);
+        return overview;
+    },
+
+    mergeX01Data(baseX01, onlineStats) {
+        const x01 = { ...EMPTY_X01, ...baseX01 };
+        x01.online_matches = num(onlineStats.x01?.matches);
+        x01.online_wins = num(onlineStats.x01?.wins);
+        return x01;
+    },
+
+    mergeBoardData(baseBoard, onlineStats) {
+        const board = { ...EMPTY_BOARD, ...baseBoard };
+        board.online_matches = num(onlineStats.shanghai?.matches) + num(onlineStats.atc?.matches);
+        board.online_wins = num(onlineStats.shanghai?.wins) + num(onlineStats.atc?.wins);
+        return board;
     },
 
     processMatchHistory(rows) {
@@ -258,6 +371,12 @@ export const StatsController = {
         setText('stats-cat-board', formatCompact(overview.matches_boardcontrol));
         setText('stats-cat-finishing', formatCompact(overview.matches_finishing));
         setText('stats-cat-warmup', formatCompact(overview.matches_warmup));
+        setText('stats-online-matches', formatCompact(overview.online_x01_matches));
+        setText('stats-online-wins', formatCompact(overview.online_x01_wins));
+        setText('stats-online-shanghai-matches', formatCompact(overview.online_shanghai_matches));
+        setText('stats-online-shanghai-wins', formatCompact(overview.online_shanghai_wins));
+        setText('stats-online-atc-matches', formatCompact(overview.online_atc_matches));
+        setText('stats-online-atc-wins', formatCompact(overview.online_atc_wins));
         setText('stats-last-match', formatDateShort(overview.last_match_at));
         setText('overview-chip-snapshot-meta', `${formatCompact(overview.total_matches)} Sessions`);
         setText('overview-chip-insights-meta', `${categoryLabel(overview)} Fokus`);
@@ -335,6 +454,8 @@ export const StatsController = {
         setText('stat-total-points', formatCompact(x01.total_points));
         setText('stat-140s', formatCompact(x01.total_triples));
         setText('stat-co-pct', formatCompact(x01.total_doubles));
+        setText('stat-online-x01-matches', formatCompact(x01.online_matches));
+        setText('stat-online-x01-wins', formatCompact(x01.online_wins));
         setText('deepdive-chip-x01-meta', `${formatCompact(x01.matches_played)} Matches`);
         setText('deepdive-chip-board-meta', `${num(board.avg_hit_rate).toFixed(0)}% Hit Rate`);
         setText('deepdive-chip-finishing-meta', `${formatCompact(finish.total_checkouts)} Checkouts`);
@@ -350,6 +471,8 @@ export const StatsController = {
                 <div class="stat-box"><span>Doubles</span><strong>${formatCompact(board.total_doubles)}</strong></div>
                 <div class="stat-box"><span>Triples</span><strong>${formatCompact(board.total_triples)}</strong></div>
                 <div class="stat-box"><span>Misses</span><strong>${formatCompact(board.total_misses)}</strong></div>
+                <div class="stat-box"><span>Online Matches</span><strong>${formatCompact(board.online_matches)}</strong></div>
+                <div class="stat-box"><span>Online Wins</span><strong>${formatCompact(board.online_wins)}</strong></div>
             `;
         }
 
@@ -410,7 +533,7 @@ export const StatsController = {
         `;
     },
 
-    renderAchievements(overview, x01, board, finish, fallbackData) {
+    renderAchievements(overview, x01, board, finish, fallbackData, onlineStats) {
         const container = document.getElementById('achievements-container');
         if (!container) return;
 
@@ -438,6 +561,12 @@ export const StatsController = {
                 desc: 'Erste Checkouts in Finishing gesichert',
                 icon: 'ri-check-double-line',
                 unlocked: num(finish.total_checkouts) > 0
+            },
+            {
+                title: 'Online Ready',
+                desc: 'Erstes Online-Duell gewonnen',
+                icon: 'ri-wifi-line',
+                unlocked: num(onlineStats?.totalWins) > 0
             }
         ];
 

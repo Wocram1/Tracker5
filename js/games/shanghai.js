@@ -36,9 +36,9 @@ export class Shanghai {
         this.level = level;
 
         this.levelConfig = {
-            1: { rounds: 5, targets: [15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 30 },
-            2: { rounds: 5, targets: [15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 45 },
-            3: { rounds: 5, targets: [13,14,15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 65 },
+            1: { rounds: 6, targets: [15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 30 },
+            2: { rounds: 6, targets: [15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 45 },
+            3: { rounds: 8, targets: [13,14,15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 65 },
             4: { rounds: 8,  targets: [13,14,15,16,17,18,19,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 85 },
             5: { rounds: 9, targets: [13,14,15,16,17,18,19,20,25], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 110 },
             6: { rounds: 27, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 3, startHerz: 0, bM: 2, bH: 2, minPoints: 360 },

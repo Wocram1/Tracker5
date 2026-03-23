@@ -20,6 +20,7 @@ export const htmlX01 = `
                         <span class="game-subline-dot"></span>
                         <span id="x01-challenge-title" class="game-mode-kicker">LEVEL 1</span>
                     </div>
+                    <div id="x01-online-status" class="x01-online-status hidden"></div>
                 </div>
 
                 <div class="game-top-meta-side game-top-meta-side-empty"></div>

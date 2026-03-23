@@ -3,6 +3,89 @@ import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung
 import { StatsController } from './stats-controller.js';
 import { OnlineRoomService } from './online/online-room-service.js';
 
+const ONLINE_GAME_UI_CONFIG = {
+    x01: {
+        label: 'X01',
+        heroTitle: 'Privater Raum fuer 1v1 X01',
+        heroCopy: 'Erstelle einen Raumcode oder tritt einem bestehenden Raum bei. Fuer den Start stehen X01, Shanghai, ATC, 121 und JDC als private Duelle bereit.',
+        liveViewLabel: 'Finishing-/X01-Ansicht',
+        createSettings: () => ({
+            startScore: 501,
+            doubleOut: false,
+            doubleIn: false
+        }),
+        renderSettings: (settings) => `
+                <div class="online-setting-pill"><span>Mode</span><strong>X01</strong></div>
+                <div class="online-setting-pill"><span>Start</span><strong>${settings.startScore}</strong></div>
+                <div class="online-setting-pill"><span>Out</span><strong>${settings.doubleOut ? 'Double' : 'Single'}</strong></div>
+            `
+    },
+    shanghai: {
+        label: 'Shanghai',
+        levelWrapId: 'online-shanghai-level-wrap',
+        heroTitle: 'Privater Raum fuer 1v1 Shanghai',
+        heroCopy: 'Erstelle einen privaten Shanghai-Raum, waehle das Start-Level und starte das Board-Control-Duell aus der Lobby.',
+        liveViewLabel: 'Board-Control-Ansicht',
+        createSettings: () => ({
+            level: parseInt(document.getElementById('online-shanghai-level')?.value || '1', 10)
+        }),
+        renderSettings: (settings) => `
+                <div class="online-setting-pill"><span>Mode</span><strong>Shanghai</strong></div>
+                <div class="online-setting-pill"><span>Level</span><strong>${settings.level || 1}</strong></div>
+                <div class="online-setting-pill"><span>Min</span><strong>${settings.minPoints || '--'}</strong></div>
+            `
+    },
+    atc: {
+        label: 'ATC',
+        levelWrapId: 'online-atc-level-wrap',
+        heroTitle: 'Privater Raum fuer 1v1 ATC',
+        heroCopy: 'Erstelle einen privaten ATC-Raum, waehle das Start-Level und starte das Board-Control-Duell aus der Lobby.',
+        liveViewLabel: 'Board-Control-Ansicht',
+        createSettings: () => ({
+            level: parseInt(document.getElementById('online-atc-level')?.value || '1', 10)
+        }),
+        renderSettings: (settings) => `
+                <div class="online-setting-pill"><span>Mode</span><strong>ATC</strong></div>
+                <div class="online-setting-pill"><span>Level</span><strong>${settings.level || 1}</strong></div>
+                <div class="online-setting-pill"><span>Hits</span><strong>${settings.hitsPerTarget || 1}x</strong></div>
+            `
+    },
+    game121: {
+        label: '121',
+        levelWrapId: 'online-121-level-wrap',
+        heroTitle: 'Privater Raum fuer 1v1 121',
+        heroCopy: 'Erstelle einen privaten 121-Raum, waehle das Start-Level und starte das Finishing-Duell direkt aus der Lobby.',
+        liveViewLabel: 'Finishing-/X01-Ansicht',
+        createSettings: () => ({
+            level: parseInt(document.getElementById('online-121-level')?.value || '1', 10)
+        }),
+        renderSettings: (settings) => `
+                <div class="online-setting-pill"><span>Mode</span><strong>121</strong></div>
+                <div class="online-setting-pill"><span>Level</span><strong>${settings.level || 1}</strong></div>
+                <div class="online-setting-pill"><span>Start</span><strong>${settings.start || '--'}</strong></div>
+            `
+    },
+    'jdc-warmup': {
+        label: 'JDC',
+        levelWrapId: 'online-jdc-level-wrap',
+        heroTitle: 'Privater Raum fuer 1v1 JDC',
+        heroCopy: 'Erstelle einen privaten JDC-Raum, waehle das Start-Level und starte das Warmup-/X01-Duell direkt aus der Lobby.',
+        liveViewLabel: 'Warmup-/X01-Ansicht',
+        createSettings: () => ({
+            level: parseInt(document.getElementById('online-jdc-level')?.value || '1', 10)
+        }),
+        renderSettings: (settings) => `
+                <div class="online-setting-pill"><span>Mode</span><strong>JDC</strong></div>
+                <div class="online-setting-pill"><span>Level</span><strong>${settings.level || 1}</strong></div>
+                <div class="online-setting-pill"><span>Double</span><strong>${settings.pointsPerDouble || '--'}</strong></div>
+                <div class="online-setting-pill"><span>Min</span><strong>${settings.minPoints || '--'}</strong></div>
+                <div class="online-setting-pill"><span>Runs</span><strong>${settings.maxRounds || '--'}</strong></div>
+            `
+    }
+};
+
+const ONLINE_GAME_IDS = Object.keys(ONLINE_GAME_UI_CONFIG);
+
 const UIController = {
     DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
     // KORRIGIERTE IDs passend zu game-manager.js imports
@@ -78,7 +161,55 @@ const UIController = {
             errorEl.classList.add('hidden');
         }
         if (codeInput) codeInput.value = '';
+        this.selectOnlineGame(this.getSelectedOnlineGame());
         this.navigate('online-setup');
+    },
+
+    getSelectedOnlineGame() {
+        return document.getElementById('online-game-id')?.value || 'x01';
+    },
+
+    normalizeOnlineGameId(gameId) {
+        return ONLINE_GAME_IDS.includes(gameId) ? gameId : 'x01';
+    },
+
+    getOnlineGameConfig(gameId) {
+        return ONLINE_GAME_UI_CONFIG[this.normalizeOnlineGameId(gameId)];
+    },
+
+    selectOnlineGame(gameId) {
+        const normalizedGameId = this.normalizeOnlineGameId(gameId);
+        const gameConfig = this.getOnlineGameConfig(normalizedGameId);
+        const input = document.getElementById('online-game-id');
+        const heroTitle = document.getElementById('online-setup-hero-title');
+        const heroCopy = document.getElementById('online-setup-hero-copy');
+
+        if (input) input.value = normalizedGameId;
+
+        ONLINE_GAME_IDS.forEach(optionGameId => {
+            const option = document.getElementById(`online-game-${optionGameId}`);
+            if (option) {
+                option.classList.toggle('active', optionGameId === normalizedGameId);
+            }
+        });
+
+        ONLINE_GAME_IDS.forEach(optionGameId => {
+            const wrapId = ONLINE_GAME_UI_CONFIG[optionGameId].levelWrapId;
+            if (!wrapId) return;
+
+            const wrap = document.getElementById(wrapId);
+            if (wrap) {
+                wrap.classList.toggle('hidden', optionGameId !== normalizedGameId);
+            }
+        });
+
+        if (heroTitle) {
+            heroTitle.textContent = gameConfig.heroTitle;
+        }
+
+        if (heroCopy) {
+            heroCopy.textContent = gameConfig.heroCopy;
+        }
     },
 
     showOnlineSetupError(message) {
@@ -90,11 +221,10 @@ const UIController = {
 
     async createOnlineRoom() {
         try {
-            await OnlineRoomService.createRoom({
-                startScore: 501,
-                doubleOut: false,
-                doubleIn: false
-            });
+            const gameId = this.normalizeOnlineGameId(this.getSelectedOnlineGame());
+            const settings = this.getOnlineGameConfig(gameId).createSettings();
+
+            await OnlineRoomService.createRoom(settings, gameId);
             this.navigate('online-lobby');
             this.renderOnlineLobby(OnlineRoomService.getLobbyViewModel());
         } catch (error) {
@@ -141,6 +271,11 @@ const UIController = {
     },
 
     async leaveOnlineRoom() {
+        const vm = OnlineRoomService.getLobbyViewModel();
+        if (vm.status === 'live') {
+            const shouldLeave = window.confirm('Das Match laeuft bereits. Wenn du den Raum jetzt verlaesst, wirst du als offline markiert und dein Gegner sieht den Disconnect. Wirklich verlassen?');
+            if (!shouldLeave) return;
+        }
         try {
             await OnlineRoomService.leaveRoom();
         } catch (error) {
@@ -171,16 +306,26 @@ const UIController = {
         `).join('');
 
         const canStart = vm.isHost && vm.playerCount === 2 && vm.allReady && vm.status !== 'live';
+        const disconnectedOpponent = vm.players.find(player => !player.isSelf && !player.connected);
+        const gameConfig = this.getOnlineGameConfig(vm.gameId);
+        const lobbyTitle = `${vm.gameLabel} Duel Lobby`;
+        const liveViewLabel = gameConfig.liveViewLabel;
         const lobbyCopy = vm.status === 'live'
-            ? 'Der Raum ist live. Der Gameplay-Hook fuer Online-X01 wird als naechster Schritt an die bestehende X01-Ansicht gebunden.'
-            : 'Sobald beide Spieler bereit sind, kann der Host das Match starten.';
+            ? (disconnectedOpponent
+                ? 'Dein Gegner ist gerade offline. Sobald er zurueckkommt, laeuft das Match im selben Raum weiter.'
+                : `Das Match laeuft. Beide Browser sollten automatisch in der ${liveViewLabel} landen.`)
+            : (disconnectedOpponent
+                ? 'Ein Spieler ist momentan offline. Der Raum bleibt bestehen und kann nach Reload wieder aufgenommen werden.'
+                : 'Sobald beide Spieler bereit sind, kann der Host das Match starten.');
+
+        const settingsHtml = gameConfig.renderSettings(vm.settings || {});
 
         container.innerHTML = `
             <div class="glass-panel online-room-card">
                 <div class="online-room-topline">
                     <div>
                         <span class="online-eyebrow">Privater Raum</span>
-                        <h3>X01 Duel Lobby</h3>
+                        <h3>${lobbyTitle}</h3>
                     </div>
                     <span class="online-status-pill status-${vm.status}">${vm.statusLabel}</span>
                 </div>
@@ -192,9 +337,7 @@ const UIController = {
                 </div>
 
                 <div class="online-room-settings">
-                    <div class="online-setting-pill"><span>Mode</span><strong>X01</strong></div>
-                    <div class="online-setting-pill"><span>Start</span><strong>${vm.settings.startScore}</strong></div>
-                    <div class="online-setting-pill"><span>Out</span><strong>${vm.settings.doubleOut ? 'Double' : 'Single'}</strong></div>
+                    ${settingsHtml}
                 </div>
 
                 <p class="online-room-copy">${lobbyCopy}</p>
@@ -205,18 +348,19 @@ const UIController = {
                 ${playersHtml}
             </div>
 
-            <div class="glass-panel online-room-card">
+            <div class="glass-panel online-room-card online-cta-card">
                 <div class="online-room-topline">
                     <div>
                         <span class="online-eyebrow">Aktionen</span>
-                        <h3>Lobby Controls</h3>
+                        <h3>${vm.gameLabel} Lobby Controls</h3>
                     </div>
                 </div>
+                <p class="online-room-copy online-cta-copy">${canStart ? 'Beide Spieler sind bereit. Der Host kann das Match jetzt direkt starten.' : 'Setze zuerst deinen Ready-Status. Sobald beide Spieler bereit sind, wird der Start freigeschaltet.'}</p>
                 <div class="online-lobby-actions">
-                    <button class="glass-btn" onclick="UIController.toggleOnlineReady()">${vm.currentUserReady ? 'Ready entfernen' : 'Ready setzen'}</button>
-                    <button class="primary-btn ${canStart ? 'flash-btn' : ''}" ${canStart ? '' : 'disabled'} onclick="UIController.startOnlineMatch()">Match starten</button>
+                    <button class="glass-btn online-ready-btn" onclick="UIController.toggleOnlineReady()">${vm.currentUserReady ? 'Ready entfernen' : 'Ready setzen'}</button>
+                    <button class="primary-btn online-start-btn ${canStart ? 'flash-btn' : ''}" ${canStart ? '' : 'disabled'} onclick="UIController.startOnlineMatch()">Match starten</button>
                 </div>
-                <button class="glass-btn online-leave-btn" onclick="UIController.leaveOnlineRoom()">Raum verlassen</button>
+                <button class="glass-btn online-leave-btn online-secondary-btn" onclick="UIController.leaveOnlineRoom()">Raum verlassen</button>
             </div>
         `;
     },

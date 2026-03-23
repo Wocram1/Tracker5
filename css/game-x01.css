@@ -24,6 +24,13 @@ body.game-active {
     overflow: hidden;
 }
 
+#view-game-x01 {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 /* --- X01 MAIN DISPLAY --- */
 .x01-main-display {
     display: flex !important;
@@ -39,6 +46,8 @@ body.game-active {
     margin: 10px;
     position: relative;
     overflow: hidden;
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 /* TOP BAR (Exit links, Score absolut zentriert) */
@@ -131,6 +140,33 @@ body.game-active {
     margin-top: 2px;
 }
 
+.x01-online-status {
+    margin-top: 4px;
+    min-height: 16px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: rgba(255,255,255,0.66);
+    text-align: center;
+}
+
+.x01-online-status.is-error {
+    color: var(--neon-red);
+}
+
+.x01-online-status.is-success {
+    color: var(--neon-green);
+}
+
+.next-btn-side.loading {
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.next-btn-side.loading i {
+    animation: spin 0.85s linear infinite;
+}
+
 .sub-stat-item {
     font-size: 0.65rem;
     font-weight: 700;
@@ -157,7 +193,7 @@ body.game-active {
     aspect-ratio: 1 / 1;
     margin: 0 auto;
     position: relative;
-    padding: 10px;
+    padding: 8px;
 }
 
 .dartboard-svg {
@@ -183,12 +219,12 @@ body.game-active {
 .mini-throw-history-v {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .throw-box {
-    width: 38px !important;
-    height: 38px !important;
+    width: 36px !important;
+    height: 36px !important;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
@@ -297,9 +333,10 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     display: grid;
     grid-template-columns: 1fr 75px;
     gap: 10px;
-    padding: 10px;
+    padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 10px);
     max-width: 500px;
     margin: 0 auto;
+    width: 100%;
 }
 
 .numpad-grid {
@@ -768,14 +805,25 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 }
 
 @media (max-width: 520px) {
+    #view-game-x01 {
+        justify-content: space-between;
+    }
+
+    .x01-main-display {
+        gap: 6px;
+        padding: 8px !important;
+        margin: 6px 4px 4px;
+        border-radius: 28px;
+    }
+
     .game-top-meta {
-        min-height: 56px;
-        gap: 4px;
+        min-height: 50px;
+        gap: 3px;
     }
 
     .game-top-meta-lower {
         grid-template-columns: 36px minmax(0, 1fr) auto;
-        gap: 6px;
+        gap: 5px;
     }
 
     .game-top-meta-side {
@@ -783,27 +831,27 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     }
 
     .game-top-meta-title {
-        max-width: min(100%, 180px);
+        max-width: min(100%, 156px);
     }
 
     .game-meta-pill {
-        min-width: 56px;
-        padding: 7px 8px;
-        font-size: 0.76rem;
+        min-width: 52px;
+        padding: 6px 7px;
+        font-size: 0.72rem;
     }
 
     .game-name-pill {
-        padding: 4px 8px;
-        font-size: 0.62rem;
+        padding: 3px 7px;
+        font-size: 0.58rem;
     }
 
     .unified-game-shell .mini-score-display {
-        font-size: 2.35rem !important;
+        font-size: 2.15rem !important;
     }
 
     .game-board-stage {
-        grid-template-columns: 1fr 40px;
-        gap: 8px;
+        grid-template-columns: 1fr 36px;
+        gap: 6px;
     }
 }
 
@@ -887,29 +935,29 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 
 @media (max-width: 520px) {
     .unified-game-shell .game-top-meta-inline {
-        min-height: 28px;
-        gap: 5px;
+        min-height: 24px;
+        gap: 4px;
     }
 
     .unified-game-shell .game-name-pill {
-        padding: 4px 8px;
-        font-size: 0.62rem;
+        padding: 3px 7px;
+        font-size: 0.58rem;
     }
 
     .unified-game-shell .sub-stat-item {
-        min-height: 28px;
-        padding: 5px 8px;
-        font-size: 0.68rem;
+        min-height: 24px;
+        padding: 4px 7px;
+        font-size: 0.64rem;
     }
 
     .unified-game-shell .x01-primary-card #x01-challenge-header {
-        gap: 4px;
+        gap: 3px;
         max-width: 100%;
     }
 
     .unified-game-shell .x01-primary-card .sub-stat-item {
-        min-height: 20px;
-        padding: 2px 6px;
+        min-height: 18px;
+        padding: 2px 5px;
         font-size: 0.58rem;
     }
 
@@ -918,36 +966,36 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     }
 
     .x01-score-layout {
-        grid-template-columns: minmax(54px, 66px) 1fr minmax(54px, 66px);
-        gap: 2px 6px;
+        grid-template-columns: minmax(50px, 60px) 1fr minmax(50px, 60px);
+        gap: 2px 5px;
     }
 
     .x01-score-side-item {
-        min-height: 31px;
-        padding: 4px 5px;
-        border-radius: 10px;
+        min-height: 28px;
+        padding: 3px 4px;
+        border-radius: 9px;
     }
 
     .x01-score-side-item i {
-        font-size: 0.7rem;
+        font-size: 0.64rem;
     }
 
     .x01-score-side-item .label {
-        font-size: 0.46rem;
+        font-size: 0.42rem;
     }
 
     .x01-score-side-item > span:last-child,
     .x01-score-side-item .mode-badge-compact {
-        font-size: 0.64rem;
+        font-size: 0.6rem;
     }
 
     .x01-inline-meta-grid {
-        gap: 5px;
+        gap: 4px;
     }
 
     .x01-primary-card #x01-stats-bar .status-item {
-        min-height: 24px;
-        padding: 4px 7px;
+        min-height: 22px;
+        padding: 3px 6px;
     }
 
     .x01-primary-card #x01-stats-bar .mode-badge-compact {
@@ -962,11 +1010,66 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
 
     .game-status-rail .status-item {
         flex: 1 1 calc(50% - 6px);
-        min-height: 38px;
-        padding: 7px 9px;
+        min-height: 34px;
+        padding: 6px 8px;
     }
 
     .x01-status-pill {
         order: -1;
+    }
+
+    .game-focus-stage {
+        gap: 6px;
+    }
+
+    .game-primary-card {
+        padding: 8px 10px;
+        border-radius: 18px;
+        gap: 4px;
+    }
+
+    .game-primary-label {
+        font-size: 0.58rem;
+        letter-spacing: 0.14em;
+    }
+
+    .board-visual-container {
+        max-width: 192px;
+        padding: 4px;
+    }
+
+    .mini-throw-history-v {
+        gap: 5px;
+    }
+
+    .throw-box {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.74rem !important;
+    }
+
+    .x01-controls-container {
+        grid-template-columns: 1fr 68px;
+        gap: 8px;
+        padding: 6px 2px calc(env(safe-area-inset-bottom, 0px) + 10px);
+    }
+
+    .numpad-grid {
+        gap: 6px;
+    }
+
+    .numpad-grid button {
+        height: 44px;
+        border-radius: 12px;
+        font-size: 0.92rem;
+    }
+
+    .side-action-stack {
+        gap: 6px;
+    }
+
+    .mod-btn,
+    .next-btn-side {
+        border-radius: 12px;
     }
 }

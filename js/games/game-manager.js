@@ -53,6 +53,131 @@ const LEVEL_MAPPERS = {
     'bulls-warmup': BullsWarmupLevelMapper
 };
 
+const ONLINE_MATCH_CONFIG = {
+    x01: {
+        resultGameLabel: 'Privates X01 Duell',
+        scoreLabel: 'Final Score',
+        summaryCategory: 'scoring',
+        startViewId: 'view-game-x01',
+        createInstance: (settings) => new ScoringX01Logic(1, false, {
+            score: settings.startScore || 501,
+            doubleOut: !!settings.doubleOut,
+            doubleIn: !!settings.doubleIn,
+            maxRounds: 99
+        }),
+        createController: (instance) => new ScoringX01Control(instance),
+        buildPlayerSummary: ({ state, serverResult, resultStats }) => ({
+            score: serverResult?.final_score
+                ?? resultStats.finalScore
+                ?? state.score
+                ?? '--',
+            avg: resultStats.avg ?? '--',
+            darts: serverResult?.darts_thrown ?? resultStats.totalDarts ?? 0,
+            oneEighty: resultStats.oneEighty ?? 0,
+            checkoutAttempts: resultStats.checkoutAttempts ?? 0
+        })
+    },
+    shanghai: {
+        resultGameLabel: 'Privates Shanghai Duell',
+        scoreLabel: 'Shanghai Score',
+        summaryCategory: 'boardcontrol',
+        startViewId: 'view-game-active',
+        createInstance: (settings) => new Shanghai(settings.level || 1, false),
+        createController: (instance) => new ScoringBoardControl(instance),
+        buildPlayerSummary: ({ state, serverResult, resultStats }) => ({
+            score: serverResult?.final_score
+                ?? resultStats.finalScore
+                ?? state.score
+                ?? '--',
+            hitRate: resultStats.hitRate ?? '--',
+            darts: serverResult?.darts_thrown ?? resultStats.totalDarts ?? 0,
+            hits: resultStats.hits ?? 0,
+            misses: resultStats.misses ?? 0,
+            maxStreak: resultStats.maxStreak ?? 0,
+            malus: resultStats.malus ?? state.malusScore ?? 0
+        })
+    },
+    atc: {
+        resultGameLabel: 'Privates ATC Duell',
+        scoreLabel: 'ATC Score',
+        summaryCategory: 'boardcontrol',
+        startViewId: 'view-game-active',
+        createInstance: (settings) => new AroundTheClock(settings.level || 1, false),
+        createController: (instance) => new ScoringBoardControl(instance),
+        buildPlayerSummary: ({ state, serverResult, resultStats, settings }) => {
+            const targetTotal = Array.isArray(settings.targets) ? settings.targets.length : 0;
+            return {
+                score: serverResult?.final_score
+                    ?? resultStats.finalScore
+                    ?? state.score
+                    ?? '--',
+                hitRate: resultStats.hitRate ?? '--',
+                darts: serverResult?.darts_thrown ?? resultStats.totalDarts ?? 0,
+                hits: resultStats.hits ?? 0,
+                misses: resultStats.misses ?? 0,
+                maxStreak: resultStats.maxStreak ?? 0,
+                malus: resultStats.malus ?? state.malusScore ?? 0,
+                progress: targetTotal > 0 ? `${Math.min(state.currentIndex ?? 0, targetTotal)}/${targetTotal}` : undefined,
+                nextTarget: state.currentTargetNumber === 25 ? 'Bull' : (state.currentTargetNumber ?? '--')
+            };
+        }
+    },
+    game121: {
+        resultGameLabel: 'Privates 121 Duell',
+        scoreLabel: '121 Punkte',
+        summaryCategory: 'finishing',
+        startViewId: 'view-game-x01',
+        createInstance: (settings) => new Game121(settings.level || 1, false),
+        createController: (instance) => new FinishingController(instance),
+        buildPlayerSummary: ({ state, serverResult, resultStats, settings }) => {
+            const totalTargets = resultStats.totalTargets ?? settings.totalTargets ?? state.totalTargetsToPlay ?? 0;
+            return {
+                score: serverResult?.final_score
+                    ?? resultStats.finalScore
+                    ?? (typeof state.points === 'number' ? state.points : '--'),
+                darts: serverResult?.darts_thrown ?? resultStats.totalDarts ?? 0,
+                malus: resultStats.malus ?? state.malusScore ?? 0,
+                progress: `${Math.min(state.targetsPlayed ?? resultStats.targetsPlayed ?? 0, totalTargets)}/${totalTargets}`,
+                nextTarget: state.currentTarget ?? resultStats.currentTarget ?? '--'
+            };
+        }
+    },
+    'jdc-warmup': {
+        resultGameLabel: 'Privates JDC Duell',
+        scoreLabel: 'JDC Punkte',
+        summaryCategory: 'warmup',
+        startViewId: 'view-game-x01',
+        createInstance: (settings) => new JDCWarmup(settings.level || 1, false),
+        createController: (instance) => new WarmupController(instance),
+        formatStage(planStep) {
+            if (!planStep || !Array.isArray(planStep.target) || planStep.target.length === 0) return '--';
+            if (planStep.type === 'double') {
+                return `D ${planStep.target.map(value => value === 25 ? 'BULL' : value).join(' / ')}`;
+            }
+            const value = planStep.target[0];
+            return `S ${value === 25 ? 'BULL' : value}`;
+        },
+        buildPlayerSummary: ({ state, serverResult, resultStats, settings }) => {
+            const jdcMaxRounds = resultStats.maxRounds ?? settings.maxRounds ?? state.maxRounds ?? 0;
+            const jdcRound = Math.min(state.round ?? resultStats.roundReached ?? 1, jdcMaxRounds || 1);
+            return {
+                score: serverResult?.final_score
+                    ?? resultStats.finalScore
+                    ?? (typeof state.points === 'number' ? state.points : '--'),
+                hitRate: resultStats.hitRate ?? '--',
+                darts: serverResult?.darts_thrown ?? resultStats.totalDarts ?? 0,
+                hits: resultStats.hits ?? 0,
+                misses: resultStats.misses ?? 0,
+                progress: `${jdcRound}/${jdcMaxRounds}`,
+                nextTarget: ONLINE_MATCH_CONFIG['jdc-warmup'].formatStage(Array.isArray(settings.gamePlan) ? settings.gamePlan[Math.max(0, jdcRound - 1)] : null),
+                nextTargetLabel: 'Stage',
+                shanghais: resultStats.shanghais ?? 0,
+                doubleHits: resultStats.doubleHits ?? 0
+            };
+        }
+    }
+};
+
 // --WAKELOCK--
 let wakeLock = null;
 
@@ -667,19 +792,19 @@ export const GameManager = {
         else if (this.currentGame.updateUI) this.currentGame.updateUI();
     },
 
-    startOnlineX01Match() {
+    getOnlineMatchConfig(gameId) {
+        return ONLINE_MATCH_CONFIG[gameId] || ONLINE_MATCH_CONFIG.x01;
+    },
+
+    startConfiguredOnlineMatch(gameId) {
         const snapshot = OnlineRoomService.getOnlineMatchSnapshot();
         const settings = snapshot.state?.settings || {};
-        const instance = new ScoringX01Logic(1, false, {
-            score: settings.startScore || 501,
-            doubleOut: !!settings.doubleOut,
-            doubleIn: !!settings.doubleIn,
-            maxRounds: 99
-        });
+        const matchConfig = this.getOnlineMatchConfig(gameId);
+        const instance = matchConfig.createInstance(settings);
 
         this.isOnlineMatch = true;
         this.isMultiplayer = false;
-        this.currentGame = new ScoringX01Control(instance);
+        this.currentGame = matchConfig.createController(instance);
         if (typeof this.currentGame.setOnlineMode === 'function') {
             this.currentGame.setOnlineMode(OnlineRoomService);
         }
@@ -687,7 +812,27 @@ export const GameManager = {
         this.applyOnlineRoomSnapshot();
 
         this.hideAllViews();
-        document.getElementById('view-game-x01')?.classList.remove('hidden');
+        document.getElementById(matchConfig.startViewId)?.classList.remove('hidden');
+    },
+
+    startOnlineX01Match() {
+        this.startConfiguredOnlineMatch('x01');
+    },
+
+    startOnlineShanghaiMatch() {
+        this.startConfiguredOnlineMatch('shanghai');
+    },
+
+    startOnlineATCMatch() {
+        this.startConfiguredOnlineMatch('atc');
+    },
+
+    startOnline121Match() {
+        this.startConfiguredOnlineMatch('game121');
+    },
+
+    startOnlineJDCMatch() {
+        this.startConfiguredOnlineMatch('jdc-warmup');
     },
 
     applyOnlineRoomSnapshot() {
@@ -701,6 +846,10 @@ export const GameManager = {
     // ANGEPASST FÜR TURN-SWITCH
     nextRoundBC() { 
         window.SoundManager?.play('next');
+        if (this.isOnlineMatch && this.currentGame?.submitOnlineTurn) {
+            this.currentGame.submitOnlineTurn();
+            return;
+        }
         this.currentGame?.nextRound?.(); 
         if (this.isMultiplayer && !this.currentGame.game.isFinished) {
             this.switchTurn();
@@ -824,7 +973,7 @@ export const GameManager = {
     // --- FINISH & STATS ---
     async completeGame(forceFinalize = false) {
         if (this.isOnlineMatch) {
-            this.renderOnlineMatchResult();
+            await this.renderOnlineMatchResult();
             return;
         }
 
@@ -926,10 +1075,12 @@ export const GameManager = {
         }
 
         const titleEl = document.getElementById('res-title');
+        const subtitleEl = document.getElementById('res-subtitle');
         titleEl.textContent = res.won ? "MISSION ACCOMPLISHED" : "MISSION FAILED";
         if (this.isMultiplayer) {
             titleEl.textContent = winnerSummary ? `${winnerSummary.name.toUpperCase()} GEWINNT!` : "HOTSEAT BEENDET";
         }
+        if (subtitleEl) subtitleEl.textContent = '';
         titleEl.style.color = res.won ? "var(--neon-green)" : "var(--neon-red)";
         
         if (res.won) {
@@ -993,7 +1144,113 @@ export const GameManager = {
         }
     },
 
-    renderOnlineMatchResult() {
+    getOnlineSyncStorageKey(roomId, userId) {
+        if (!roomId || !userId) return null;
+        return `ocram-online-match-synced-${roomId}-${String(userId).toLowerCase()}`;
+    },
+
+    async syncOnlineMatchResultIfNeeded(snapshot) {
+        const roomId = snapshot?.room?.id;
+        const userId = window.appState?.user?.id || snapshot?.currentPlayer?.player_id || snapshot?.currentPlayer?.id;
+        const storageKey = this.getOnlineSyncStorageKey(roomId, userId);
+        if (!roomId || !userId || !storageKey) return null;
+
+        try {
+            if (window.localStorage?.getItem(storageKey) === '1') {
+                return { alreadySynced: true };
+            }
+        } catch (error) {
+            console.warn('online sync read flag failed', error);
+        }
+
+        if (typeof OnlineRoomService.syncMyMatchResult === 'function') {
+            try {
+                const serverResult = await OnlineRoomService.syncMyMatchResult();
+                try {
+                    window.localStorage?.setItem(storageKey, '1');
+                } catch (error) {
+                    console.warn('online sync write flag failed', error);
+                }
+                return {
+                    xp: serverResult?.xp ?? 0,
+                    sr: serverResult?.sr ?? 0,
+                    synced: !serverResult?.already_synced,
+                    alreadySynced: !!serverResult?.already_synced,
+                    source: 'server'
+                };
+            } catch (error) {
+                console.warn('server online sync unavailable, using fallback', error);
+            }
+        }
+
+        const activeLogic = this.currentGame?.game || this.currentGame;
+        if (!activeLogic || typeof activeLogic.getFinalStats !== 'function') {
+            return null;
+        }
+
+        const finalStats = activeLogic.getFinalStats();
+        if (!finalStats?.stats || !window.syncMatchToDatabase) {
+            return null;
+        }
+
+        await window.syncMatchToDatabase(
+            finalStats.xp,
+            finalStats.stats,
+            finalStats.sr,
+            activeLogic.srCategory || this.getOnlineMatchConfig(snapshot?.gameId).summaryCategory,
+            false,
+            null
+        );
+
+        try {
+            window.localStorage?.setItem(storageKey, '1');
+        } catch (error) {
+            console.warn('online sync write flag failed', error);
+        }
+
+        return {
+            xp: finalStats.xp,
+            sr: finalStats.sr,
+            synced: true
+        };
+    },
+
+    resolveOnlinePlayerState(snapshot, playerId) {
+        if (!playerId || !snapshot?.state?.players) return {};
+        const entry = Object.entries(snapshot.state.players).find(([statePlayerId]) => {
+            return String(statePlayerId).toLowerCase() === String(playerId).toLowerCase();
+        });
+        return entry ? entry[1] : {};
+    },
+
+    buildOnlineResultSummary(snapshot, player, serverResultsById, settings) {
+        const matchConfig = this.getOnlineMatchConfig(snapshot.gameId);
+        const state = this.resolveOnlinePlayerState(snapshot, player.player_id);
+        const serverResult = serverResultsById[String(player.player_id).toLowerCase()];
+        const resultStats = serverResult?.result_stats || {};
+        const gameSpecificSummary = matchConfig.buildPlayerSummary({
+            snapshot,
+            player,
+            state,
+            serverResult,
+            resultStats,
+            settings
+        });
+
+        return {
+            id: player.player_id,
+            name: player.username || player.name || 'Spieler',
+            xp: serverResult?.xp_earned ?? 0,
+            sr: serverResult?.sr_value ?? 0,
+            resultStatus: serverResult?.result_status || 'finished',
+            won: !!serverResult?.won,
+            isGuest: false,
+            isBot: false,
+            ...gameSpecificSummary
+        };
+    },
+
+    async renderOnlineMatchResult() {
         const snapshot = OnlineRoomService.getOnlineMatchSnapshot();
         const modal = document.getElementById('modal-game-result');
         if (!modal) {
@@ -1001,24 +1258,23 @@ export const GameManager = {
             return;
         }
 
+        const serverResultsById = Object.fromEntries((snapshot.roomResults || []).map(result => [String(result.player_id).toLowerCase(), result]));
+        const settings = snapshot.state?.settings || {};
+
         const players = [
             snapshot.currentPlayer,
             snapshot.opponent
-        ].filter(Boolean).map(player => {
-            const state = snapshot.state?.players?.[player.player_id] || {};
-            return {
-                id: player.player_id,
-                name: player.username || player.name || 'Spieler',
-                score: state.score ?? '--',
-                xp: 0,
-                sr: 0,
-                isGuest: false,
-                isBot: false
-            };
-        });
+        ].filter(Boolean).map(player => this.buildOnlineResultSummary(snapshot, player, serverResultsById, settings));
 
         const winnerId = snapshot.room?.winner_id || null;
         const winnerSummary = players.find(player => player.id === winnerId) || null;
+        let syncInfo = null;
+
+        try {
+            syncInfo = await this.syncOnlineMatchResultIfNeeded(snapshot);
+        } catch (error) {
+            console.error('syncOnlineMatchResultIfNeeded failed', error);
+        }
 
         const profileHeader = document.getElementById('user-profile-header');
         const hudPlaceholder = document.getElementById('modal-hud-placeholder');
@@ -1027,9 +1283,17 @@ export const GameManager = {
         }
 
         const titleEl = document.getElementById('res-title');
+        const subtitleEl = document.getElementById('res-subtitle');
         titleEl.textContent = winnerSummary ? `${winnerSummary.name.toUpperCase()} GEWINNT!` : 'ONLINE MATCH BEENDET';
         titleEl.style.color = 'var(--neon-cyan)';
         titleEl.classList.toggle('neon-glow', !!winnerSummary);
+        if (subtitleEl) {
+            const opponentDisconnected = snapshot.opponentConnected === false;
+            const gameLabel = this.getOnlineMatchConfig(snapshot.gameId).resultGameLabel;
+            subtitleEl.textContent = opponentDisconnected
+                ? `Room ${snapshot.room?.room_code || '------'} | Gegner offline | Matchstatus: ${snapshot.room?.status || 'live'}`
+                : `Room ${snapshot.room?.room_code || '------'} | ${gameLabel} | ${snapshot.room?.status || 'finished'}`;
+        }
 
         const btnDone = document.querySelector('button[onclick="GameManager.closeResultModal()"]');
         const btnNext = document.getElementById('btn-quickplay-next');
@@ -1041,12 +1305,20 @@ export const GameManager = {
         if (btnNext) btnNext.classList.add('hidden');
         if (btnLevelDown) btnLevelDown.classList.add('hidden');
 
-        this.renderMultiplayerSummaryEnhanced(players, winnerSummary);
+        this.renderMultiplayerSummaryEnhanced(players, winnerSummary, snapshot.gameId || 'x01');
         this.hideAllViews();
         modal.classList.remove('hidden');
 
         const xpTotal = document.getElementById('xp-total');
-        if (xpTotal) xpTotal.innerHTML = 'ONLINE MATCH';
+        if (xpTotal) {
+            if (syncInfo?.synced && typeof syncInfo.xp === 'number') {
+                xpTotal.innerHTML = `${syncInfo.xp} XP`;
+            } else if (syncInfo?.alreadySynced) {
+                xpTotal.innerHTML = 'BEREITS SYNCHRONISIERT';
+            } else {
+                xpTotal.innerHTML = 'ONLINE MATCH';
+            }
+        }
     },
 
    closeResultModal() {
@@ -1145,17 +1417,18 @@ export const GameManager = {
         `).join('');
     },
 
-    renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary) {
+    renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary, gameId = 'x01') {
         const grid = document.getElementById('dynamic-stats-grid');
         if (!grid) return;
         grid.classList.add('coop-results-grid');
+        const scoreLabel = this.getOnlineMatchConfig(gameId).scoreLabel;
 
         grid.innerHTML = playerSummaries.map(summary => {
             const tags = [];
             if (summary.isGuest) tags.push('Gast');
             if (summary.isBot) tags.push('Bot');
             if (!summary.isGuest && !summary.isBot) tags.push('Lokaler Spieler');
-
+            if (summary.resultStatus && !summary.isGuest && !summary.isBot && summary.resultStatus !== 'finished') tags.push(summary.resultStatus);
             return `
                 <div class="res-dyn-stat coop-summary-card ${winnerSummary?.id === summary.id ? 'coop-summary-winner' : ''}">
                     <div class="coop-summary-head">
@@ -1164,7 +1437,7 @@ export const GameManager = {
                     </div>
                     <div class="coop-summary-subline">${tags.map(tag => `<span>${tag}</span>`).join('')}</div>
                     <div class="coop-summary-score">${summary.score}</div>
-                    <div class="coop-summary-score-label">Final Score</div>
+                    <div class="coop-summary-score-label">${scoreLabel}</div>
                     <div class="coop-summary-metrics">
                         <div class="coop-summary-metric">
                             <span class="label">XP</span>
@@ -1174,6 +1447,71 @@ export const GameManager = {
                             <span class="label">SR</span>
                             <span class="value">${summary.sr}</span>
                         </div>
+                        ${summary.progress !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Fortschritt</span>
+                            <span class="value">${summary.progress}</span>
+                        </div>` : ''}
+                        ${summary.nextTarget !== undefined && summary.nextTarget !== '--' ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">${summary.nextTargetLabel || 'Naechstes Ziel'}</span>
+                            <span class="value">${summary.nextTarget}</span>
+                        </div>` : ''}
+                        ${summary.shanghais !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Shanghais</span>
+                            <span class="value">${summary.shanghais}</span>
+                        </div>` : ''}
+                        ${summary.doubleHits !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Double Hits</span>
+                            <span class="value">${summary.doubleHits}</span>
+                        </div>` : ''}
+                        ${summary.avg !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">AVG</span>
+                            <span class="value">${summary.avg}</span>
+                        </div>` : ''}
+                        ${summary.hitRate !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Hit Rate</span>
+                            <span class="value">${summary.hitRate}</span>
+                        </div>` : ''}
+                        ${summary.darts !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Darts</span>
+                            <span class="value">${summary.darts}</span>
+                        </div>` : ''}
+                        ${summary.oneEighty !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">180s</span>
+                            <span class="value">${summary.oneEighty}</span>
+                        </div>` : ''}
+                        ${summary.checkoutAttempts !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Chk Att</span>
+                            <span class="value">${summary.checkoutAttempts}</span>
+                        </div>` : ''}
+                        ${summary.hits !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Hits</span>
+                            <span class="value">${summary.hits}</span>
+                        </div>` : ''}
+                        ${summary.misses !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Misses</span>
+                            <span class="value">${summary.misses}</span>
+                        </div>` : ''}
+                        ${summary.maxStreak !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Streak</span>
+                            <span class="value">${summary.maxStreak}</span>
+                        </div>` : ''}
+                        ${summary.malus !== undefined ? `
+                        <div class="coop-summary-metric">
+                            <span class="label">Malus</span>
+                            <span class="value">${summary.malus}</span>
+                        </div>` : ''}
                     </div>
                 </div>
             `;

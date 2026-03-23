@@ -9,6 +9,12 @@ export class ScoringX01Control {
         this.ui = {};
         this.onlineService = null;
         this.isInputLocked = false;
+        this.isSubmittingOnlineTurn = false;
+        this.onlineStatusMessage = '';
+        this.onlineStatusType = '';
+        this.onlineStatusTimeout = null;
+        this.lastConfirmedScore = null;
+        this.lastConfirmedRound = null;
     }
 
     setOnlineMode(service) {
@@ -27,6 +33,7 @@ export class ScoringX01Control {
                 playerName: this.appContainer.querySelector('#x01-player-name'),
                 gameName: this.appContainer.querySelector('#x01-game-name'),
                 challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
+                onlineStatus: this.appContainer.querySelector('#x01-online-status'),
                 round: this.appContainer.querySelector('#x01-round'),
 
                 checkoutBadge: this.appContainer.querySelector('#x01-checkout-badge'),
@@ -57,6 +64,125 @@ export class ScoringX01Control {
         }
         await this.updateHeaderInfo();
         this.updateUI();
+        this.updateOnlineInteractionState();
+    }
+
+    getOnlineProgressStorageKey() {
+        if (!this.onlineService?.room?.id) return null;
+        const userId = this.onlineService.getResolvedCurrentUserId?.() || window.appState?.user?.id || 'anonymous';
+        return `ocram-online-progress-${this.onlineService.room.id}-${String(userId).toLowerCase()}`;
+    }
+
+    readPersistedOnlineProgress() {
+        const key = this.getOnlineProgressStorageKey();
+        if (!key) return null;
+        try {
+            const raw = window.sessionStorage?.getItem(key);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.warn('readPersistedOnlineProgress failed', error);
+            return null;
+        }
+    }
+
+    persistOnlineProgress() {
+        if (!this.onlineService) return;
+        const key = this.getOnlineProgressStorageKey();
+        if (!key) return;
+        try {
+            const payload = {
+                currentScore: this.game.currentScore,
+                round: this.game.round,
+                lastScore: this.game.lastScore,
+                totalDarts: this.game.totalDarts,
+                dartsThrown: this.game.dartsThrown,
+                currentRoundThrows: this.game.currentRoundThrows || [],
+                stats: this.game.stats || {},
+                hasStartedScoring: this.game.hasStartedScoring,
+                isFinished: this.game.isFinished,
+                isDoubleOut: this.game.isDoubleOut,
+                isDoubleIn: this.game.isDoubleIn,
+                startScore: this.game.startScore,
+                lastConfirmedScore: this.lastConfirmedScore,
+                lastConfirmedRound: this.lastConfirmedRound,
+                savedAt: Date.now()
+            };
+            window.sessionStorage?.setItem(key, JSON.stringify(payload));
+        } catch (error) {
+            console.warn('persistOnlineProgress failed', error);
+        }
+    }
+
+    clearPersistedOnlineProgress() {
+        const key = this.getOnlineProgressStorageKey();
+        if (!key) return;
+        try {
+            window.sessionStorage?.removeItem(key);
+        } catch (error) {
+            console.warn('clearPersistedOnlineProgress failed', error);
+        }
+    }
+
+    hydrateFromPersistedProgress(progress, { includeDraft = false } = {}) {
+        if (!progress) return;
+        if (progress.stats) this.game.stats = { ...this.game.stats, ...progress.stats };
+        if (typeof progress.totalDarts === 'number') this.game.totalDarts = progress.totalDarts;
+        if (typeof progress.lastScore === 'number') this.game.lastScore = progress.lastScore;
+        if (includeDraft) {
+            this.game.currentScore = progress.currentScore ?? this.game.currentScore;
+            this.game.round = progress.round ?? this.game.round;
+            this.game.currentRoundThrows = Array.isArray(progress.currentRoundThrows) ? progress.currentRoundThrows : [];
+            this.game.dartsThrown = progress.dartsThrown ?? this.game.currentRoundThrows.length;
+        }
+    }
+
+    setOnlineStatus(message = '', type = '', timeoutMs = 0) {
+        this.onlineStatusMessage = message;
+        this.onlineStatusType = type;
+        if (this.onlineStatusTimeout) {
+            window.clearTimeout(this.onlineStatusTimeout);
+            this.onlineStatusTimeout = null;
+        }
+        if (timeoutMs > 0) {
+            this.onlineStatusTimeout = window.setTimeout(() => {
+                this.onlineStatusMessage = '';
+                this.onlineStatusType = '';
+                this.renderOnlineStatus();
+            }, timeoutMs);
+        }
+        this.renderOnlineStatus();
+    }
+
+    renderOnlineStatus() {
+        if (!this.ui.onlineStatus) return;
+        const message = this.onlineStatusMessage || '';
+        this.ui.onlineStatus.textContent = message;
+        this.ui.onlineStatus.classList.toggle('hidden', !message);
+        this.ui.onlineStatus.classList.toggle('is-error', this.onlineStatusType === 'error');
+        this.ui.onlineStatus.classList.toggle('is-success', this.onlineStatusType === 'success');
+    }
+
+    updateOnlineInteractionState() {
+        const targets = [
+            ...Array.from(document.querySelectorAll('.num-btn')),
+            ...Array.from(document.querySelectorAll('.mod-btn')),
+            document.getElementById('x01-next-btn'),
+            document.querySelector('.undo-btn')
+        ].filter(Boolean);
+
+        const shouldDisable = this.isInputLocked || this.isSubmittingOnlineTurn;
+        targets.forEach(el => {
+            el.classList.toggle('disabled', shouldDisable);
+            if ('disabled' in el) el.disabled = shouldDisable;
+        });
+
+        const nextBtn = document.getElementById('x01-next-btn');
+        if (nextBtn) {
+            nextBtn.classList.toggle('loading', this.isSubmittingOnlineTurn);
+            nextBtn.innerHTML = this.isSubmittingOnlineTurn
+                ? '<i class="ri-loader-4-line ri-spin"></i>'
+                : '<i class="ri-arrow-right-line"></i>';
+        }
     }
 
     /**
@@ -155,6 +281,7 @@ export class ScoringX01Control {
     // Standard Methoden bleiben unverändert
   handleInput(val, mult) {
         if (this.isInputLocked) return;
+        if (this.isSubmittingOnlineTurn) return;
         if (this.game.isFinished || this.game.dartsThrown >= 3) return;
         const finalMult = this.modifier !== 1 ? this.modifier : mult;
         
@@ -165,6 +292,7 @@ export class ScoringX01Control {
         
         this.modifier = 1; 
         this.updateUI();
+        this.persistOnlineProgress();
 const currentDarts = this.game.dartsThrown;
       if (currentDarts === 3 && !this.game.isFinished) {
             const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
@@ -183,17 +311,17 @@ const currentDarts = this.game.dartsThrown;
             }, 1100); // Auf 1100ms erhöht
         }
     }
-    setModifier(m) { if (this.isInputLocked) return; this.modifier = (this.modifier === m) ? 1 : m; this.updateModifierUI(); }
+    setModifier(m) { if (this.isInputLocked || this.isSubmittingOnlineTurn) return; this.modifier = (this.modifier === m) ? 1 : m; this.updateModifierUI(); }
     nextRound() { if (this.game.nextRound) { this.game.nextRound(); this.updateUI(); } }
     undo() { 
-        if (this.isInputLocked) return;
+        if (this.isInputLocked || this.isSubmittingOnlineTurn) return;
         clearTimeout(this.autoNextTimeout);
         const nextBtn = document.getElementById('x01-next-btn') || document.querySelector('.next-btn-side');
         if (nextBtn) nextBtn.classList.remove('auto-next-anim');
 
         const btn = document.querySelector('.undo-btn'); 
         if (btn) { btn.classList.add('ani-undo'); setTimeout(() => btn.classList.remove('ani-undo'), 400); }
-        if (this.game && typeof this.game.undo === 'function') { this.game.undo(); this.updateUI(); }
+        if (this.game && typeof this.game.undo === 'function') { this.game.undo(); this.updateUI(); this.persistOnlineProgress(); }
     }
     updateModifierUI() { document.querySelectorAll('.mod-btn').forEach(btn => { const m = parseInt(btn.dataset.mult); btn.classList.toggle('active', m === this.modifier && this.modifier !== 1); }); }
     async updateHeaderInfo() {
@@ -208,17 +336,34 @@ const currentDarts = this.game.dartsThrown;
         const playerState = snapshot.currentPlayerState;
         const opponentState = snapshot.opponentState || {};
         const settings = snapshot.state?.settings || {};
+        const persistedProgress = this.readPersistedOnlineProgress();
         const hasLocalDraft = (this.game.currentRoundThrows || []).length > 0;
         const serverHasDraft = Array.isArray(playerState.currentThrows) && playerState.currentThrows.length > 0;
         const shouldPreserveLocalDraft = snapshot.isMyTurn && hasLocalDraft && !serverHasDraft && !snapshot.isFinished;
+        const canRestorePersistedDraft = snapshot.isMyTurn
+            && !hasLocalDraft
+            && !serverHasDraft
+            && !snapshot.isFinished
+            && Array.isArray(persistedProgress?.currentRoundThrows)
+            && persistedProgress.currentRoundThrows.length > 0
+            && persistedProgress.lastConfirmedScore === playerState.score
+            && persistedProgress.lastConfirmedRound === playerState.round;
+
+        if (persistedProgress) {
+            this.hydrateFromPersistedProgress(persistedProgress, { includeDraft: false });
+        }
 
         this.game.startScore = settings.startScore || this.game.startScore;
         this.game.isDoubleOut = !!settings.doubleOut;
         this.game.isDoubleIn = !!settings.doubleIn;
         this.game.hasStartedScoring = playerState.hasStartedScoring ?? true;
         this.game.isFinished = !!playerState.finished;
+        this.lastConfirmedScore = playerState.score ?? this.lastConfirmedScore;
+        this.lastConfirmedRound = playerState.round ?? this.lastConfirmedRound;
 
-        if (!shouldPreserveLocalDraft) {
+        if (canRestorePersistedDraft) {
+            this.hydrateFromPersistedProgress(persistedProgress, { includeDraft: true });
+        } else if (!shouldPreserveLocalDraft) {
             this.game.currentScore = playerState.score ?? this.game.currentScore;
             this.game.round = playerState.round ?? this.game.round;
             this.game.lastScore = playerState.lastScore ?? 0;
@@ -231,10 +376,16 @@ const currentDarts = this.game.dartsThrown;
                 }))
                 : [];
             this.game.dartsThrown = this.game.currentRoundThrows.length;
-            this.game.totalDarts = this.game.currentRoundThrows.length;
         }
 
         this.isInputLocked = !snapshot.isMyTurn || snapshot.isFinished;
+        if (!snapshot.isMyTurn && !snapshot.isFinished) {
+            this.game.currentRoundThrows = [];
+            this.game.dartsThrown = 0;
+        }
+        if (snapshot.isFinished) {
+            this.isSubmittingOnlineTurn = false;
+        }
 
         if (this.ui.playerName) {
             this.ui.playerName.textContent = snapshot.currentPlayer?.username || snapshot.currentPlayer?.name || window.appState?.profile?.username || 'You';
@@ -246,7 +397,9 @@ const currentDarts = this.game.dartsThrown;
 
         if (this.ui.challengeTitle) {
             const opponentName = snapshot.opponent?.username || snapshot.opponent?.name || 'Gegner';
-            const turnText = snapshot.isMyTurn ? 'Du bist dran' : `${opponentName} ist dran`;
+            const turnText = snapshot.opponentConnected === false
+                ? `${opponentName} ist offline`
+                : (snapshot.isMyTurn ? 'Du bist dran' : `${opponentName} ist dran`);
             const oppScore = opponentState?.score ?? '--';
             this.ui.challengeTitle.textContent = `${turnText} • Opp ${oppScore}`;
         }
@@ -258,18 +411,17 @@ const currentDarts = this.game.dartsThrown;
         }
 
         this.updateUI();
+        this.updateOnlineInteractionState();
 
-        const targets = [
-            ...Array.from(document.querySelectorAll('.num-btn')),
-            ...Array.from(document.querySelectorAll('.mod-btn')),
-            document.getElementById('x01-next-btn'),
-            document.querySelector('.undo-btn')
-        ].filter(Boolean);
-
-        targets.forEach(el => {
-            el.classList.toggle('disabled', this.isInputLocked);
-            if ('disabled' in el) el.disabled = this.isInputLocked;
-        });
+        if (snapshot.isFinished) {
+            this.persistOnlineProgress();
+        } else if (!snapshot.isMyTurn) {
+            this.persistOnlineProgress();
+        } else if (canRestorePersistedDraft || shouldPreserveLocalDraft) {
+            this.persistOnlineProgress();
+        } else {
+            this.persistOnlineProgress();
+        }
 
         if (snapshot.isFinished && window.GameManager) {
             window.GameManager.completeGame(true);
@@ -277,15 +429,23 @@ const currentDarts = this.game.dartsThrown;
     }
 
     async submitOnlineTurn() {
-        if (!this.onlineService || this.isInputLocked) return;
+        if (!this.onlineService || this.isInputLocked || this.isSubmittingOnlineTurn) return;
         const throws = this.game.currentRoundThrows || [];
         if (throws.length === 0) return;
 
         try {
+            this.isSubmittingOnlineTurn = true;
+            this.setOnlineStatus('Turn wird synchronisiert ...', '', 0);
+            this.updateOnlineInteractionState();
             await this.onlineService.submitTurn(throws);
             this.modifier = 1;
+            this.setOnlineStatus('Turn gesendet', 'success', 1200);
         } catch (error) {
             console.error(error);
+            this.setOnlineStatus(error.message || 'Turn konnte nicht gesendet werden.', 'error', 3500);
+        } finally {
+            this.isSubmittingOnlineTurn = false;
+            this.updateOnlineInteractionState();
         }
     }
 }

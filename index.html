@@ -81,27 +81,27 @@
 
 <div class="profile-sr-strip glass-panel">
     <div class="profile-sr-head">
-        <span class="profile-sr-label">Skill Rating</span>
+        <span class="profile-sr-label">Ratings</span>
     </div>
     <div class="sr-badge-grid">
         <div class="sr-card sco">
             <div class="sr-icon-slot" id="icon-scoring"></div>
             <div class="sr-card-meta">
-                <label>SCO</label>
+                <label>SC</label>
                 <span id="sr-scoring">0</span>
             </div>
         </div>
         <div class="sr-card fin">
             <div class="sr-icon-slot" id="icon-finishing"></div>
             <div class="sr-card-meta">
-                <label>FIN</label>
+                <label>FN</label>
                 <span id="sr-finishing">0</span>
             </div>
         </div>
         <div class="sr-card brd">
             <div class="sr-icon-slot" id="icon-boardcontrol"></div>
             <div class="sr-card-meta">
-                <label>BRD</label>
+                <label>BC</label>
                 <span id="sr-boardcontrol">0</span>
             </div>
         </div>
@@ -125,13 +125,13 @@
 
                 <div class="wide-card glass-card dashboard-entry dashboard-entry-online" onclick="UIController.showOnlineSetup()">
                     <div class="wide-icon-left"><i class="ri-wifi-line"></i></div>
-                    <div class="wide-content-center"><h3>Online X01</h3></div>
+                    <div class="wide-content-center"><h3>Online</h3></div>
                     <div class="wide-info-right"><i class="ri-sword-line"></i></div>
                 </div>
 
                 <div class="wide-card glass-card dashboard-entry dashboard-entry-stats" onclick="navigate('stats')">
                     <div class="wide-icon-left"><i class="ri-bar-chart-box-line"></i></div>
-                    <div class="wide-content-center"><h3>Statistics</h3></div>
+                    <div class="wide-content-center"><h3>Stats</h3></div>
                     <div class="wide-info-right"><i class="ri-information-line"></i></div>
                 </div>
             </div>
@@ -139,13 +139,109 @@
             <div id="view-online-setup" class="view hidden">
                 <div class="sub-page-header">
                     <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2>Online X01</h2>
+                    <h2>Online Duell</h2>
                 </div>
                 <div class="online-flow-stack animated-in">
                     <div class="glass-panel online-hero-card">
                         <span class="online-eyebrow">Phase 1</span>
-                        <h3>Privater Raum fuer 1v1 X01</h3>
-                        <p>Erstelle einen Raumcode oder tritt einem bestehenden Raum bei. In dieser Phase ist nur privates X01 verfuegbar.</p>
+                        <h3 id="online-setup-hero-title">Privater Raum fuer 1v1 X01</h3>
+                        <p id="online-setup-hero-copy">Erstelle einen Raumcode oder tritt einem bestehenden Raum bei. Fuer den Start stehen X01, Shanghai, ATC, 121 und JDC als private Duelle bereit.</p>
+                        <div class="setup-group online-setup-group">
+                            <label>Spiel waehlen</label>
+                            <div class="option-grid online-game-grid">
+                                <button id="online-game-x01" class="opt-btn active online-game-option" onclick="UIController.selectOnlineGame('x01')">X01</button>
+                                <button id="online-game-shanghai" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('shanghai')">Shanghai</button>
+                                <button id="online-game-atc" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('atc')">ATC</button>
+                                <button id="online-game-game121" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('game121')">121</button>
+                                <button id="online-game-jdc-warmup" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('jdc-warmup')">JDC</button>
+                            </div>
+                            <input type="hidden" id="online-game-id" value="x01">
+                        </div>
+                        <div id="online-shanghai-level-wrap" class="setup-group online-setup-group hidden">
+                            <label for="online-shanghai-level">Shanghai Level</label>
+                            <select id="online-shanghai-level" class="glass-input">
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                                <option value="6">Level 6</option>
+                                <option value="7">Level 7</option>
+                                <option value="8">Level 8</option>
+                                <option value="9">Level 9</option>
+                                <option value="10">Level 10</option>
+                                <option value="11">Level 11</option>
+                                <option value="12">Level 12</option>
+                                <option value="13">Level 13</option>
+                            </select>
+                        </div>
+                        <div id="online-atc-level-wrap" class="setup-group online-setup-group hidden">
+                            <label for="online-atc-level">ATC Level</label>
+                            <select id="online-atc-level" class="glass-input">
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                                <option value="6">Level 6</option>
+                                <option value="7">Level 7</option>
+                                <option value="8">Level 8</option>
+                                <option value="9">Level 9</option>
+                                <option value="10">Level 10</option>
+                                <option value="15">Level 15</option>
+                                <option value="20">Level 20</option>
+                            </select>
+                        </div>
+                        <div id="online-121-level-wrap" class="setup-group online-setup-group hidden">
+                            <label for="online-121-level">121 Level</label>
+                            <select id="online-121-level" class="glass-input">
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                                <option value="6">Level 6</option>
+                                <option value="7">Level 7</option>
+                                <option value="8">Level 8</option>
+                                <option value="9">Level 9</option>
+                                <option value="10">Level 10</option>
+                                <option value="11">Level 11</option>
+                                <option value="12">Level 12</option>
+                                <option value="13">Level 13</option>
+                                <option value="14">Level 14</option>
+                                <option value="15">Level 15</option>
+                                <option value="16">Level 16</option>
+                                <option value="17">Level 17</option>
+                                <option value="18">Level 18</option>
+                                <option value="19">Level 19</option>
+                                <option value="20">Level 20</option>
+                            </select>
+                        </div>
+                        <div id="online-jdc-level-wrap" class="setup-group online-setup-group hidden">
+                            <label for="online-jdc-level">JDC Level</label>
+                            <select id="online-jdc-level" class="glass-input">
+                                <option value="1">Level 1</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                                <option value="6">Level 6</option>
+                                <option value="7">Level 7</option>
+                                <option value="8">Level 8</option>
+                                <option value="9">Level 9</option>
+                                <option value="10">Level 10</option>
+                                <option value="11">Level 11</option>
+                                <option value="12">Level 12</option>
+                                <option value="13">Level 13</option>
+                                <option value="14">Level 14</option>
+                                <option value="15">Level 15</option>
+                                <option value="16">Level 16</option>
+                                <option value="17">Level 17</option>
+                                <option value="18">Level 18</option>
+                                <option value="19">Level 19</option>
+                                <option value="20">Level 20</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="glass-panel online-action-card">
@@ -357,6 +453,32 @@
                                     <strong id="stats-cat-warmup">0</strong>
                                 </div>
                             </div>
+                            <div class="stats-category-strip">
+                                <div class="stats-category-pill">
+                                    <span>Online X01</span>
+                                    <strong id="stats-online-matches">0</strong>
+                                </div>
+                                <div class="stats-category-pill">
+                                    <span>Online Wins</span>
+                                    <strong id="stats-online-wins">0</strong>
+                                </div>
+                                <div class="stats-category-pill">
+                                    <span>Online Shanghai</span>
+                                    <strong id="stats-online-shanghai-matches">0</strong>
+                                </div>
+                                <div class="stats-category-pill">
+                                    <span>Shanghai Wins</span>
+                                    <strong id="stats-online-shanghai-wins">0</strong>
+                                </div>
+                                <div class="stats-category-pill">
+                                    <span>Online ATC</span>
+                                    <strong id="stats-online-atc-matches">0</strong>
+                                </div>
+                                <div class="stats-category-pill">
+                                    <span>ATC Wins</span>
+                                    <strong id="stats-online-atc-wins">0</strong>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -453,6 +575,8 @@
                                 <div class="stat-box"><span>Gesamtpunkte</span><strong id="stat-total-points">--</strong></div>
                                 <div class="stat-box"><span>Triples</span><strong id="stat-140s">--</strong></div>
                                 <div class="stat-box"><span>Doubles</span><strong id="stat-co-pct">--</strong></div>
+                                <div class="stat-box"><span>Online Matches</span><strong id="stat-online-x01-matches">--</strong></div>
+                                <div class="stat-box"><span>Online Wins</span><strong id="stat-online-x01-wins">--</strong></div>
                             </div>
                         </div>
                     </div>
@@ -507,6 +631,7 @@
 
                     <div class="result-header">
                         <h2 id="res-title">MISSION COMPLETE</h2>
+                        <p id="res-subtitle" class="res-subtitle"></p>
                     </div>
                     
                     <div id="dynamic-stats-grid" class="dynamic-stats-grid"></div>

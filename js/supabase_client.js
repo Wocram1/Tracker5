@@ -209,6 +209,7 @@ async function setupAuthenticatedSession(user) {
     if (authScreen) authScreen.classList.add('hidden');
     if (appScreen) appScreen.classList.remove('hidden');
     window.navigate('dashboard');
+    window.dispatchEvent(new CustomEvent('app:authenticated-session', { detail: { userId: user?.id || null } }));
 }
 
 // --- DATENBANK SYNCHRONISATION ---
