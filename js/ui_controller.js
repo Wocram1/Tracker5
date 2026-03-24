@@ -2,6 +2,7 @@ import { htmlX01 } from './views/view-x01.js';
 import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung hinzugefügt
 import { StatsController } from './stats-controller.js';
 import { OnlineRoomService } from './online/online-room-service.js';
+import { OnlineVideoService } from './online/online-video-service.js';
 
 const ONLINE_GAME_UI_CONFIG = {
     x01: {
@@ -147,6 +148,8 @@ const UIController = {
             targetView.classList.remove('hidden');
             targetView.classList.add('animated-in');
         }
+
+        window.OnlineVideoService?.syncUiVisibility?.();
 
         if (target === 'challenge') {
             this.showChallengeCategories();
@@ -348,6 +351,8 @@ const UIController = {
                 ${playersHtml}
             </div>
 
+            ${OnlineVideoService.getLobbyMarkup()}
+
             <div class="glass-panel online-room-card online-cta-card">
                 <div class="online-room-topline">
                     <div>
@@ -363,6 +368,8 @@ const UIController = {
                 <button class="glass-btn online-leave-btn online-secondary-btn" onclick="UIController.leaveOnlineRoom()">Raum verlassen</button>
             </div>
         `;
+
+        OnlineVideoService.mountLobbyElements();
     },
 
     async copyOnlineRoomCode() {

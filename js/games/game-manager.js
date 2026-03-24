@@ -18,6 +18,7 @@ import { Catch40, Catch40LevelMapper } from './catch40.js';
 import { XXonXX, XXonXXLevelMapper } from './XXonXX.js';
 import { LevelSystem, CoopService } from '../supabase_client.js';
 import { OnlineRoomService } from '../online/online-room-service.js';
+import { OnlineVideoService } from '../online/online-video-service.js';
 
 
 const GAME_CLASSES = {
@@ -813,6 +814,7 @@ export const GameManager = {
 
         this.hideAllViews();
         document.getElementById(matchConfig.startViewId)?.classList.remove('hidden');
+        OnlineVideoService.syncUiVisibility();
     },
 
     startOnlineX01Match() {
@@ -1348,6 +1350,7 @@ export const GameManager = {
         document.getElementById('modal-game-info')?.classList.add('hidden');
         document.getElementById('modal-game-setup')?.classList.add('hidden');
         OnlineRoomService.leaveRoom?.();
+        OnlineVideoService.syncUiVisibility();
         window.navigate('dashboard');
     },
 

@@ -698,6 +698,371 @@ body::after {
     box-shadow: 0 14px 28px rgba(0, 170, 255, 0.22);
 }
 
+.online-video-card {
+    gap: 14px;
+    background:
+        radial-gradient(circle at top right, rgba(0, 242, 255, 0.08), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+        rgba(7, 14, 26, 0.82);
+}
+
+.online-video-meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.online-video-chip,
+.online-video-mini-chip,
+.online-video-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: rgba(232, 240, 250, 0.92);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.online-video-chip.tone-live,
+.online-video-mini-chip.tone-live,
+.online-video-badge.tone-live {
+    background: rgba(16, 185, 129, 0.16);
+    border-color: rgba(16, 185, 129, 0.36);
+    color: #d1fae5;
+}
+
+.online-video-chip.tone-connecting,
+.online-video-mini-chip.tone-connecting,
+.online-video-badge.tone-connecting {
+    background: rgba(59, 130, 246, 0.16);
+    border-color: rgba(59, 130, 246, 0.32);
+    color: #dbeafe;
+}
+
+.online-video-chip.tone-ready,
+.online-video-mini-chip.tone-ready,
+.online-video-badge.tone-ready {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fef3c7;
+}
+
+.online-video-chip.tone-warning,
+.online-video-mini-chip.tone-warning,
+.online-video-badge.tone-warning {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.32);
+    color: #fee2e2;
+}
+
+.online-video-chip.tone-offline,
+.online-video-mini-chip.tone-offline,
+.online-video-badge.tone-offline {
+    background: rgba(148, 163, 184, 0.14);
+    border-color: rgba(148, 163, 184, 0.24);
+    color: #e2e8f0;
+}
+
+.online-video-chip {
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.online-video-mini-chip {
+    min-height: 26px;
+    padding: 4px 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.online-video-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.online-video-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.online-video-tile-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.online-video-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.online-video-badge {
+    min-height: 24px;
+    padding: 4px 9px;
+    font-size: 0.64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.online-video-feed {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: 18px;
+    background: rgba(2, 6, 23, 0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.online-video-feed-hidden {
+    opacity: 0.08;
+    filter: grayscale(1) brightness(0.45);
+}
+
+.online-video-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.online-video-controls .glass-btn {
+    flex: 1 1 150px;
+}
+
+.online-video-helper-text {
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.8rem;
+    color: rgba(226, 232, 240, 0.84);
+    line-height: 1.45;
+}
+
+.online-video-debug {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(2, 6, 23, 0.52);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.online-video-debug-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.online-video-debug-text {
+    margin: 0;
+    font-family: "Cascadia Mono", "Consolas", monospace;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: rgba(226, 232, 240, 0.78);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.online-video-status-text {
+    margin-top: 10px;
+    min-height: 24px;
+    font-size: 0.82rem;
+    color: rgba(226, 232, 240, 0.72);
+}
+
+.online-video-dock {
+    position: fixed;
+    right: 14px;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    z-index: 1200;
+    width: min(70vw, 360px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top right, rgba(0, 242, 255, 0.12), transparent 30%),
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+        rgba(8, 15, 28, 0.82);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 18px 36px rgba(2, 8, 23, 0.35);
+    backdrop-filter: blur(18px);
+    transition: width 180ms ease, transform 180ms ease, opacity 180ms ease;
+}
+
+.online-video-dock.expanded {
+    transform: translateY(0);
+}
+
+.online-video-dock.minimized {
+    width: min(44vw, 230px);
+    gap: 8px;
+}
+
+.online-video-dock.hidden {
+    display: none;
+}
+
+.online-video-dock-head,
+.online-video-dock-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.online-video-dock-head {
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.online-video-dock-headline {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.online-video-dock-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.online-video-dock.dragging .online-video-dock-head {
+    cursor: grabbing;
+}
+
+.online-video-dock-state {
+    color: var(--text-muted);
+    text-align: right;
+    max-width: 48%;
+}
+
+.online-video-dock-toggle {
+    min-height: 34px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: #f8fbff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.online-video-dock-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.online-video-dock-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.online-video-dock.minimized .online-video-dock-body {
+    display: none;
+}
+
+.online-video-dock-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.online-video-dock-stage-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.online-video-dock-feeds {
+    position: relative;
+}
+
+.online-video-dock-feeds .online-video-feed {
+    aspect-ratio: 5 / 6;
+    border-radius: 16px;
+}
+
+.online-video-feed-self {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    width: 34%;
+    aspect-ratio: 3 / 4;
+    border-radius: 12px;
+    border-color: rgba(0,242,255,0.2);
+}
+
+.online-video-dock-helper {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: rgba(226, 232, 240, 0.84);
+}
+
+.online-video-dock-actions .glass-btn {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 0.76rem;
+}
+
+@media (max-width: 720px) {
+    .online-video-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .online-video-dock {
+        width: min(82vw, 320px);
+        right: 10px;
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .online-video-dock.minimized {
+        width: min(56vw, 220px);
+    }
+}
+
 .online-start-btn[disabled] {
     opacity: 0.46;
     box-shadow: none;

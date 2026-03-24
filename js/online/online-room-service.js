@@ -1,4 +1,5 @@
 import { supabase } from '../supabase_client.js';
+import { OnlineVideoService } from './online-video-service.js';
 
 const STATUS_LABELS = {
     waiting: 'Wartet',
@@ -351,6 +352,7 @@ export const OnlineRoomService = {
         }
 
         this.stopPolling();
+        await OnlineVideoService.reset({ preserveUi: false });
 
         this.room = null;
         this.players = [];
@@ -486,6 +488,11 @@ export const OnlineRoomService = {
         }));
         this.lastError = '';
         this.persistSession();
+        OnlineVideoService.syncRoomContext({
+            room: this.room,
+            players: this.players,
+            currentUserId: this.getResolvedCurrentUserId()
+        });
 
         if (this.room?.status === 'live') {
             const desiredLiveInterval = this.inMatchPollingIntervalMs;
