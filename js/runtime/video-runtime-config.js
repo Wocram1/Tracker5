@@ -13,6 +13,9 @@ window.__OCRAM_VIDEO_CONFIG__ = {
     iceServerTtlSeconds: 43200,
     startMicrophoneMuted: true,
     preferReceiveOnlyOnInsecureIOS: true,
+    // Optional: true/false erzwingt Debug-Panels an/aus.
+    // Ohne Wert werden sie nur auf lokalen/dev Hosts angezeigt.
+    // debugPanels: false,
     mobilePreset: {
         label: 'Mobile 360p',
         width: 640,

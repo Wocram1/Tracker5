@@ -1,5 +1,6 @@
 window.__OCRAM_VIDEO_CONFIG__ = {
     ...window.__OCRAM_VIDEO_CONFIG__,
+    debugPanels: true,
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         {

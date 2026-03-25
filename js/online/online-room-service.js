@@ -517,6 +517,7 @@ export const OnlineRoomService = {
 
         if (this.room?.status === 'finished' || this.room?.status === 'cancelled') {
             this.stopPolling();
+            this.clearPersistedSession();
         }
 
         if (document.getElementById('view-online-lobby') && !document.getElementById('view-online-lobby').classList.contains('hidden')) {

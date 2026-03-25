@@ -59,6 +59,7 @@ export const OnlineVideoService = {
     lastIceProbeAt: '-',
     lifecycleBound: false,
     reconnectTimer: null,
+    isEndingForRoomState: false,
 
     normalizeId(id) {
         return typeof id === 'string' ? id.toLowerCase() : id;
@@ -142,6 +143,7 @@ export const OnlineVideoService = {
 
     maybeAutoResumeVideo() {
         if (!this.roomId || !this.currentUserId) return;
+        if (!this.canAutoResumeInCurrentRoom()) return;
         if (!this.shouldAutoResumeVideo || this.isEnabled || this.isStarting) return;
         if (this.autoResumeAttemptedForRoomId === this.roomId) return;
 
@@ -149,6 +151,14 @@ export const OnlineVideoService = {
         this.startVideo({ autoResume: true }).catch(error => {
             console.warn('video auto resume failed', error);
         });
+    },
+
+    canAutoResumeInCurrentRoom() {
+        return ['waiting', 'ready', 'live'].includes(this.roomStatus);
+    },
+
+    getRoomEndStatusText() {
+        return this.roomStatus === 'cancelled' ? 'Raum beendet' : 'Match beendet';
     },
 
     syncRoomContext({ room, players, currentUserId }) {
@@ -176,6 +186,35 @@ export const OnlineVideoService = {
             this.signalReplayPromise = null;
             this.lastSignalReplayAt = 0;
             this.opponentVideoReady = false;
+            this.isEndingForRoomState = false;
+        }
+
+        if (!this.canAutoResumeInCurrentRoom()) {
+            this.shouldAutoResumeVideo = false;
+            this.opponentVideoReady = false;
+            this.persistUiState();
+
+            if ((this.isEnabled || this.isStarting) && !this.isEndingForRoomState) {
+                const endStatus = this.getRoomEndStatusText();
+                this.isEndingForRoomState = true;
+                this.remoteStatusText = endStatus;
+                this.stopVideo({
+                    emitLeave: false,
+                    preserveStatus: true,
+                    keepAutoResume: false
+                }).then(() => {
+                    this.isEndingForRoomState = false;
+                    this.setStatus(endStatus);
+                    this.refreshUiState();
+                }).catch(error => {
+                    this.isEndingForRoomState = false;
+                    console.warn('video room-end cleanup failed', error);
+                });
+            } else {
+                const endStatus = this.getRoomEndStatusText();
+                this.remoteStatusText = endStatus;
+                this.setStatus(endStatus);
+            }
         }
 
         this.ensureFloatingDock();
@@ -217,6 +256,29 @@ export const OnlineVideoService = {
     getRuntimeVideoConfig() {
         const runtimeConfig = window.__OCRAM_VIDEO_CONFIG__;
         return runtimeConfig && typeof runtimeConfig === 'object' ? runtimeConfig : {};
+    },
+
+    isDebugEnabled() {
+        const runtimeValue = this.getRuntimeVideoConfig().debugPanels;
+        if (typeof runtimeValue === 'boolean') {
+            return runtimeValue;
+        }
+
+        if (typeof window === 'undefined') return false;
+
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            if (params.get('videoDebug') === '1') return true;
+            if (params.get('videoDebug') === '0') return false;
+        } catch (_error) {
+        }
+
+        const host = (window.location?.hostname || '').toLowerCase();
+        if (!host) return false;
+        if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return true;
+        if (host.startsWith('192.168.') || host.startsWith('10.')) return true;
+
+        return /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
     },
 
     isSafariLikeBrowser() {
@@ -782,6 +844,7 @@ export const OnlineVideoService = {
         this.signalReplayPromise = null;
         this.lastSignalReplayAt = 0;
         this.opponentVideoReady = false;
+        this.isEndingForRoomState = false;
         Object.assign(this, this.getDefaultUiState());
         this.dockDragState = null;
         this.autoResumeAttemptedForRoomId = null;
@@ -1300,6 +1363,12 @@ export const OnlineVideoService = {
     },
 
     updatePresenceState() {
+        if (!this.canAutoResumeInCurrentRoom()) {
+            this.opponentVideoReady = false;
+            this.setRemoteStatus(this.getRoomEndStatusText());
+            return;
+        }
+
         if (!this.hasOpponent()) {
             this.opponentVideoReady = false;
             this.setRemoteStatus('Warte auf Gegner');
@@ -1335,6 +1404,9 @@ export const OnlineVideoService = {
             this.resumeRemotePlayback({ suppressStatus: true }).catch(error => {
                 console.warn('video lifecycle remote playback resume failed', error);
             });
+            this.fetchMissedSignals().catch(error => {
+                console.warn('video lifecycle replay failed', error);
+            });
             this.maybeReconnectToOpponent().catch(error => {
                 console.warn('video lifecycle reconnect failed', error);
             });
@@ -1348,6 +1420,19 @@ export const OnlineVideoService = {
 
         window.addEventListener('pageshow', () => {
             resumeVideoState();
+        });
+
+        window.addEventListener('online', () => {
+            if (!this.isEnabled) return;
+            this.setRemoteStatus('Netz wieder da');
+            resumeVideoState();
+        });
+
+        window.addEventListener('offline', () => {
+            if (!this.isEnabled) return;
+            this.setRemoteStatus('Keine Verbindung');
+            this.setStatus('Netz getrennt');
+            this.refreshUiState();
         });
 
         this.lifecycleBound = true;
@@ -2103,6 +2188,8 @@ export const OnlineVideoService = {
     },
 
     getDebugMarkup(scope) {
+        if (!this.isDebugEnabled()) return '';
+
         return `
             <div class="online-video-debug">
                 <div class="online-video-debug-head">
