@@ -21,6 +21,7 @@ export const OnlineVideoService = {
     peerConnection: null,
     signalSubscription: null,
     signalSubscriptionReadyPromise: null,
+    pendingRemoteSignals: [],
     pendingIceCandidates: [],
     localVideoEls: new Set(),
     remoteVideoEls: new Set(),
@@ -166,6 +167,7 @@ export const OnlineVideoService = {
             this.iceServerBundlePromise = null;
             this.signalSubscriptionReadyPromise = null;
             this.offerPendingSince = null;
+            this.pendingRemoteSignals = [];
         }
 
         this.ensureFloatingDock();
@@ -666,6 +668,8 @@ export const OnlineVideoService = {
                 receiveOnly: this.isReceiveOnlyMode
             });
 
+            await this.flushPendingRemoteSignals();
+
             if (this.isInitiator() && this.hasOpponent()) {
                 await this.requestConnectionIfNeeded({
                     statusText: 'Warte auf Antwort...'
@@ -760,6 +764,7 @@ export const OnlineVideoService = {
         this.iceServerBundlePromise = null;
         this.signalSubscriptionReadyPromise = null;
         this.offerPendingSince = null;
+        this.pendingRemoteSignals = [];
         Object.assign(this, this.getDefaultUiState());
         this.dockDragState = null;
         this.autoResumeAttemptedForRoomId = null;
@@ -1795,12 +1800,19 @@ export const OnlineVideoService = {
         this.setStatus(statusText);
     },
 
-    async handleSignal(signalData, fromPlayerId) {
+    async handleSignal(signalData, fromPlayerId, options = {}) {
         const signalType = signalData?.signalType;
         const payload = signalData?.payload || {};
+        const replayed = !!options.replayed;
 
         if (!signalType || this.normalizeId(fromPlayerId) === this.currentUserId) return;
-        if (!this.isEnabled && signalType !== 'video_ready') return;
+
+        if (!this.isEnabled && signalType !== 'video_ready') {
+            if (!replayed) {
+                this.pendingRemoteSignals.push({ signalData, fromPlayerId });
+            }
+            return;
+        }
 
         this.recordSignalDebug('in', signalType);
 
@@ -1862,6 +1874,17 @@ export const OnlineVideoService = {
 
         for (const candidate of this.pendingIceCandidates.splice(0)) {
             await this.peerConnection.addIceCandidate(candidate);
+        }
+    },
+
+    async flushPendingRemoteSignals() {
+        if (!this.isEnabled || this.pendingRemoteSignals.length === 0) return;
+
+        const queuedSignals = [...this.pendingRemoteSignals];
+        this.pendingRemoteSignals = [];
+
+        for (const queuedSignal of queuedSignals) {
+            await this.handleSignal(queuedSignal.signalData, queuedSignal.fromPlayerId, { replayed: true });
         }
     },
 
@@ -2068,9 +2091,12 @@ export const OnlineVideoService = {
             if (this.isReceiveOnlyMode) {
                 toggleButton.textContent = 'HTTPS fuer Cam';
                 toggleButton.disabled = true;
+            } else if (!this.isEnabled) {
+                toggleButton.textContent = 'Kamera aktivieren';
+                toggleButton.disabled = this.isStarting;
             } else {
                 toggleButton.textContent = videoTrack?.enabled === false ? 'Kamera fortsetzen' : 'Kamera pausieren';
-                toggleButton.disabled = !this.isEnabled;
+                toggleButton.disabled = false;
             }
         }
 
@@ -2184,9 +2210,12 @@ export const OnlineVideoService = {
             if (this.isReceiveOnlyMode) {
                 dockCam.textContent = 'Recv';
                 dockCam.disabled = true;
+            } else if (!this.isEnabled) {
+                dockCam.textContent = 'Cam+';
+                dockCam.disabled = this.isStarting;
             } else {
                 dockCam.textContent = videoTrack?.enabled === false ? 'Cam+' : 'Cam';
-                dockCam.disabled = !this.isEnabled;
+                dockCam.disabled = false;
             }
         }
 

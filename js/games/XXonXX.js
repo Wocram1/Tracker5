@@ -28,7 +28,7 @@ const LEVEL_CONFIG = {
     10: { rounds: 11, minPoints: 170, malus: 3, targets: [{v:20, m:1}, {v:18, m:2}, {v:13, m:1}], pointsPerHit: 10, xpBase: 450 },
     20: { rounds: 16, minPoints: 320, malus: 5, targets: null, mode: 'random', pointsPerHit: 10, xpBase: 600 },
     'daily':  { 
-        rounds: 7,  
+        rounds: 6,  
         minPoints: 3,  
         malus: 0.5, 
         pointsPerHit: 1, 
