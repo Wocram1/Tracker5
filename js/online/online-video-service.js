@@ -737,6 +737,7 @@ export const OnlineVideoService = {
                 this.setStatus('Nur Empfang wird gestartet...');
             }
 
+            this.ensurePeerConnection();
             await this.ensureSignalSubscription();
             this.isEnabled = true;
             this.shouldAutoResumeVideo = true;
@@ -746,8 +747,6 @@ export const OnlineVideoService = {
                 facingMode: this.facingMode,
                 receiveOnly: this.isReceiveOnlyMode
             });
-
-            this.ensurePeerConnection();
 
             const replayPromise = this.fetchMissedSignals({ force: true });
             await this.flushPendingRemoteSignals();
@@ -981,7 +980,9 @@ export const OnlineVideoService = {
 
     async toggleMicrophoneEnabled() {
         if (!this.isEnabled) {
-            await this.startVideo();
+            this.setStatus('Zuerst Video verbinden');
+            this.refreshUiState();
+            return;
         }
 
         if (!this.isEnabled) return;
@@ -1820,10 +1821,21 @@ export const OnlineVideoService = {
         this.remoteStream = new MediaStream();
         this.peerConnection = new RTCPeerConnection({ iceServers: this.getConfiguredIceServers() });
 
+        const hasLocalVideoTrack = !!this.localStream?.getVideoTracks?.().length;
+        const hasLocalAudioTrack = !!this.localStream?.getAudioTracks?.().length;
+
         if (this.localStream) {
             this.localStream.getTracks().forEach(track => {
                 this.peerConnection.addTrack(track, this.localStream);
             });
+        }
+
+        if (!hasLocalVideoTrack) {
+            this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
+        }
+
+        if (!hasLocalAudioTrack) {
+            this.peerConnection.addTransceiver('audio', { direction: 'recvonly' });
         }
 
         this.peerConnection.onicecandidate = (event) => {
