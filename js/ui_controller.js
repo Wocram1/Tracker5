@@ -290,6 +290,10 @@ const UIController = {
     renderOnlineLobby(viewModel) {
         const container = document.getElementById('online-lobby-content');
         if (!container) return;
+        const existingVideoRoot = container.querySelector('#online-video-root');
+        if (existingVideoRoot) {
+            existingVideoRoot.remove();
+        }
 
         const vm = viewModel || OnlineRoomService.getLobbyViewModel();
         const playersHtml = vm.players.map(player => `
@@ -351,7 +355,7 @@ const UIController = {
                 ${playersHtml}
             </div>
 
-            ${OnlineVideoService.getLobbyMarkup()}
+            <div id="online-video-slot"></div>
 
             <div class="glass-panel online-room-card online-cta-card">
                 <div class="online-room-topline">
@@ -368,6 +372,15 @@ const UIController = {
                 <button class="glass-btn online-leave-btn online-secondary-btn" onclick="UIController.leaveOnlineRoom()">Raum verlassen</button>
             </div>
         `;
+
+        const videoSlot = container.querySelector('#online-video-slot');
+        if (videoSlot) {
+            if (existingVideoRoot) {
+                videoSlot.replaceWith(existingVideoRoot);
+            } else {
+                videoSlot.outerHTML = OnlineVideoService.getLobbyMarkup();
+            }
+        }
 
         OnlineVideoService.mountLobbyElements();
     },

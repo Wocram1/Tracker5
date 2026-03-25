@@ -1039,7 +1039,7 @@ export const OnlineVideoService = {
         if (!this.roomId) return '';
 
         return `
-            <div class="glass-panel online-room-card online-video-card">
+            <div id="online-video-root" class="glass-panel online-room-card online-video-card">
                 <div class="online-room-topline">
                     <div>
                         <span class="online-eyebrow">Video</span>
@@ -1425,7 +1425,13 @@ export const OnlineVideoService = {
         window.addEventListener('online', () => {
             if (!this.isEnabled) return;
             this.setRemoteStatus('Netz wieder da');
-            resumeVideoState();
+            window.setTimeout(() => {
+                this.recoverVideoSession({
+                    statusText: 'Video wird nach Netzwechsel verbunden...'
+                }).catch(error => {
+                    console.warn('video network recovery failed', error);
+                });
+            }, 500);
         });
 
         window.addEventListener('offline', () => {
@@ -1875,6 +1881,20 @@ export const OnlineVideoService = {
         return this.signalSubscriptionReadyPromise;
     },
 
+    async restartSignalSubscription() {
+        if (this.signalSubscription) {
+            try {
+                await supabase.removeChannel(this.signalSubscription);
+            } catch (error) {
+                console.warn('video subscription restart remove failed', error);
+            }
+        }
+
+        this.signalSubscription = null;
+        this.signalSubscriptionReadyPromise = null;
+        return this.ensureSignalSubscription();
+    },
+
     async emitSignal(signalType, payload) {
         if (!this.roomId) return;
 
@@ -1889,6 +1909,32 @@ export const OnlineVideoService = {
         }
 
         this.recordSignalDebug('out', signalType);
+    },
+
+    async recoverVideoSession(options = {}) {
+        const { statusText = 'Video wird wiederhergestellt...' } = options;
+        if (!this.isEnabled || !this.roomId) return;
+
+        this.clearReconnectTimer();
+        this.setStatus(statusText);
+        this.setRemoteStatus('Stelle Video neu her...');
+
+        await this.restartSignalSubscription();
+        this.resetPeerConnection();
+        this.ensurePeerConnection();
+        await this.emitSignal('video_ready', {
+            facingMode: this.facingMode,
+            receiveOnly: this.isReceiveOnlyMode
+        });
+        await this.fetchMissedSignals({ force: true });
+        await this.flushPendingRemoteSignals();
+
+        if (this.isInitiator() && this.opponentVideoReady) {
+            await this.requestConnectionIfNeeded({
+                force: true,
+                statusText: 'Verbinde erneut...'
+            });
+        }
     },
 
     buildSignalReplayKey(signalData, fromPlayerId) {
@@ -2267,7 +2313,7 @@ export const OnlineVideoService = {
         if (connectButton) {
             connectButton.textContent = this.isEnabled
                 ? 'Video trennen'
-                : (this.isStarting ? 'Starte...' : (this.canUseReceiveOnlyMode() ? 'Empfang starten' : 'Kamera verbinden'));
+                : (this.isStarting ? 'Starte...' : (this.canUseReceiveOnlyMode() ? 'Empfang starten' : 'Video verbinden'));
             connectButton.disabled = this.isStarting;
         }
 
@@ -2284,8 +2330,8 @@ export const OnlineVideoService = {
                 toggleButton.textContent = 'HTTPS fuer Cam';
                 toggleButton.disabled = true;
             } else if (!this.isEnabled) {
-                toggleButton.textContent = 'Kamera aktivieren';
-                toggleButton.disabled = this.isStarting;
+                toggleButton.textContent = 'Nach Verbindung';
+                toggleButton.disabled = true;
             } else {
                 toggleButton.textContent = videoTrack?.enabled === false ? 'Kamera fortsetzen' : 'Kamera pausieren';
                 toggleButton.disabled = false;
@@ -2388,6 +2434,7 @@ export const OnlineVideoService = {
         const dockConnect = document.getElementById('online-video-dock-connect');
         if (dockConnect) {
             dockConnect.textContent = this.isEnabled ? 'Disconnect' : 'Connect';
+            dockConnect.disabled = this.isStarting;
         }
 
         const dockTurn = document.getElementById('online-video-dock-turn');
@@ -2403,8 +2450,8 @@ export const OnlineVideoService = {
                 dockCam.textContent = 'Recv';
                 dockCam.disabled = true;
             } else if (!this.isEnabled) {
-                dockCam.textContent = 'Cam+';
-                dockCam.disabled = this.isStarting;
+                dockCam.textContent = 'Verbinden';
+                dockCam.disabled = true;
             } else {
                 dockCam.textContent = videoTrack?.enabled === false ? 'Cam+' : 'Cam';
                 dockCam.disabled = false;
