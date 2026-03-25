@@ -61,3 +61,37 @@ begin
     );
 end;
 $$;
+
+create or replace function public.list_online_room_video_signals(
+    p_room_id uuid,
+    p_limit int default 40
+)
+returns table (
+    player_id uuid,
+    signal_data jsonb
+)
+language plpgsql
+security definer
+as $$
+begin
+    if auth.uid() is null then
+        raise exception 'Not authenticated';
+    end if;
+
+    if not public.is_room_member(p_room_id, auth.uid()) then
+        raise exception 'Not a room member';
+    end if;
+
+    return query
+    select recent.player_id, recent.payload
+    from (
+        select e.player_id, e.payload, e.ctid
+        from public.online_room_events e
+        where e.room_id = p_room_id
+          and e.event_type = 'video_signal'
+        order by e.ctid desc
+        limit greatest(1, least(coalesce(p_limit, 40), 100))
+    ) as recent
+    order by recent.ctid asc;
+end;
+$$;

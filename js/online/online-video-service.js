@@ -22,6 +22,9 @@ export const OnlineVideoService = {
     signalSubscription: null,
     signalSubscriptionReadyPromise: null,
     pendingRemoteSignals: [],
+    seenSignalKeys: [],
+    signalReplayPromise: null,
+    lastSignalReplayAt: 0,
     pendingIceCandidates: [],
     localVideoEls: new Set(),
     remoteVideoEls: new Set(),
@@ -51,6 +54,7 @@ export const OnlineVideoService = {
     resolvedIceBundle: null,
     iceServerBundlePromise: null,
     offerPendingSince: null,
+    opponentVideoReady: false,
     lastIceProbeStatus: '-',
     lastIceProbeAt: '-',
     lifecycleBound: false,
@@ -168,6 +172,10 @@ export const OnlineVideoService = {
             this.signalSubscriptionReadyPromise = null;
             this.offerPendingSince = null;
             this.pendingRemoteSignals = [];
+            this.seenSignalKeys = [];
+            this.signalReplayPromise = null;
+            this.lastSignalReplayAt = 0;
+            this.opponentVideoReady = false;
         }
 
         this.ensureFloatingDock();
@@ -615,6 +623,7 @@ export const OnlineVideoService = {
 
         if (!this.isEnabled || !this.peerConnection || !this.hasOpponent()) return;
         if (!force && !this.isInitiator()) return;
+        if (!force && !this.opponentVideoReady) return;
         if (this.peerConnection.signalingState !== 'stable') return;
         if (this.remoteStream?.getTracks?.().length) return;
 
@@ -668,9 +677,10 @@ export const OnlineVideoService = {
                 receiveOnly: this.isReceiveOnlyMode
             });
 
+            await this.fetchMissedSignals({ force: true });
             await this.flushPendingRemoteSignals();
 
-            if (this.isInitiator() && this.hasOpponent()) {
+            if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady) {
                 await this.requestConnectionIfNeeded({
                     statusText: 'Warte auf Antwort...'
                 });
@@ -730,8 +740,11 @@ export const OnlineVideoService = {
 
         this.remoteStream = null;
         this.pendingIceCandidates = [];
+        this.signalReplayPromise = null;
+        this.lastSignalReplayAt = 0;
         this.isReceiveOnlyMode = false;
         this.remotePlaybackBlocked = false;
+        this.opponentVideoReady = false;
         this.remoteStatusText = 'Warte auf Gegnerkamera';
         this.detachVideoStreams();
         if (!preserveStatus) {
@@ -765,6 +778,10 @@ export const OnlineVideoService = {
         this.signalSubscriptionReadyPromise = null;
         this.offerPendingSince = null;
         this.pendingRemoteSignals = [];
+        this.seenSignalKeys = [];
+        this.signalReplayPromise = null;
+        this.lastSignalReplayAt = 0;
+        this.opponentVideoReady = false;
         Object.assign(this, this.getDefaultUiState());
         this.dockDragState = null;
         this.autoResumeAttemptedForRoomId = null;
@@ -1284,6 +1301,7 @@ export const OnlineVideoService = {
 
     updatePresenceState() {
         if (!this.hasOpponent()) {
+            this.opponentVideoReady = false;
             this.setRemoteStatus('Warte auf Gegner');
             return;
         }
@@ -1298,7 +1316,7 @@ export const OnlineVideoService = {
             return;
         }
 
-        this.setRemoteStatus('Gegner verbunden');
+        this.setRemoteStatus(this.opponentVideoReady ? 'Gegnerkamera bereit' : 'Gegner verbunden');
     },
 
     isIOSLikeDevice() {
@@ -1618,6 +1636,7 @@ export const OnlineVideoService = {
 
     handleRemoteDeparture(message = 'Gegnerkamera getrennt') {
         this.resetPeerConnection();
+        this.opponentVideoReady = false;
         this.setRemoteStatus(message);
     },
 
@@ -1634,6 +1653,7 @@ export const OnlineVideoService = {
         }
 
         await this.ensureSignalSubscription();
+        await this.fetchMissedSignals();
 
         const connectionState = this.peerConnection?.connectionState;
         const signalingState = this.peerConnection?.signalingState;
@@ -1658,6 +1678,11 @@ export const OnlineVideoService = {
                 force: true,
                 statusText: 'Warte auf Antwort...'
             });
+            return;
+        }
+
+        if (!this.opponentVideoReady && !hasRemoteMedia) {
+            this.setRemoteStatus('Warte auf Gegnerkamera');
             return;
         }
 
@@ -1781,6 +1806,74 @@ export const OnlineVideoService = {
         this.recordSignalDebug('out', signalType);
     },
 
+    buildSignalReplayKey(signalData, fromPlayerId) {
+        const signalType = signalData?.signalType || '-';
+        let payloadKey = '{}';
+
+        try {
+            payloadKey = JSON.stringify(signalData?.payload || {});
+        } catch (_error) {
+            payloadKey = '[unserializable]';
+        }
+
+        return `${this.normalizeId(fromPlayerId) || '-'}|${signalType}|${payloadKey}`;
+    },
+
+    hasSeenSignalKey(signalKey) {
+        return !!signalKey && this.seenSignalKeys.includes(signalKey);
+    },
+
+    rememberSignalKey(signalKey) {
+        if (!signalKey || this.hasSeenSignalKey(signalKey)) return;
+
+        this.seenSignalKeys.push(signalKey);
+        if (this.seenSignalKeys.length > 250) {
+            this.seenSignalKeys = this.seenSignalKeys.slice(-200);
+        }
+    },
+
+    async fetchMissedSignals(options = {}) {
+        const { force = false } = options;
+
+        if (!this.roomId || !this.currentUserId) return;
+
+        const now = Date.now();
+        if (!force && this.signalReplayPromise) {
+            return this.signalReplayPromise;
+        }
+
+        if (!force && this.lastSignalReplayAt && (now - this.lastSignalReplayAt) < 1200) {
+            return;
+        }
+
+        this.signalReplayPromise = (async () => {
+            const { data, error } = await supabase.rpc('list_online_room_video_signals', {
+                p_room_id: this.roomId,
+                p_limit: 40
+            });
+
+            if (error) {
+                throw new Error(error.message || 'Videosignale konnten nicht nachgeladen werden.');
+            }
+
+            for (const row of Array.isArray(data) ? data : []) {
+                await this.handleSignal(row?.signal_data, row?.player_id, {
+                    replayed: true,
+                    signalKey: this.buildSignalReplayKey(row?.signal_data, row?.player_id)
+                });
+            }
+        })()
+            .catch(error => {
+                console.warn('video signal replay failed', error);
+            })
+            .finally(() => {
+                this.signalReplayPromise = null;
+                this.lastSignalReplayAt = Date.now();
+            });
+
+        return this.signalReplayPromise;
+    },
+
     async createAndSendOffer(options = {}) {
         const allowNonInitiator = !!options.allowNonInitiator;
         const statusText = options.statusText || 'Warte auf Antwort...';
@@ -1804,19 +1897,26 @@ export const OnlineVideoService = {
         const signalType = signalData?.signalType;
         const payload = signalData?.payload || {};
         const replayed = !!options.replayed;
+        const signalKey = options.signalKey || this.buildSignalReplayKey(signalData, fromPlayerId);
 
         if (!signalType || this.normalizeId(fromPlayerId) === this.currentUserId) return;
 
         if (!this.isEnabled && signalType !== 'video_ready') {
             if (!replayed) {
-                this.pendingRemoteSignals.push({ signalData, fromPlayerId });
+                const alreadyQueued = this.pendingRemoteSignals.some(item => item.signalKey === signalKey);
+                if (!alreadyQueued) {
+                    this.pendingRemoteSignals.push({ signalData, fromPlayerId, signalKey });
+                }
             }
             return;
         }
 
+        if (this.hasSeenSignalKey(signalKey)) return;
+        this.rememberSignalKey(signalKey);
         this.recordSignalDebug('in', signalType);
 
         if (signalType === 'video_ready') {
+            this.opponentVideoReady = true;
             this.setRemoteStatus(payload?.receiveOnly ? 'Gegner im Empfangsmodus' : 'Gegnerkamera bereit');
             if (this.isEnabled && this.isInitiator()) {
                 this.ensurePeerConnection();
@@ -1830,6 +1930,7 @@ export const OnlineVideoService = {
         this.ensurePeerConnection();
 
         if (signalType === 'video_offer') {
+            this.opponentVideoReady = true;
             if (this.peerConnection?.signalingState !== 'stable') {
                 this.resetPeerConnection();
                 this.ensurePeerConnection();
@@ -1864,6 +1965,7 @@ export const OnlineVideoService = {
         }
 
         if (signalType === 'video_leave') {
+            this.opponentVideoReady = false;
             this.handleRemoteDeparture('Gegnerkamera getrennt');
             this.setStatus('Gegnerkamera getrennt');
         }
@@ -1884,7 +1986,10 @@ export const OnlineVideoService = {
         this.pendingRemoteSignals = [];
 
         for (const queuedSignal of queuedSignals) {
-            await this.handleSignal(queuedSignal.signalData, queuedSignal.fromPlayerId, { replayed: true });
+            await this.handleSignal(queuedSignal.signalData, queuedSignal.fromPlayerId, {
+                replayed: true,
+                signalKey: queuedSignal.signalKey
+            });
         }
     },
 
