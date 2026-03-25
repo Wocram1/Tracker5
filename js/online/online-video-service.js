@@ -1987,7 +1987,9 @@ export const OnlineVideoService = {
                 throw new Error(error.message || 'Videosignale konnten nicht nachgeladen werden.');
             }
 
-            for (const row of Array.isArray(data) ? data : []) {
+            const replayRows = this.filterReplayRowsToLatestSessions(Array.isArray(data) ? data : []);
+
+            for (const row of replayRows) {
                 await this.handleSignal(row?.signal_data, row?.player_id, {
                     replayed: true,
                     signalKey: this.buildSignalReplayKey(row?.signal_data, row?.player_id)
@@ -2003,6 +2005,25 @@ export const OnlineVideoService = {
             });
 
         return this.signalReplayPromise;
+    },
+
+    filterReplayRowsToLatestSessions(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return [];
+
+        const lastBoundaryByPlayer = new Map();
+        rows.forEach((row, index) => {
+            const playerKey = this.normalizeId(row?.player_id) || `idx-${index}`;
+            const signalType = row?.signal_data?.signalType;
+            if (signalType === 'video_ready' || signalType === 'video_leave') {
+                lastBoundaryByPlayer.set(playerKey, index);
+            }
+        });
+
+        return rows.filter((row, index) => {
+            const playerKey = this.normalizeId(row?.player_id) || `idx-${index}`;
+            const boundaryIndex = lastBoundaryByPlayer.get(playerKey);
+            return boundaryIndex == null || index >= boundaryIndex;
+        });
     },
 
     async createAndSendOffer(options = {}) {
