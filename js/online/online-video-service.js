@@ -54,6 +54,8 @@ export const OnlineVideoService = {
     resolvedIceBundle: null,
     iceServerBundlePromise: null,
     offerPendingSince: null,
+    localVideoSessionId: null,
+    opponentVideoSessionId: null,
     opponentVideoReady: false,
     lastIceProbeStatus: '-',
     lastIceProbeAt: '-',
@@ -63,6 +65,14 @@ export const OnlineVideoService = {
 
     normalizeId(id) {
         return typeof id === 'string' ? id.toLowerCase() : id;
+    },
+
+    generateVideoSessionId() {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+
+        return `video-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
     },
 
     getRoomStorageKey(roomId = this.roomId) {
@@ -185,6 +195,8 @@ export const OnlineVideoService = {
             this.seenSignalKeys = [];
             this.signalReplayPromise = null;
             this.lastSignalReplayAt = 0;
+            this.localVideoSessionId = null;
+            this.opponentVideoSessionId = null;
             this.opponentVideoReady = false;
             this.isEndingForRoomState = false;
         }
@@ -634,9 +646,9 @@ export const OnlineVideoService = {
 
         if (!this.isEnabled) {
             if (this.isIOSLikeDevice() && window.isSecureContext) {
-                return 'Auf iPhone/iPad zuerst Kamera und Mikrofon erlauben. Bleibe waehrend des Verbindens in Safari und tippe danach bei Bedarf auf Audio freigeben.';
+                return 'Auf iPhone/iPad zuerst die Kamera erlauben. Das Mikrofon kannst du danach bei Bedarf zuschalten.';
             }
-            return 'Verbinde die Match-Kamera vor dem Start, damit ihr direkt im Duellbild seid.';
+            return 'Verbinde zuerst das Video. Das Mikrofon kannst du danach getrennt aktivieren.';
         }
 
         if (this.hasRemoteMedia()) {
@@ -710,14 +722,11 @@ export const OnlineVideoService = {
         try {
             this.isReceiveOnlyMode = false;
             this.remotePlaybackBlocked = false;
+            this.localVideoSessionId = this.generateVideoSessionId();
             await this.ensureResolvedIceBundle();
 
             try {
                 await this.ensureLocalStream();
-                await this.ensureMicrophoneTrack({
-                    initializeMuted: this.shouldStartMicrophoneMuted(),
-                    silent: true
-                });
             } catch (mediaError) {
                 if (!this.canUseReceiveOnlyMode()) {
                     throw mediaError;
@@ -729,7 +738,6 @@ export const OnlineVideoService = {
             }
 
             await this.ensureSignalSubscription();
-            this.ensurePeerConnection();
             this.isEnabled = true;
             this.shouldAutoResumeVideo = true;
             this.autoResumeAttemptedForRoomId = this.roomId;
@@ -739,10 +747,21 @@ export const OnlineVideoService = {
                 receiveOnly: this.isReceiveOnlyMode
             });
 
-            await this.fetchMissedSignals({ force: true });
+            this.ensurePeerConnection();
+
+            const replayPromise = this.fetchMissedSignals({ force: true });
             await this.flushPendingRemoteSignals();
 
             if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady) {
+                await this.requestConnectionIfNeeded({
+                    statusText: 'Warte auf Antwort...'
+                });
+            }
+
+            await replayPromise;
+            await this.flushPendingRemoteSignals();
+
+            if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady && !this.hasRemoteMedia()) {
                 await this.requestConnectionIfNeeded({
                     statusText: 'Warte auf Antwort...'
                 });
@@ -804,6 +823,8 @@ export const OnlineVideoService = {
         this.pendingIceCandidates = [];
         this.signalReplayPromise = null;
         this.lastSignalReplayAt = 0;
+        this.localVideoSessionId = null;
+        this.opponentVideoSessionId = null;
         this.isReceiveOnlyMode = false;
         this.remotePlaybackBlocked = false;
         this.opponentVideoReady = false;
@@ -843,6 +864,8 @@ export const OnlineVideoService = {
         this.seenSignalKeys = [];
         this.signalReplayPromise = null;
         this.lastSignalReplayAt = 0;
+        this.localVideoSessionId = null;
+        this.opponentVideoSessionId = null;
         this.opponentVideoReady = false;
         this.isEndingForRoomState = false;
         Object.assign(this, this.getDefaultUiState());
@@ -1727,6 +1750,7 @@ export const OnlineVideoService = {
 
     handleRemoteDeparture(message = 'Gegnerkamera getrennt') {
         this.resetPeerConnection();
+        this.opponentVideoSessionId = null;
         this.opponentVideoReady = false;
         this.setRemoteStatus(message);
     },
@@ -1898,10 +1922,18 @@ export const OnlineVideoService = {
     async emitSignal(signalType, payload) {
         if (!this.roomId) return;
 
+        const enrichedPayload = {
+            ...(payload || {})
+        };
+
+        if (this.localVideoSessionId && !enrichedPayload.sessionId) {
+            enrichedPayload.sessionId = this.localVideoSessionId;
+        }
+
         const { error } = await supabase.rpc('emit_online_room_signal', {
             p_room_id: this.roomId,
             p_signal_type: signalType,
-            p_payload: payload || {}
+            p_payload: enrichedPayload
         });
 
         if (error) {
@@ -1916,6 +1948,7 @@ export const OnlineVideoService = {
         if (!this.isEnabled || !this.roomId) return;
 
         this.clearReconnectTimer();
+        this.localVideoSessionId = this.generateVideoSessionId();
         this.setStatus(statusText);
         this.setRemoteStatus('Stelle Video neu her...');
 
@@ -1939,6 +1972,7 @@ export const OnlineVideoService = {
 
     buildSignalReplayKey(signalData, fromPlayerId) {
         const signalType = signalData?.signalType || '-';
+        const sessionId = signalData?.payload?.sessionId || '-';
         let payloadKey = '{}';
 
         try {
@@ -1947,7 +1981,13 @@ export const OnlineVideoService = {
             payloadKey = '[unserializable]';
         }
 
-        return `${this.normalizeId(fromPlayerId) || '-'}|${signalType}|${payloadKey}`;
+        return `${this.normalizeId(fromPlayerId) || '-'}|${sessionId}|${signalType}|${payloadKey}`;
+    },
+
+    getSignalSessionId(payload) {
+        return typeof payload?.sessionId === 'string' && payload.sessionId.trim()
+            ? payload.sessionId.trim()
+            : null;
     },
 
     hasSeenSignalKey(signalKey) {
@@ -2010,6 +2050,15 @@ export const OnlineVideoService = {
     filterReplayRowsToLatestSessions(rows) {
         if (!Array.isArray(rows) || rows.length === 0) return [];
 
+        const latestSessionByPlayer = new Map();
+        rows.forEach((row, index) => {
+            const playerKey = this.normalizeId(row?.player_id) || `idx-${index}`;
+            const sessionId = this.getSignalSessionId(row?.signal_data?.payload);
+            if (sessionId) {
+                latestSessionByPlayer.set(playerKey, sessionId);
+            }
+        });
+
         const lastBoundaryByPlayer = new Map();
         rows.forEach((row, index) => {
             const playerKey = this.normalizeId(row?.player_id) || `idx-${index}`;
@@ -2021,6 +2070,11 @@ export const OnlineVideoService = {
 
         return rows.filter((row, index) => {
             const playerKey = this.normalizeId(row?.player_id) || `idx-${index}`;
+            const latestSessionId = latestSessionByPlayer.get(playerKey);
+            const rowSessionId = this.getSignalSessionId(row?.signal_data?.payload);
+            if (latestSessionId) {
+                return rowSessionId === latestSessionId;
+            }
             const boundaryIndex = lastBoundaryByPlayer.get(playerKey);
             return boundaryIndex == null || index >= boundaryIndex;
         });
@@ -2050,6 +2104,7 @@ export const OnlineVideoService = {
         const payload = signalData?.payload || {};
         const replayed = !!options.replayed;
         const signalKey = options.signalKey || this.buildSignalReplayKey(signalData, fromPlayerId);
+        const signalSessionId = this.getSignalSessionId(payload);
 
         if (!signalType || this.normalizeId(fromPlayerId) === this.currentUserId) return;
 
@@ -2068,6 +2123,13 @@ export const OnlineVideoService = {
         this.recordSignalDebug('in', signalType);
 
         if (signalType === 'video_ready') {
+            const sessionChanged = !!(signalSessionId && this.opponentVideoSessionId && signalSessionId !== this.opponentVideoSessionId);
+            if (sessionChanged) {
+                this.resetPeerConnection();
+            }
+            if (signalSessionId) {
+                this.opponentVideoSessionId = signalSessionId;
+            }
             this.opponentVideoReady = true;
             this.setRemoteStatus(payload?.receiveOnly ? 'Gegner im Empfangsmodus' : 'Gegnerkamera bereit');
             if (this.isEnabled && this.isInitiator()) {
@@ -2080,6 +2142,20 @@ export const OnlineVideoService = {
         }
 
         this.ensurePeerConnection();
+
+        if (signalSessionId) {
+            if (!this.opponentVideoSessionId) {
+                this.opponentVideoSessionId = signalSessionId;
+            } else if (signalSessionId !== this.opponentVideoSessionId) {
+                if (signalType === 'video_offer') {
+                    this.opponentVideoSessionId = signalSessionId;
+                    this.resetPeerConnection();
+                    this.ensurePeerConnection();
+                } else {
+                    return;
+                }
+            }
+        }
 
         if (signalType === 'video_offer') {
             this.opponentVideoReady = true;
@@ -2117,6 +2193,10 @@ export const OnlineVideoService = {
         }
 
         if (signalType === 'video_leave') {
+            if (signalSessionId && this.opponentVideoSessionId && signalSessionId !== this.opponentVideoSessionId) {
+                return;
+            }
+            this.opponentVideoSessionId = null;
             this.opponentVideoReady = false;
             this.handleRemoteDeparture('Gegnerkamera getrennt');
             this.setStatus('Gegnerkamera getrennt');
