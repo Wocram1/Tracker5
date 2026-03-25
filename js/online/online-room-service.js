@@ -96,8 +96,8 @@ export const OnlineRoomService = {
     refreshPromise: null,
     refreshRequestId: 0,
     startHandled: false,
-    lobbyPollingIntervalMs: 1500,
-    inMatchPollingIntervalMs: 1200,
+    lobbyPollingIntervalMs: 2500,
+    inMatchPollingIntervalMs: 1800,
     isRestoringSession: false,
 
     normalizeId(id) {

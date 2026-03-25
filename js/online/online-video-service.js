@@ -50,6 +50,7 @@ export const OnlineVideoService = {
     iceServerBundlePromise: null,
     lastIceProbeStatus: '-',
     lastIceProbeAt: '-',
+    lifecycleBound: false,
     reconnectTimer: null,
 
     normalizeId(id) {
@@ -202,6 +203,13 @@ export const OnlineVideoService = {
     getRuntimeVideoConfig() {
         const runtimeConfig = window.__OCRAM_VIDEO_CONFIG__;
         return runtimeConfig && typeof runtimeConfig === 'object' ? runtimeConfig : {};
+    },
+
+    isSafariLikeBrowser() {
+        const userAgent = navigator.userAgent || '';
+        const isSafariEngine = /Safari/i.test(userAgent);
+        const isOtherWebKitShell = /CriOS|FxiOS|EdgiOS|Chrome|Chromium|Android/i.test(userAgent);
+        return isSafariEngine && !isOtherWebKitShell;
     },
 
     getIceServerEndpoint() {
@@ -424,6 +432,10 @@ export const OnlineVideoService = {
             return 'iOS: HTTPS fuer Send';
         }
 
+        if (this.isSafariLikeBrowser()) {
+            return 'Safari: Tap fuer Ton';
+        }
+
         if (this.isIOSLikeDevice()) {
             return 'Mic stumm + Tap';
         }
@@ -545,6 +557,9 @@ export const OnlineVideoService = {
         }
 
         if (!this.isEnabled) {
+            if (this.isIOSLikeDevice() && window.isSecureContext) {
+                return 'Auf iPhone/iPad zuerst Kamera und Mikrofon erlauben. Bleibe waehrend des Verbindens in Safari und tippe danach bei Bedarf auf Audio freigeben.';
+            }
             return 'Verbinde die Match-Kamera vor dem Start, damit ihr direkt im Duellbild seid.';
         }
 
@@ -762,6 +777,9 @@ export const OnlineVideoService = {
 
     getMicrophoneErrorMessage(error) {
         if (error?.name === 'NotAllowedError') {
+            if (this.isIOSLikeDevice()) {
+                return 'Mikrofonzugriff wurde blockiert. Bitte in Safari bei den Website-Einstellungen Mikrofon auf Erlauben setzen.';
+            }
             return 'Mikrofonzugriff wurde blockiert.';
         }
 
@@ -1001,13 +1019,15 @@ export const OnlineVideoService = {
         this.refreshUiState();
     },
 
-    handlePrimaryAction() {
+    async handlePrimaryAction() {
+        await this.primePlaybackFromGesture();
+
         if (this.isEnabled) {
-            this.stopVideo();
+            await this.stopVideo();
             return;
         }
 
-        this.startVideo();
+        await this.startVideo();
     },
 
     toggleDockExpanded(force) {
@@ -1260,6 +1280,33 @@ export const OnlineVideoService = {
         return isAppleMobile || isIPadOSDesktopMode;
     },
 
+    initializeLifecycleObservers() {
+        if (this.lifecycleBound || typeof document === 'undefined') return;
+
+        const resumeVideoState = () => {
+            if (!this.isEnabled) return;
+
+            this.resumeRemotePlayback({ suppressStatus: true }).catch(error => {
+                console.warn('video lifecycle remote playback resume failed', error);
+            });
+            this.maybeReconnectToOpponent().catch(error => {
+                console.warn('video lifecycle reconnect failed', error);
+            });
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                resumeVideoState();
+            }
+        });
+
+        window.addEventListener('pageshow', () => {
+            resumeVideoState();
+        });
+
+        this.lifecycleBound = true;
+    },
+
     getLocalhostSuggestion() {
         const currentHost = (window.location.hostname || '').toLowerCase();
         const { protocol, port, pathname, search, hash } = window.location;
@@ -1289,6 +1336,9 @@ export const OnlineVideoService = {
         }
 
         if (error?.name === 'NotAllowedError') {
+            if (this.isIOSLikeDevice()) {
+                return 'Kamerazugriff wurde blockiert. Bitte in Safari bei den Website-Einstellungen Kamera und Mikrofon auf Erlauben setzen.';
+            }
             return 'Kamerazugriff wurde blockiert. Bitte Safari-Kamerarechte pruefen.';
         }
 
@@ -1368,6 +1418,64 @@ export const OnlineVideoService = {
                 this.queueUiRefresh();
             }
         }
+    },
+
+    async primePlaybackFromGesture() {
+        const playbackElements = [
+            ...this.localVideoEls,
+            ...this.remoteVideoEls
+        ].filter(Boolean);
+
+        for (const videoEl of playbackElements) {
+            videoEl.setAttribute('playsinline', 'true');
+            videoEl.setAttribute('webkit-playsinline', 'true');
+            try {
+                await videoEl.play();
+            } catch (_error) {
+                // Expected until media is attached or the peer stream arrives.
+            }
+        }
+    },
+
+    async bindVideoElement(videoEl, stream, options = {}) {
+        if (!videoEl) return;
+
+        const {
+            muted = false,
+            hidden = false,
+            isRemote = false
+        } = options;
+
+        videoEl.setAttribute('playsinline', 'true');
+        videoEl.setAttribute('webkit-playsinline', 'true');
+        videoEl.autoplay = true;
+        videoEl.playsInline = true;
+        videoEl.disablePictureInPicture = true;
+
+        const hadDifferentStream = videoEl.srcObject !== stream;
+        const hadDifferentMute = videoEl.muted !== muted;
+        const hadDifferentVisibility = videoEl.classList.contains('online-video-feed-hidden') !== hidden;
+
+        if (hadDifferentMute) {
+            videoEl.muted = muted;
+        }
+
+        if (hadDifferentStream) {
+            videoEl.srcObject = stream || null;
+        }
+
+        if (hadDifferentVisibility) {
+            videoEl.classList.toggle('online-video-feed-hidden', hidden);
+        }
+
+        const shouldAttemptPlayback = hadDifferentStream
+            || hadDifferentMute
+            || (isRemote && this.remotePlaybackBlocked)
+            || (!!stream && videoEl.paused);
+
+        if (!shouldAttemptPlayback) return;
+
+        await this.syncMediaElementPlayback(videoEl, { isRemote });
     },
 
     async resumeRemotePlayback(options = {}) {
@@ -1702,20 +1810,19 @@ export const OnlineVideoService = {
 
     attachVideoStreams() {
         this.localVideoEls.forEach(videoEl => {
-            if (!videoEl) return;
-            videoEl.setAttribute('playsinline', 'true');
-            videoEl.muted = true;
-            videoEl.srcObject = this.localStream || null;
-            this.syncMediaElementPlayback(videoEl).catch(() => {});
+            this.bindVideoElement(videoEl, this.localStream || null, {
+                muted: true,
+                hidden: false,
+                isRemote: false
+            }).catch(() => {});
         });
 
         this.remoteVideoEls.forEach(videoEl => {
-            if (!videoEl) return;
-            videoEl.setAttribute('playsinline', 'true');
-            videoEl.muted = this.isRemoteAudioMuted;
-            videoEl.srcObject = this.remoteStream || null;
-            videoEl.classList.toggle('online-video-feed-hidden', this.isRemoteVideoHidden);
-            this.syncMediaElementPlayback(videoEl, { isRemote: true }).catch(() => {});
+            this.bindVideoElement(videoEl, this.remoteStream || null, {
+                muted: this.isRemoteAudioMuted,
+                hidden: this.isRemoteVideoHidden,
+                isRemote: true
+            }).catch(() => {});
         });
     },
 
@@ -1829,6 +1936,7 @@ export const OnlineVideoService = {
     },
 
     refreshUiState() {
+        this.initializeLifecycleObservers();
         this.attachVideoStreams();
         const connectionIndicator = this.getConnectionIndicator();
         const debugText = this.getDebugText();
