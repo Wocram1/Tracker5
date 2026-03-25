@@ -1174,12 +1174,28 @@ export const OnlineVideoService = {
     },
 
     registerElements({ localVideo, remoteVideo, status, controls = [] }) {
+        this.pruneDomElementReferences();
         if (localVideo) this.localVideoEls.add(localVideo);
         if (remoteVideo) this.remoteVideoEls.add(remoteVideo);
         if (status) this.statusEls.add(status);
         controls.filter(Boolean).forEach(control => this.controlEls.add(control));
         this.attachVideoStreams();
         this.refreshUiState();
+    },
+
+    pruneDisconnectedElements(elementSet) {
+        for (const element of Array.from(elementSet)) {
+            if (!element?.isConnected) {
+                elementSet.delete(element);
+            }
+        }
+    },
+
+    pruneDomElementReferences() {
+        this.pruneDisconnectedElements(this.localVideoEls);
+        this.pruneDisconnectedElements(this.remoteVideoEls);
+        this.pruneDisconnectedElements(this.statusEls);
+        this.pruneDisconnectedElements(this.controlEls);
     },
 
     ensureFloatingDock() {
@@ -1936,6 +1952,7 @@ export const OnlineVideoService = {
     },
 
     refreshUiState() {
+        this.pruneDomElementReferences();
         this.initializeLifecycleObservers();
         this.attachVideoStreams();
         const connectionIndicator = this.getConnectionIndicator();
