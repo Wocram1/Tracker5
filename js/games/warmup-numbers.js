@@ -36,7 +36,7 @@ const LEVEL_CONFIG = {
     10: { rounds: 11, minPoints: 170, malus: 3, targets: [{v:20, m:1}, {v:18, m:2}, {v:13, m:1}], pointsPerHit: 10, xpBase: 450 },
     20: { rounds: 16, minPoints: 320, malus: 5, targets: null, mode: 'random', pointsPerHit: 10, xpBase: 600 },
     'daily':  { 
-        rounds: 8,  
+        rounds: 6,  
         minPoints: 1,  
         malus: 0, 
         pointsPerHit: 1, 
@@ -47,9 +47,7 @@ const LEVEL_CONFIG = {
             3: [{v:11, m:0}, {v:25, m:1}, {v:6, m:0}],
             4: [{v:6, m:0}, {v:25, m:1}, {v:11, m:0}],
             5: [{v:16, m:0}, {v:8, m:0}, {v:4, m:0}],
-            6: [{v:16, m:0}, {v:8, m:0}, {v:4, m:0}],  
-            7: [{v:20, m:0}, {v:10, m:0}, {v:5, m:0}],
-            8: [{v:20, m:0}, {v:10, m:0}, {v:5, m:0}]
+            6: [{v:20, m:0}, {v:10, m:0}, {v:5, m:0}]
         }
     },
 };

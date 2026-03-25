@@ -20,6 +20,7 @@ export const OnlineVideoService = {
     remoteStream: null,
     peerConnection: null,
     signalSubscription: null,
+    signalSubscriptionReadyPromise: null,
     pendingIceCandidates: [],
     localVideoEls: new Set(),
     remoteVideoEls: new Set(),
@@ -48,6 +49,7 @@ export const OnlineVideoService = {
     uiRefreshQueued: false,
     resolvedIceBundle: null,
     iceServerBundlePromise: null,
+    offerPendingSince: null,
     lastIceProbeStatus: '-',
     lastIceProbeAt: '-',
     lifecycleBound: false,
@@ -162,6 +164,8 @@ export const OnlineVideoService = {
             this.autoResumeAttemptedForRoomId = null;
             this.resolvedIceBundle = null;
             this.iceServerBundlePromise = null;
+            this.signalSubscriptionReadyPromise = null;
+            this.offerPendingSince = null;
         }
 
         this.ensureFloatingDock();
@@ -701,6 +705,7 @@ export const OnlineVideoService = {
         }
 
         this.isEnabled = false;
+        this.offerPendingSince = null;
 
         if (this.peerConnection) {
             try {
@@ -753,6 +758,8 @@ export const OnlineVideoService = {
         this.remotePlaybackBlocked = false;
         this.resolvedIceBundle = null;
         this.iceServerBundlePromise = null;
+        this.signalSubscriptionReadyPromise = null;
+        this.offerPendingSince = null;
         Object.assign(this, this.getDefaultUiState());
         this.dockDragState = null;
         this.autoResumeAttemptedForRoomId = null;
@@ -1599,6 +1606,7 @@ export const OnlineVideoService = {
 
         this.peerConnection = null;
         this.pendingIceCandidates = [];
+        this.offerPendingSince = null;
         this.remoteStream = null;
         this.attachVideoStreams();
     },
@@ -1623,12 +1631,29 @@ export const OnlineVideoService = {
         await this.ensureSignalSubscription();
 
         const connectionState = this.peerConnection?.connectionState;
+        const signalingState = this.peerConnection?.signalingState;
         const needsFreshConnection = !this.peerConnection || connectionState === 'failed' || connectionState === 'closed';
         const hasRemoteMedia = !!this.remoteStream?.getTracks?.().length;
 
         if (needsFreshConnection) {
             this.resetPeerConnection();
             this.ensurePeerConnection();
+        }
+
+        const offerTimedOut = this.isInitiator()
+            && signalingState === 'have-local-offer'
+            && this.offerPendingSince
+            && (Date.now() - this.offerPendingSince) > 4000;
+
+        if (offerTimedOut) {
+            this.setRemoteStatus('Sende Offer erneut...');
+            this.resetPeerConnection();
+            this.ensurePeerConnection();
+            await this.requestConnectionIfNeeded({
+                force: true,
+                statusText: 'Warte auf Antwort...'
+            });
+            return;
         }
 
         if (this.isInitiator() && !hasRemoteMedia && this.peerConnection?.signalingState === 'stable') {
@@ -1701,24 +1726,38 @@ export const OnlineVideoService = {
     },
 
     async ensureSignalSubscription() {
-        if (this.signalSubscription || !this.roomId) return;
+        if (!this.roomId) return;
+        if (this.signalSubscription && this.signalSubscriptionReadyPromise) {
+            return this.signalSubscriptionReadyPromise;
+        }
 
-        this.signalSubscription = supabase
-            .channel(`online-video-${this.roomId}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'online_room_events',
-                filter: `room_id=eq.${this.roomId}`
-            }, (payload) => {
-                const eventType = payload?.new?.event_type;
-                const data = payload?.new?.payload;
-                if (eventType !== VIDEO_SIGNAL_EVENT || !data) return;
-                this.handleSignal(data, payload.new.player_id).catch(error => {
-                    console.error('handleSignal failed', error);
+        this.signalSubscriptionReadyPromise = new Promise((resolve, reject) => {
+            this.signalSubscription = supabase
+                .channel(`online-video-${this.roomId}`)
+                .on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'online_room_events',
+                    filter: `room_id=eq.${this.roomId}`
+                }, (payload) => {
+                    const eventType = payload?.new?.event_type;
+                    const data = payload?.new?.payload;
+                    if (eventType !== VIDEO_SIGNAL_EVENT || !data) return;
+                    this.handleSignal(data, payload.new.player_id).catch(error => {
+                        console.error('handleSignal failed', error);
+                    });
+                })
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        resolve();
+                    } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                        this.signalSubscriptionReadyPromise = null;
+                        reject(new Error(`Video subscription failed: ${status}`));
+                    }
                 });
-            })
-            .subscribe();
+        });
+
+        return this.signalSubscriptionReadyPromise;
     },
 
     async emitSignal(signalType, payload) {
@@ -1751,6 +1790,7 @@ export const OnlineVideoService = {
             offerToReceiveVideo: true
         });
         await this.peerConnection.setLocalDescription(offer);
+        this.offerPendingSince = Date.now();
         await this.emitSignal('video_offer', { sdp: offer.sdp, type: offer.type });
         this.setStatus(statusText);
     },
@@ -1795,6 +1835,7 @@ export const OnlineVideoService = {
         if (signalType === 'video_answer') {
             await this.peerConnection.setRemoteDescription(new RTCSessionDescription(payload));
             await this.flushPendingIceCandidates();
+            this.offerPendingSince = null;
             this.setRemoteStatus('Gegnerkamera verbunden');
             this.setStatus('Video verbunden');
             return;

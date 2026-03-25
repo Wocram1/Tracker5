@@ -23,7 +23,7 @@ export class Game121 {
             1:  { start: 61,  rounds: 3, check: 'single', totalTargets: 3,  minPoints: 5, resetToStart: false,  malus: 1 },
             2:  { start: 65,  rounds: 3, check: 'single', totalTargets: 4,  minPoints: 9, resetToStart: false,  malus: 1 },
             3:  { start: 76,  rounds: 3, check: 'single', totalTargets: 5,  minPoints: 5, resetToStart: false,  malus: 1 },
-            'daily':  { start: 121,  rounds: 3, check: 'single', totalTargets: 5,  minPoints: 10, resetToStart: true,  malus: 1 },
+            'daily':  { start: 121,  rounds: 3, check: 'single', totalTargets: 4,  minPoints: 10, resetToStart: true,  malus: 1 },
             4:  { start: 75,  rounds: 2, check: 'single', totalTargets: 6,  minPoints: 35, resetToStart: true,  malus: 1 },
             5:  { start: 80,  rounds: 2, check: 'single', totalTargets: 7,  minPoints: 45, resetToStart: true,  malus: 2 },
             6:  { start: 91,  rounds: 2, check: 'single', totalTargets: 6,  minPoints: 5, resetToStart: false,  malus: 1 },
