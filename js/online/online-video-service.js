@@ -61,6 +61,7 @@ export const OnlineVideoService = {
     lastIceProbeAt: '-',
     lifecycleBound: false,
     reconnectTimer: null,
+    replayFallbackTimer: null,
     isEndingForRoomState: false,
 
     normalizeId(id) {
@@ -233,6 +234,7 @@ export const OnlineVideoService = {
         this.updatePresenceState();
         this.syncUiVisibility();
         this.refreshUiState();
+        this.prewarmLobbyVideoInfra();
 
         if (this.isEnabled) {
             this.maybeReconnectToOpponent().catch(error => {
@@ -716,6 +718,7 @@ export const OnlineVideoService = {
         }
 
         this.isStarting = true;
+        this.clearReplayFallbackTimer();
         this.lastError = '';
         this.setStatus('Kamera wird gestartet...');
 
@@ -747,8 +750,6 @@ export const OnlineVideoService = {
                 facingMode: this.facingMode,
                 receiveOnly: this.isReceiveOnlyMode
             });
-
-            const replayPromise = this.fetchMissedSignals({ force: true });
             await this.flushPendingRemoteSignals();
 
             if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady) {
@@ -757,14 +758,9 @@ export const OnlineVideoService = {
                 });
             }
 
-            await replayPromise;
-            await this.flushPendingRemoteSignals();
-
-            if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady && !this.hasRemoteMedia()) {
-                await this.requestConnectionIfNeeded({
-                    statusText: 'Warte auf Antwort...'
-                });
-            }
+            this.scheduleReplayFallback({
+                statusText: 'Warte auf Antwort...'
+            });
 
             this.setStatus(this.isReceiveOnlyMode ? 'Nur Empfang verbunden' : 'Kamera verbunden');
         } catch (error) {
@@ -784,6 +780,7 @@ export const OnlineVideoService = {
     async stopVideo(options = {}) {
         const { emitLeave = true, preserveStatus = false, keepAutoResume = false } = options;
         this.clearReconnectTimer();
+        this.clearReplayFallbackTimer();
 
         if (!keepAutoResume) {
             this.shouldAutoResumeVideo = false;
@@ -1717,6 +1714,53 @@ export const OnlineVideoService = {
             window.clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
+    },
+
+    clearReplayFallbackTimer() {
+        if (this.replayFallbackTimer) {
+            window.clearTimeout(this.replayFallbackTimer);
+            this.replayFallbackTimer = null;
+        }
+    },
+
+    prewarmLobbyVideoInfra() {
+        if (!this.roomId || !this.currentUserId) return;
+        if (!this.canAutoResumeInCurrentRoom()) return;
+
+        this.ensureResolvedIceBundle().catch(error => {
+            console.warn('video ice prewarm failed', error);
+        });
+
+        if (!this.hasOpponent()) return;
+
+        this.ensureSignalSubscription().catch(error => {
+            console.warn('video signaling prewarm failed', error);
+        });
+    },
+
+    scheduleReplayFallback(options = {}) {
+        const {
+            delayMs = 900,
+            statusText = 'Warte auf Antwort...'
+        } = options;
+
+        this.clearReplayFallbackTimer();
+        this.replayFallbackTimer = window.setTimeout(() => {
+            this.replayFallbackTimer = null;
+
+            if (!this.isEnabled || !this.roomId || this.hasRemoteMedia()) return;
+
+            this.fetchMissedSignals({ force: true })
+                .then(() => this.flushPendingRemoteSignals())
+                .then(() => {
+                    if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady && !this.hasRemoteMedia()) {
+                        return this.requestConnectionIfNeeded({ statusText });
+                    }
+                })
+                .catch(error => {
+                    console.warn('video replay fallback failed', error);
+                });
+        }, delayMs);
     },
 
     scheduleReconnectAttempt(delayMs = 800) {
