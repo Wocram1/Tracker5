@@ -1136,7 +1136,7 @@ export const OnlineVideoService = {
     },
 
     async handlePrimaryAction() {
-        await this.primePlaybackFromGesture();
+        this.primePlaybackFromGesture().catch(() => {});
 
         if (this.isEnabled) {
             await this.stopVideo();
@@ -1591,7 +1591,10 @@ export const OnlineVideoService = {
             videoEl.setAttribute('playsinline', 'true');
             videoEl.setAttribute('webkit-playsinline', 'true');
             try {
-                await videoEl.play();
+                const playPromise = videoEl.play();
+                if (playPromise?.catch) {
+                    playPromise.catch(() => {});
+                }
             } catch (_error) {
                 // Expected until media is attached or the peer stream arrives.
             }
