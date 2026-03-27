@@ -1,6 +1,6 @@
 import { supabase } from '../supabase_client.js';
 
-const VIDEO_SIGNAL_EVENT = 'video_signal';
+const VIDEO_SIGNAL_TABLE = 'online_room_video_signals';
 const DEFAULT_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
@@ -25,6 +25,7 @@ export const OnlineVideoService = {
     seenSignalKeys: [],
     signalReplayPromise: null,
     lastSignalReplayAt: 0,
+    lastSeenSignalId: 0,
     pendingIceCandidates: [],
     localVideoEls: new Set(),
     remoteVideoEls: new Set(),
@@ -196,6 +197,7 @@ export const OnlineVideoService = {
             this.seenSignalKeys = [];
             this.signalReplayPromise = null;
             this.lastSignalReplayAt = 0;
+            this.lastSeenSignalId = 0;
             this.localVideoSessionId = null;
             this.opponentVideoSessionId = null;
             this.opponentVideoReady = false;
@@ -819,6 +821,7 @@ export const OnlineVideoService = {
         this.pendingIceCandidates = [];
         this.signalReplayPromise = null;
         this.lastSignalReplayAt = 0;
+        this.lastSeenSignalId = 0;
         this.localVideoSessionId = null;
         this.opponentVideoSessionId = null;
         this.isReceiveOnlyMode = false;
@@ -860,6 +863,7 @@ export const OnlineVideoService = {
         this.seenSignalKeys = [];
         this.signalReplayPromise = null;
         this.lastSignalReplayAt = 0;
+        this.lastSeenSignalId = 0;
         this.localVideoSessionId = null;
         this.opponentVideoSessionId = null;
         this.opponentVideoReady = false;
@@ -1941,13 +1945,16 @@ export const OnlineVideoService = {
                 .on('postgres_changes', {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'online_room_events',
+                    table: VIDEO_SIGNAL_TABLE,
                     filter: `room_id=eq.${this.roomId}`
                 }, (payload) => {
-                    const eventType = payload?.new?.event_type;
-                    const data = payload?.new?.payload;
-                    if (eventType !== VIDEO_SIGNAL_EVENT || !data) return;
-                    this.handleSignal(data, payload.new.player_id).catch(error => {
+                    const row = payload?.new;
+                    const data = this.buildSignalDataFromRow(row);
+                    if (!data) return;
+                    this.rememberSeenSignalId(row?.id);
+                    this.handleSignal(data, row.player_id, {
+                        signalKey: this.buildSignalReplayKey(data, row.player_id, row?.id)
+                    }).catch(error => {
                         console.error('handleSignal failed', error);
                     });
                 })
@@ -2029,7 +2036,12 @@ export const OnlineVideoService = {
         }
     },
 
-    buildSignalReplayKey(signalData, fromPlayerId) {
+    buildSignalReplayKey(signalData, fromPlayerId, signalId = null) {
+        const normalizedSignalId = Number(signalId);
+        if (Number.isFinite(normalizedSignalId)) {
+            return `signal:${normalizedSignalId}`;
+        }
+
         const signalType = signalData?.signalType || '-';
         const sessionId = signalData?.payload?.sessionId || '-';
         let payloadKey = '{}';
@@ -2047,6 +2059,21 @@ export const OnlineVideoService = {
         return typeof payload?.sessionId === 'string' && payload.sessionId.trim()
             ? payload.sessionId.trim()
             : null;
+    },
+
+    buildSignalDataFromRow(row) {
+        if (!row?.signal_type) return null;
+
+        return {
+            signalType: row.signal_type,
+            payload: row.payload || {}
+        };
+    },
+
+    rememberSeenSignalId(signalId) {
+        const normalizedSignalId = Number(signalId);
+        if (!Number.isFinite(normalizedSignalId)) return;
+        this.lastSeenSignalId = Math.max(this.lastSeenSignalId || 0, normalizedSignalId);
     },
 
     hasSeenSignalKey(signalKey) {
@@ -2079,6 +2106,7 @@ export const OnlineVideoService = {
         this.signalReplayPromise = (async () => {
             const { data, error } = await supabase.rpc('list_online_room_video_signals', {
                 p_room_id: this.roomId,
+                p_after_signal_id: this.lastSeenSignalId || 0,
                 p_limit: 40
             });
 
@@ -2089,9 +2117,10 @@ export const OnlineVideoService = {
             const replayRows = this.filterReplayRowsToLatestSessions(Array.isArray(data) ? data : []);
 
             for (const row of replayRows) {
+                this.rememberSeenSignalId(row?.signal_id);
                 await this.handleSignal(row?.signal_data, row?.player_id, {
                     replayed: true,
-                    signalKey: this.buildSignalReplayKey(row?.signal_data, row?.player_id)
+                    signalKey: this.buildSignalReplayKey(row?.signal_data, row?.player_id, row?.signal_id)
                 });
             }
         })()
