@@ -117,8 +117,39 @@ function resetScrollableDescendants(root) {
     });
 }
 
+function buildOnlineLobbyRenderKey(viewModel) {
+    if (!viewModel) return 'online-lobby:none';
+
+    return JSON.stringify({
+        roomId: viewModel.roomId || '',
+        roomCode: viewModel.roomCode || '',
+        gameId: viewModel.gameId || '',
+        gameLabel: viewModel.gameLabel || '',
+        status: viewModel.status || '',
+        statusLabel: viewModel.statusLabel || '',
+        isHost: !!viewModel.isHost,
+        playerCount: viewModel.playerCount || 0,
+        allReady: !!viewModel.allReady,
+        currentUserReady: !!viewModel.currentUserReady,
+        error: viewModel.error || '',
+        settings: viewModel.settings || {},
+        players: Array.isArray(viewModel.players)
+            ? viewModel.players.map(player => ({
+                id: player.id || '',
+                name: player.name || '',
+                seat: player.seat || 0,
+                ready: !!player.ready,
+                connected: !!player.connected,
+                isHost: !!player.isHost,
+                isSelf: !!player.isSelf
+            }))
+            : []
+    });
+}
+
 const UIController = {
     DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
+    onlineLobbyRenderKey: '',
     profileHudMetricMode: 'darts',
     profileHudMetricTimer: null,
     profileHudSnapshot: null,
@@ -270,6 +301,7 @@ const UIController = {
             errorEl.classList.add('hidden');
         }
         if (codeInput) codeInput.value = '';
+        this.onlineLobbyRenderKey = '';
         this.closeOnlineGamePicker();
         this.closeOnlineSetupInfos();
         this.selectOnlineGame(this.getSelectedOnlineGame());
@@ -443,18 +475,28 @@ const UIController = {
         } catch (error) {
             console.error(error);
         }
+        this.onlineLobbyRenderKey = '';
         this.navigate('dashboard');
     },
 
     renderOnlineLobby(viewModel) {
         const container = document.getElementById('online-lobby-content');
         if (!container) return;
+
+        const vm = viewModel || OnlineRoomService.getLobbyViewModel();
+        const renderKey = buildOnlineLobbyRenderKey(vm);
+        if (this.onlineLobbyRenderKey === renderKey && container.childElementCount > 0) {
+            OnlineVideoService.mountLobbyElements();
+            return;
+        }
+
+        this.onlineLobbyRenderKey = renderKey;
+
         const existingVideoRoot = container.querySelector('#online-video-root');
         if (existingVideoRoot) {
             existingVideoRoot.remove();
         }
 
-        const vm = viewModel || OnlineRoomService.getLobbyViewModel();
         const playersHtml = vm.players.map(player => `
             <div class="online-player-card menu-card menu-card-level-3 ${player.isSelf ? 'online-player-self' : ''}">
                 <div class="online-player-head">
