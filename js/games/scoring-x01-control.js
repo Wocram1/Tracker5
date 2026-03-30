@@ -30,6 +30,10 @@ export class ScoringX01Control {
             // UI Referenzen cachen
             this.ui = {
                 score: this.appContainer.querySelector('#x01-score'),
+                scoreLabel: this.appContainer.querySelector('#x01-score-label'),
+                scoreContext: this.appContainer.querySelector('#x01-score-context'),
+                onlineInlineHead: this.appContainer.querySelector('#x01-online-inline-head'),
+                onlineInlinePlayer: this.appContainer.querySelector('#x01-online-inline-player'),
                 playerName: this.appContainer.querySelector('#x01-player-name'),
                 gameName: this.appContainer.querySelector('#x01-game-name'),
                 challengeTitle: this.appContainer.querySelector('#x01-challenge-title'),
@@ -192,6 +196,7 @@ export class ScoringX01Control {
      */
     configureLayout() {
         if (this.onlineService) {
+            if(this.ui.onlineInlineHead) this.ui.onlineInlineHead.classList.remove('hidden');
             if(this.ui.avgContainer) this.ui.avgContainer.style.display = 'flex';
             if(this.ui.lastContainer) this.ui.lastContainer.style.display = 'flex';
             if(this.ui.challengeHeader) this.ui.challengeHeader.style.display = 'none';
@@ -200,6 +205,7 @@ export class ScoringX01Control {
             if(this.ui.livesContainer) this.ui.livesContainer.classList.add('hidden');
             return;
         }
+        if(this.ui.onlineInlineHead) this.ui.onlineInlineHead.classList.add('hidden');
         // Prüft strikt, ob es das Standard X01 Spiel ist
         const isStandardX01 = this.game.name === 'X01';
 
@@ -325,9 +331,19 @@ const currentDarts = this.game.dartsThrown;
     }
     updateModifierUI() { document.querySelectorAll('.mod-btn').forEach(btn => { const m = parseInt(btn.dataset.mult); btn.classList.toggle('active', m === this.modifier && this.modifier !== 1); }); }
     async updateHeaderInfo() {
-        try { await LevelSystem.getUserStats(); if(this.ui.playerName) this.ui.playerName.textContent = window.appState?.profile?.username || "Player 1"; } catch (e) { if(this.ui.playerName) this.ui.playerName.textContent = "Player 1"; }
+        let playerName = 'Player 1';
+        try {
+            await LevelSystem.getUserStats();
+            playerName = window.appState?.profile?.username || 'Player 1';
+        } catch (e) {
+            playerName = 'Player 1';
+        }
+        if(this.ui.playerName) this.ui.playerName.textContent = playerName;
+        if(this.ui.onlineInlinePlayer) this.ui.onlineInlinePlayer.textContent = playerName;
+        if(this.ui.scoreLabel) this.ui.scoreLabel.textContent = this.onlineService ? playerName : 'Score';
         if(this.ui.gameName) this.ui.gameName.textContent = this.game.displayName || this.game.name || 'Game';
         if(this.ui.challengeTitle) this.ui.challengeTitle.textContent = this.game.isTraining ? "Training Mode" : `Level ${this.game.level || 1}`;
+        if(this.ui.scoreContext && !this.onlineService) this.ui.scoreContext.textContent = '';
     }
 
     applyOnlineSnapshot(snapshot) {
@@ -391,6 +407,14 @@ const currentDarts = this.game.dartsThrown;
             this.ui.playerName.textContent = snapshot.currentPlayer?.username || snapshot.currentPlayer?.name || window.appState?.profile?.username || 'You';
         }
 
+        if (this.ui.onlineInlinePlayer) {
+            this.ui.onlineInlinePlayer.textContent = snapshot.currentPlayer?.username || snapshot.currentPlayer?.name || window.appState?.profile?.username || 'You';
+        }
+
+        if (this.ui.scoreLabel) {
+            this.ui.scoreLabel.textContent = snapshot.currentPlayer?.username || snapshot.currentPlayer?.name || window.appState?.profile?.username || 'You';
+        }
+
         if (this.ui.gameName) {
             this.ui.gameName.textContent = snapshot.room?.room_code ? `ONLINE X01 • ${snapshot.room.room_code}` : 'ONLINE X01';
         }
@@ -401,6 +425,7 @@ const currentDarts = this.game.dartsThrown;
                 ? `${opponentName} ist offline`
                 : (snapshot.isMyTurn ? 'Du bist dran' : `${opponentName} ist dran`);
             const oppScore = opponentState?.score ?? '--';
+            if (this.ui.scoreContext) this.ui.scoreContext.textContent = `${turnText} • Opp ${oppScore}`;
             this.ui.challengeTitle.textContent = `${turnText} • Opp ${oppScore}`;
         }
 

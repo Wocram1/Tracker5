@@ -86,9 +86,44 @@ const ONLINE_GAME_UI_CONFIG = {
 };
 
 const ONLINE_GAME_IDS = Object.keys(ONLINE_GAME_UI_CONFIG);
+const HAPTIC_CLICK_SELECTOR = '.primary-btn, .secondary-btn, .icon-only-btn, .back-nav-btn, .glass-btn, .adaptive-nav-btn, .opt-btn, .stat-pill, .overview-chip, .app-menu-trigger, .app-header-menu-item';
+
+function restartAnimatedEntry(element) {
+    if (!element) return;
+    element.classList.remove('animated-in');
+    void element.offsetWidth;
+    element.classList.add('animated-in');
+}
+
+function triggerNativeClickFeedback() {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+
+    const prefersReducedMotion = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        : false;
+    const isCoarsePointer = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(pointer: coarse)').matches
+        : false;
+
+    if (prefersReducedMotion || !isCoarsePointer) return;
+    navigator.vibrate(8);
+}
+
+function resetScrollableDescendants(root) {
+    if (!root) return;
+    root.scrollTop = 0;
+    root.querySelectorAll('.online-flow-stack, .category-list, .stats-body, .scrollable-content').forEach(node => {
+        node.scrollTop = 0;
+    });
+}
 
 const UIController = {
     DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
+    profileHudMetricMode: 'darts',
+    profileHudMetricTimer: null,
+    profileHudSnapshot: null,
+    profileHudPaneMode: 'profile',
+    profileHudPaneTimer: null,
     // KORRIGIERTE IDs passend zu game-manager.js imports
     gamesData: {
         board: [
@@ -115,6 +150,66 @@ const UIController = {
         ]
     },
 
+    syncAdaptiveNav(target) {
+        const appScreen = document.getElementById('app-screen');
+        if (appScreen) {
+            appScreen.dataset.view = target || 'dashboard';
+        }
+
+        const group = target === 'online-setup' || target === 'online-lobby'
+            ? 'online'
+            : target === 'stats'
+                ? 'stats'
+                : target === 'training'
+                    ? 'training'
+                    : target === 'challenge'
+                        ? 'challenge'
+                        : target === 'dashboard'
+                            ? 'dashboard'
+                            : '';
+
+        document.querySelectorAll('.adaptive-nav-btn').forEach(btn => {
+            btn.classList.toggle('active', group !== '' && btn.dataset.navGroup === group);
+        });
+    },
+
+    openHeaderMenu() {
+        const menu = document.getElementById('app-header-menu');
+        const trigger = document.getElementById('btn-app-menu');
+        if (!menu || !trigger) return;
+        menu.classList.remove('hidden');
+        trigger.classList.add('active');
+        trigger.setAttribute('aria-expanded', 'true');
+    },
+
+    closeHeaderMenu() {
+        const menu = document.getElementById('app-header-menu');
+        const trigger = document.getElementById('btn-app-menu');
+        if (!menu || !trigger) return;
+        menu.classList.add('hidden');
+        trigger.classList.remove('active');
+        trigger.setAttribute('aria-expanded', 'false');
+    },
+
+    toggleHeaderMenu() {
+        const menu = document.getElementById('app-header-menu');
+        if (!menu) return;
+        if (menu.classList.contains('hidden')) {
+            this.openHeaderMenu();
+            return;
+        }
+        this.closeHeaderMenu();
+    },
+
+    handleHeaderMenuAction(target) {
+        this.closeHeaderMenu();
+        if (target === 'online') {
+            this.showOnlineSetup();
+            return;
+        }
+        this.navigate(target);
+    },
+
     navigate(target) {
         const views = [
             'view-dashboard', 
@@ -133,7 +228,13 @@ const UIController = {
         
         if (target === 'stats') {
             views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
-            document.getElementById('view-stats').classList.remove('hidden');
+            const statsView = document.getElementById('view-stats');
+            statsView?.classList.remove('hidden');
+            restartAnimatedEntry(statsView);
+            resetScrollableDescendants(document.getElementById('content-area'));
+            resetScrollableDescendants(statsView);
+            this.syncAdaptiveNav('stats');
+            this.closeHeaderMenu();
             if(window.StatsController) window.StatsController.loadStats();
             return;
         }
@@ -146,8 +247,13 @@ const UIController = {
         const targetView = document.getElementById(`view-${target}`);
         if (targetView) {
             targetView.classList.remove('hidden');
-            targetView.classList.add('animated-in');
+            restartAnimatedEntry(targetView);
+            resetScrollableDescendants(document.getElementById('content-area'));
+            resetScrollableDescendants(targetView);
         }
+
+        this.syncAdaptiveNav(target);
+        this.closeHeaderMenu();
 
         window.OnlineVideoService?.syncUiVisibility?.();
 
@@ -164,6 +270,8 @@ const UIController = {
             errorEl.classList.add('hidden');
         }
         if (codeInput) codeInput.value = '';
+        this.closeOnlineGamePicker();
+        this.closeOnlineSetupInfos();
         this.selectOnlineGame(this.getSelectedOnlineGame());
         this.navigate('online-setup');
     },
@@ -180,14 +288,63 @@ const UIController = {
         return ONLINE_GAME_UI_CONFIG[this.normalizeOnlineGameId(gameId)];
     },
 
+    toggleOnlineGamePicker() {
+        const panel = document.getElementById('online-game-picker-panel');
+        const trigger = document.getElementById('online-game-picker-trigger');
+        if (!panel || !trigger) return;
+
+        const shouldOpen = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !shouldOpen);
+        trigger.classList.toggle('active', shouldOpen);
+        trigger.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    },
+
+    closeOnlineGamePicker() {
+        const panel = document.getElementById('online-game-picker-panel');
+        const trigger = document.getElementById('online-game-picker-trigger');
+        if (!panel || !trigger) return;
+        panel.classList.add('hidden');
+        trigger.classList.remove('active');
+        trigger.setAttribute('aria-expanded', 'false');
+    },
+
+    toggleOnlineSetupInfo(infoId) {
+        const target = document.getElementById(infoId);
+        if (!target) return;
+
+        const shouldOpen = target.classList.contains('hidden');
+        this.closeOnlineSetupInfos(infoId);
+        target.classList.toggle('hidden', !shouldOpen);
+
+        document.querySelectorAll(`.online-info-toggle[aria-controls="${infoId}"]`).forEach(btn => {
+            btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+            btn.classList.toggle('active', shouldOpen);
+        });
+    },
+
+    closeOnlineSetupInfos(exceptId = '') {
+        document.querySelectorAll('#view-online-setup .online-info-popover, #view-online-lobby .online-info-popover').forEach(popover => {
+            if (exceptId && popover.id === exceptId) return;
+            popover.classList.add('hidden');
+        });
+
+        document.querySelectorAll('#view-online-setup .online-info-toggle, #view-online-lobby .online-info-toggle').forEach(btn => {
+            if (exceptId && btn.getAttribute('aria-controls') === exceptId) return;
+            btn.setAttribute('aria-expanded', 'false');
+            btn.classList.remove('active');
+        });
+    },
+
     selectOnlineGame(gameId) {
         const normalizedGameId = this.normalizeOnlineGameId(gameId);
         const gameConfig = this.getOnlineGameConfig(normalizedGameId);
         const input = document.getElementById('online-game-id');
         const heroTitle = document.getElementById('online-setup-hero-title');
         const heroCopy = document.getElementById('online-setup-hero-copy');
+        const pickerValue = document.getElementById('online-game-picker-value');
 
         if (input) input.value = normalizedGameId;
+        if (pickerValue) pickerValue.textContent = gameConfig.label;
 
         ONLINE_GAME_IDS.forEach(optionGameId => {
             const option = document.getElementById(`online-game-${optionGameId}`);
@@ -213,6 +370,8 @@ const UIController = {
         if (heroCopy) {
             heroCopy.textContent = gameConfig.heroCopy;
         }
+
+        this.closeOnlineGamePicker();
     },
 
     showOnlineSetupError(message) {
@@ -297,7 +456,7 @@ const UIController = {
 
         const vm = viewModel || OnlineRoomService.getLobbyViewModel();
         const playersHtml = vm.players.map(player => `
-            <div class="online-player-card ${player.isSelf ? 'online-player-self' : ''}">
+            <div class="online-player-card menu-card menu-card-level-3 ${player.isSelf ? 'online-player-self' : ''}">
                 <div class="online-player-head">
                     <div>
                         <span class="online-seat-badge">Seat ${player.seat}</span>
@@ -328,13 +487,18 @@ const UIController = {
         const settingsHtml = gameConfig.renderSettings(vm.settings || {});
 
         container.innerHTML = `
-            <div class="glass-panel online-room-card">
+            <div class="glass-panel online-room-card menu-card menu-card-level-2">
                 <div class="online-room-topline">
                     <div>
                         <span class="online-eyebrow">Privater Raum</span>
                         <h3>${lobbyTitle}</h3>
                     </div>
-                    <span class="online-status-pill status-${vm.status}">${vm.statusLabel}</span>
+                    <div class="online-card-head-actions">
+                        <button class="online-info-toggle" onclick="UIController.toggleOnlineSetupInfo('online-lobby-room-info')" aria-controls="online-lobby-room-info" aria-expanded="false">
+                            <i class="ri-information-line"></i>
+                        </button>
+                        <span class="online-status-pill status-${vm.status}">${vm.statusLabel}</span>
+                    </div>
                 </div>
 
                 <div class="online-room-code-block">
@@ -347,7 +511,9 @@ const UIController = {
                     ${settingsHtml}
                 </div>
 
-                <p class="online-room-copy">${lobbyCopy}</p>
+                <div id="online-lobby-room-info" class="online-info-popover hidden">
+                    <p class="online-room-copy">${lobbyCopy}</p>
+                </div>
                 ${vm.error ? `<div class="error-msg">${vm.error}</div>` : ''}
             </div>
 
@@ -357,14 +523,19 @@ const UIController = {
 
             <div id="online-video-slot"></div>
 
-            <div class="glass-panel online-room-card online-cta-card">
+            <div class="glass-panel online-room-card online-cta-card menu-card menu-card-level-2">
                 <div class="online-room-topline">
                     <div>
                         <span class="online-eyebrow">Aktionen</span>
                         <h3>${vm.gameLabel} Lobby Controls</h3>
                     </div>
+                    <button class="online-info-toggle" onclick="UIController.toggleOnlineSetupInfo('online-lobby-action-info')" aria-controls="online-lobby-action-info" aria-expanded="false">
+                        <i class="ri-information-line"></i>
+                    </button>
                 </div>
-                <p class="online-room-copy online-cta-copy">${canStart ? 'Beide Spieler sind bereit. Der Host kann das Match jetzt direkt starten.' : 'Setze zuerst deinen Ready-Status. Sobald beide Spieler bereit sind, wird der Start freigeschaltet.'}</p>
+                <div id="online-lobby-action-info" class="online-info-popover hidden">
+                    <p class="online-room-copy online-cta-copy">${canStart ? 'Beide Spieler sind bereit. Der Host kann das Match jetzt direkt starten.' : 'Setze zuerst deinen Ready-Status. Sobald beide Spieler bereit sind, wird der Start freigeschaltet.'}</p>
+                </div>
                 <div class="online-lobby-actions">
                     <button class="glass-btn online-ready-btn" onclick="UIController.toggleOnlineReady()">${vm.currentUserReady ? 'Ready entfernen' : 'Ready setzen'}</button>
                     <button class="primary-btn online-start-btn ${canStart ? 'flash-btn' : ''}" ${canStart ? '' : 'disabled'} onclick="UIController.startOnlineMatch()">Match starten</button>
@@ -397,6 +568,7 @@ const UIController = {
 
     updateProfileDisplay(profile) {
         if (!profile) return;
+        this.profileHudSnapshot = profile;
 
         const nameEl = document.getElementById('display-name');
         const levelEl = document.getElementById('display-level'); 
@@ -426,10 +598,80 @@ const UIController = {
             const neededForNext = nextLvlXp - currentLvlXp;
             const progressInLevel = (profile.xp || 0) - currentLvlXp;
             
-            let percent = Math.floor((progressInLevel / neededForNext) * 100);
+            const previousPercent = Number.parseFloat(xpFill.dataset.progress || '0') || 0;
+            const percent = Math.max(0, Math.min(100, Math.floor((progressInLevel / neededForNext) * 100)));
+            xpFill.dataset.progress = `${percent}`;
             xpFill.style.width = `${percent}%`;
             xpText.textContent = `${progressInLevel} / ${neededForNext} XP`;
+
+            if (percent !== previousPercent) {
+                xpFill.classList.remove('xp-fill-progressing');
+                xpText.classList.remove('xp-label-progressing');
+                void xpFill.offsetWidth;
+                xpFill.classList.add('xp-fill-progressing');
+                xpText.classList.add('xp-label-progressing');
+            }
         }
+
+        this.renderProfileHudMetric(profile);
+        this.ensureProfileHudMetricRotator();
+        this.ensureProfileHudPaneRotator();
+    },
+
+    renderProfileHudMetric(profile = this.profileHudSnapshot) {
+        if (!profile) return;
+
+        const metricEl = document.querySelector('.stat-mini-rotating');
+        const iconEl = document.getElementById('profile-kpi-icon');
+        const valueEl = document.getElementById('profile-kpi-value');
+        const labelEl = document.getElementById('profile-kpi-label');
+        if (!metricEl || !iconEl || !valueEl || !labelEl) return;
+
+        const isGamesMode = this.profileHudMetricMode === 'games';
+        metricEl.classList.remove('profile-hud-metric-anim');
+        iconEl.className = isGamesMode ? 'ri-trophy-line' : 'ri-send-plane-fill';
+        valueEl.textContent = isGamesMode
+            ? (profile.total_games_played || 0).toLocaleString()
+            : (profile.total_darts_thrown || 0).toLocaleString();
+        labelEl.textContent = isGamesMode ? 'Games Played' : 'Darts Thrown';
+        requestAnimationFrame(() => {
+            metricEl.classList.add('profile-hud-metric-anim');
+        });
+    },
+
+    ensureProfileHudMetricRotator() {
+        if (this.profileHudMetricTimer) return;
+
+        this.profileHudMetricTimer = window.setInterval(() => {
+            this.profileHudMetricMode = this.profileHudMetricMode === 'darts' ? 'games' : 'darts';
+            this.renderProfileHudMetric();
+        }, 3000);
+    },
+
+    applyProfileHudPaneState() {
+        const profilePane = document.getElementById('user-profile-header');
+        const ratingsPane = document.getElementById('profile-sr-strip');
+        if (!profilePane || !ratingsPane) return;
+
+        const showRatings = this.profileHudPaneMode === 'ratings';
+        profilePane.classList.toggle('dashboard-profile-pane-hidden', showRatings);
+        ratingsPane.classList.toggle('dashboard-profile-pane-hidden', !showRatings);
+    },
+
+    scheduleNextProfileHudPaneSwitch() {
+        window.clearTimeout(this.profileHudPaneTimer);
+        const delay = this.profileHudPaneMode === 'profile' ? 7000 : 3000;
+        this.profileHudPaneTimer = window.setTimeout(() => {
+            this.profileHudPaneMode = this.profileHudPaneMode === 'profile' ? 'ratings' : 'profile';
+            this.applyProfileHudPaneState();
+            this.scheduleNextProfileHudPaneSwitch();
+        }, delay);
+    },
+
+    ensureProfileHudPaneRotator() {
+        this.applyProfileHudPaneState();
+        if (this.profileHudPaneTimer) return;
+        this.scheduleNextProfileHudPaneSwitch();
     },
 
     showChallengeCategories() {
@@ -439,24 +681,24 @@ const UIController = {
 
         container.className = "category-list animated-in";
         container.innerHTML = `
-            <div class="wide-card glass-card" onclick="UIController.prepareAndRenderGames('board', false)">
+            <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.prepareAndRenderGames('board', false)">
                 <div class="wide-icon-left"><i class="ri-focus-3-line"></i></div>
-                <div class="wide-content-center"><h3>Board Control</h3></div>
+                <div class="wide-content-center"><h3>Board Control</h3><p class="menu-card-copy">Präzision und Segmentkontrolle.</p></div>
                 <div class="wide-info-right"><i class="ri-information-line"></i></div>
             </div>
-            <div class="wide-card glass-card" onclick="UIController.prepareAndRenderGames('finishing', false)">
+            <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.prepareAndRenderGames('finishing', false)">
                 <div class="wide-icon-left"><i class="ri-check-double-line"></i></div>
-                <div class="wide-content-center"><h3>Finishing</h3></div>
+                <div class="wide-content-center"><h3>Finishing</h3><p class="menu-card-copy">Checkouts, Wege und Drucksituationen.</p></div>
                 <div class="wide-info-right"><i class="ri-information-line"></i></div>
             </div>
-            <div class="wide-card glass-card" onclick="UIController.prepareAndRenderGames('scoring', false)">
+            <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.prepareAndRenderGames('scoring', false)">
                 <div class="wide-icon-left"><i class="ri-numbers-line"></i></div>
-                <div class="wide-content-center"><h3>Scoring</h3></div>
+                <div class="wide-content-center"><h3>Scoring</h3><p class="menu-card-copy">Rhythmus, Power und Konstanz.</p></div>
                 <div class="wide-info-right"><i class="ri-information-line"></i></div>
             </div>
-            <div class="wide-card glass-card" onclick="UIController.prepareAndRenderGames('warmup', false)">
+            <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.prepareAndRenderGames('warmup', false)">
                 <div class="wide-icon-left"><i class="ri-fire-line"></i></div>
-                <div class="wide-content-center"><h3>Warmup</h3></div>
+                <div class="wide-content-center"><h3>Warmup</h3><p class="menu-card-copy">Schnell reinfinden und locker starten.</p></div>
                 <div class="wide-info-right"><i class="ri-information-line"></i></div>
             </div>
         `;
@@ -481,21 +723,24 @@ const UIController = {
                 <button class="back-nav-btn" onclick="navigate('${backTarget}')">
                     <i class="ri-arrow-left-s-line"></i>
                 </button>
-                <h2 style="text-transform: capitalize;">${categoryKey} ${isTrainingMode ? '(Training)' : '(Challenge)'}</h2>
+                <div class="sub-page-header-copy">
+                    <h2 style="text-transform: capitalize;">${categoryKey} ${isTrainingMode ? '(Training)' : '(Challenge)'}</h2>
+                    <p>${isTrainingMode ? 'Wähle dein nächstes Trainingsspiel.' : 'Wähle deine nächste Challenge.'}</p>
+                </div>
             </div>
             <div id="games-container" class="category-list animated-in">
         `;
 
         games.forEach(game => {
             html += `
-                <div class="wide-card glass-card ${game.active ? '' : 'locked gray-scale'}" 
+                <div class="wide-card glass-card menu-card menu-card-level-2 ${game.active ? '' : 'locked gray-scale'}" 
                      onclick="${game.active ? `selectGame('${game.id}')` : ''}">
                     <div class="wide-icon-left">
                         <i class="${game.icon}"></i>
                     </div>
                     <div class="wide-content-center">
                         <h3>${game.name}</h3>
-                        ${!game.active ? '<p style="font-size:0.7rem; color:red;">Coming Soon</p>' : ''}
+                        ${!game.active ? '<p class="menu-card-status">Coming Soon</p>' : ''}
                     </div>
                     <div class="wide-info-right">
                         <i class="ri-information-line"></i>
@@ -525,36 +770,36 @@ const UIController = {
         
         modal.innerHTML = `
             <div class="modal-backdrop" onclick="document.getElementById('modal-game-setup').classList.add('hidden')"></div>
-            <div class="setup-container glass-panel animate-pop">
+            <div class="setup-container glass-panel menu-modal animate-pop">
                 <div class="setup-header">
                     <h2>Quickplay</h2>
                     <p>Wähle dein Trainingsformat</p>
                 </div>
 
-                <div class="qp-options-grid" style="display: grid; gap: 15px; margin-bottom: 20px;">
-                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${this.DAILY_WORKOUT_IDS.join("','")}'], 'Daily Workout', 'daily')" style="padding: 20px; text-align: left;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <h3 style="color: var(--neon-cyan); margin: 0;">Daily Workout</h3>
+                <div class="qp-options-grid">
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${this.DAILY_WORKOUT_IDS.join("','")}'], 'Daily Workout', 'daily')">
+                        <div class="qp-card-row">
+                            <div class="qp-card-copy">
+                                <h3 class="qp-card-title qp-card-title-primary">Daily Workout</h3>
                                 <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele • ca 10-15mins</p>
                             </div>
-                            <i class="ri-calendar-check-line" style="font-size: 2rem; color: var(--neon-cyan);"></i>
+                            <i class="ri-calendar-check-line qp-card-icon qp-card-icon-primary"></i>
                         </div>
                     </div>
 
-                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${randomQueue.join("','")}'], 'Random Mix', 'random')" style="padding: 20px; text-align: left;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <h3 style="margin: 0;">Random Mix</h3>
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${randomQueue.join("','")}'], 'Random Mix', 'random')">
+                        <div class="qp-card-row">
+                            <div class="qp-card-copy">
+                                <h3 class="qp-card-title">Random Mix</h3>
                                 <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">3 zufällige Spiele • Kurze Session</p>
                             </div>
-                            <i class="ri-shuffle-line" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <i class="ri-shuffle-line qp-card-icon"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="qp-actions">
-                    <button class="glass-btn" onclick="document.getElementById('modal-game-setup').classList.add('hidden')">Abbrechen</button>
+                    <button class="glass-btn menu-btn-secondary" onclick="document.getElementById('modal-game-setup').classList.add('hidden')">Abbrechen</button>
                 </div>
             </div>
         `;
@@ -569,31 +814,31 @@ const UIController = {
         const gamesListHtml = queueIds.map((id, index) => {
             const game = allGames.find(g => g.id === id) || { name: id, icon: 'ri-play-line' };
             return `
-                <div class="preview-item" style="display: flex; align-items: center; gap: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 8px;">
-                    <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--neon-cyan); color: black; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                <div class="preview-item qp-preview-item">
+                    <div class="qp-number">
                         ${index + 1}
                     </div>
-                    <i class="${game.icon}" style="font-size: 1.2rem; color: var(--neon-cyan);"></i>
-                    <span style="font-weight: 600;">${game.name}</span>
+                    <i class="${game.icon} qp-icon"></i>
+                    <span class="qp-name">${game.name}</span>
                 </div>
             `;
         }).join('');
 
         modal.innerHTML = `
             <div class="modal-backdrop" onclick="document.getElementById('modal-game-setup').classList.add('hidden')"></div>
-            <div class="setup-container glass-panel animate-pop">
+            <div class="setup-container glass-panel menu-modal animate-pop">
                 <div class="setup-header">
-                    <h2 style="color: var(--neon-cyan);">${title}</h2>
+                    <h2>${title}</h2>
                     <p>Folgende Challenges warten auf dich:</p>
                 </div>
 
-                <div class="preview-list" style="margin: 20px 0;">
+                <div class="preview-list qp-preview-list">
                     ${gamesListHtml}
                 </div>
 
-                <div class="qp-actions" style="display: flex; gap: 10px;">
+                <div class="qp-actions qp-actions-split">
                     <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayOptions()">Zurück</button>
-                    <button class="primary-btn flash-btn" style="flex: 2;" onclick="GameManager.startQuickplaySequence(['${queueIds.join("','")}'], '${qpMode}')">
+                    <button class="primary-btn flash-btn qp-btn-start" onclick="GameManager.startQuickplaySequence(['${queueIds.join("','")}'], '${qpMode}')">
                         JETZT STARTEN <i class="ri-play-fill"></i>
                     </button>
                 </div>
@@ -630,3 +875,24 @@ window.selectModalOption = (btn, fieldId, value) => {
     const hiddenInput = document.getElementById(`setup-${fieldId}`);
     if (hiddenInput) hiddenInput.value = value;
 };
+
+document.addEventListener('click', (event) => {
+    if (!event.target.closest(HAPTIC_CLICK_SELECTOR)) return;
+    triggerNativeClickFeedback();
+}, { passive: true });
+
+document.addEventListener('click', (event) => {
+    const menu = document.getElementById('app-header-menu');
+    const shell = event.target.closest('.app-menu-shell');
+    if (!menu || shell) return;
+    UIController.closeHeaderMenu();
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    UIController.closeHeaderMenu();
+});
+
+document.getElementById('btn-app-menu')?.addEventListener('click', () => {
+    UIController.toggleHeaderMenu();
+});

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>OCRAM Dart Tracker Pro</title>
     
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
@@ -33,127 +33,198 @@
         </div>
     </main>
 
-    <main id="app-screen" class="hidden">
+    <main id="app-screen" class="hidden" data-view="dashboard">
         <header class="app-top-bar">
             <div class="brand-logo">DART<span>PRO</span><div class="dot"></div></div>
-            <button id="btn-logout" class="icon-only-btn"><i class="ri-logout-box-r-line"></i></button>
+            <div class="app-menu-shell">
+                <button id="btn-app-menu" class="app-menu-trigger" aria-expanded="false" aria-controls="app-header-menu">
+                    <i class="ri-menu-4-line"></i>
+                    <span>Menü</span>
+                    <i class="ri-arrow-down-s-line app-menu-caret"></i>
+                </button>
+                <div id="app-header-menu" class="app-header-menu hidden" role="menu" aria-label="Schnellnavigation">
+                    <button class="app-header-menu-item" role="menuitem" onclick="UIController.handleHeaderMenuAction('dashboard')">
+                        <i class="ri-home-5-line"></i><span>Home</span>
+                    </button>
+                    <button class="app-header-menu-item" role="menuitem" onclick="UIController.handleHeaderMenuAction('training')">
+                        <i class="ri-shuffle-line"></i><span>Training</span>
+                    </button>
+                    <button class="app-header-menu-item" role="menuitem" onclick="UIController.handleHeaderMenuAction('challenge')">
+                        <i class="ri-medal-line"></i><span>Challenge</span>
+                    </button>
+                    <button class="app-header-menu-item" role="menuitem" onclick="UIController.handleHeaderMenuAction('online')">
+                        <i class="ri-wifi-line"></i><span>Online</span>
+                    </button>
+                    <button class="app-header-menu-item" role="menuitem" onclick="UIController.handleHeaderMenuAction('stats')">
+                        <i class="ri-bar-chart-box-line"></i><span>Stats</span>
+                    </button>
+                    <div class="app-header-menu-divider"></div>
+                    <button id="btn-logout" class="app-header-menu-item danger" role="menuitem">
+                        <i class="ri-logout-box-r-line"></i><span>Ausloggen</span>
+                    </button>
+                </div>
+            </div>
         </header>
+
+        <aside id="adaptive-nav-rail" class="adaptive-nav-rail" aria-label="App Navigation">
+            <button class="adaptive-nav-btn active" data-nav-group="dashboard" onclick="navigate('dashboard')">
+                <i class="ri-home-5-line"></i>
+                <span>Home</span>
+            </button>
+            <button class="adaptive-nav-btn" data-nav-group="training" onclick="navigate('training')">
+                <i class="ri-shuffle-line"></i>
+                <span>Training</span>
+            </button>
+            <button class="adaptive-nav-btn" data-nav-group="challenge" onclick="navigate('challenge')">
+                <i class="ri-medal-line"></i>
+                <span>Challenge</span>
+            </button>
+            <button class="adaptive-nav-btn" data-nav-group="online" onclick="UIController.showOnlineSetup()">
+                <i class="ri-wifi-line"></i>
+                <span>Online</span>
+            </button>
+            <button class="adaptive-nav-btn" data-nav-group="stats" onclick="navigate('stats')">
+                <i class="ri-bar-chart-box-line"></i>
+                <span>Stats</span>
+            </button>
+        </aside>
 
         <section id="content-area">
             
             <div id="view-dashboard" class="view dashboard-layout animated-in">
-      <div id="user-profile-header" class="profile-container glass-panel tier-rookie">
-    <div class="profile-rank-zone">
-        <div class="user-meta">
-            <h2 id="display-name">Lade...</h2>
-            <span class="rank-title" id="rank-name">ROOKIE</span>
-        </div>
-        
-        <div class="counters-row">
-            <div class="stat-mini compact">
-                <i class="ri-send-plane-fill"></i>
-                <div class="stat-values">
-                    <span id="stat-total-darts">0</span>
-                    <label>DARTS</label>
+      <div id="dashboard-profile-rotator" class="dashboard-profile-rotator">
+        <div id="user-profile-header" class="profile-container glass-panel tier-rookie dashboard-profile-pane">
+            <div class="profile-rank-zone">
+                <div class="user-meta">
+                    <h2 id="display-name">Lade...</h2>
+                    <span class="rank-title" id="rank-name">ROOKIE</span>
+                </div>
+                
+                <div class="counters-row">
+                    <div class="stat-mini compact stat-mini-rotating">
+                        <i id="profile-kpi-icon" class="ri-send-plane-fill"></i>
+                        <div class="stat-values">
+                            <span id="profile-kpi-value">0</span>
+                            <label id="profile-kpi-label">Darts Thrown</label>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="stat-mini compact">
-                <i class="ri-trophy-line"></i>
-                <div class="stat-values">
-                    <span id="stat-total-games">0</span>
-                    <label>GAMES</label>
+
+            <div class="xp-fusion-wrapper">
+                <div class="level-circle">
+                    <span id="display-level">0</span>
+                </div>
+                
+                <div class="xp-container">
+                    <div id="display-xp-fill" class="xp-fill"></div>
+                    <div class="xp-label-row" id="display-xp">0 / 0 XP</div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="xp-fusion-wrapper">
-        <div class="level-circle">
-            <span id="display-level">0</span>
-        </div>
-        
-        <div class="xp-container">
-            <div id="display-xp-fill" class="xp-fill"></div>
-            <div class="xp-label-row" id="display-xp">0 / 0 XP</div>
-        </div>
-    </div>
-</div>
-
-<div class="profile-sr-strip glass-panel">
-    <div class="profile-sr-head">
-        <span class="profile-sr-label">Ratings</span>
-    </div>
-    <div class="sr-badge-grid">
-        <div class="sr-card sco">
-            <div class="sr-icon-slot" id="icon-scoring"></div>
-            <div class="sr-card-meta">
-                <label>SC</label>
-                <span id="sr-scoring">0</span>
+        <div id="profile-sr-strip" class="profile-sr-strip glass-panel dashboard-profile-pane dashboard-profile-pane-hidden">
+            <div class="profile-sr-head">
+                <span class="profile-sr-label">Ratings</span>
+            </div>
+            <div class="sr-badge-grid">
+                <div class="sr-card sco">
+                    <div class="sr-icon-slot" id="icon-scoring"></div>
+                    <div class="sr-card-meta">
+                        <label>SC</label>
+                        <span id="sr-scoring">0</span>
+                    </div>
+                </div>
+                <div class="sr-card fin">
+                    <div class="sr-icon-slot" id="icon-finishing"></div>
+                    <div class="sr-card-meta">
+                        <label>FN</label>
+                        <span id="sr-finishing">0</span>
+                    </div>
+                </div>
+                <div class="sr-card brd">
+                    <div class="sr-icon-slot" id="icon-boardcontrol"></div>
+                    <div class="sr-card-meta">
+                        <label>BC</label>
+                        <span id="sr-boardcontrol">0</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="sr-card fin">
-            <div class="sr-icon-slot" id="icon-finishing"></div>
-            <div class="sr-card-meta">
-                <label>FN</label>
-                <span id="sr-finishing">0</span>
-            </div>
-        </div>
-        <div class="sr-card brd">
-            <div class="sr-icon-slot" id="icon-boardcontrol"></div>
-            <div class="sr-card-meta">
-                <label>BC</label>
-                <span id="sr-boardcontrol">0</span>
-            </div>
-        </div>
-    </div>
-</div>
-                <div class="action-grid">
-                    <div class="square-card glass-card dashboard-entry dashboard-entry-quickplay" onclick="UIController.initQuickplay()">
+      </div>
+                <div class="dashboard-menu-stack">
+                    <div class="square-card glass-card menu-card menu-card-level-1 dashboard-entry dashboard-entry-quickplay" onclick="UIController.initQuickplay()">
                         <div class="square-top"><i class="ri-target-line"></i><span class="square-title">Quickplay</span></div>
                         <div class="square-bottom"><span class="square-desc">Zufällige Auswahl oder 10mins</span></div>
                     </div>
-                    <div class="square-card glass-card dashboard-entry dashboard-entry-challenge" onclick="navigate('challenge')">
+                    <div class="square-card glass-card menu-card menu-card-level-2 dashboard-entry dashboard-entry-challenge" onclick="navigate('challenge')">
                         <div class="square-top"><i class="ri-medal-line"></i><span class="square-title">Challenge</span></div>
                         <div class="square-bottom"><span class="square-desc">Level up</span></div>
                     </div>
+                    <div class="square-card glass-card menu-card menu-card-level-2 dashboard-entry dashboard-entry-online" onclick="UIController.showOnlineSetup()">
+                        <div class="square-top"><i class="ri-wifi-line"></i><span class="square-title">Online</span></div>
+                        <div class="square-bottom"><span class="square-desc">Private Duelle mit Lobby und Video.</span></div>
+                    </div>
                 </div>
 
-                <div class="wide-card glass-card dashboard-entry dashboard-entry-training" onclick="navigate('training')">
-    <div class="wide-icon-left"><i class="ri-shuffle-line"></i></div> <div class="wide-content-center"><h3>Training</h3></div>
-    <div class="wide-info-right"><i class="ri-play-fill"></i></div>
-</div>
+                <div class="dashboard-secondary-stack">
+                    <div class="wide-card glass-card menu-card menu-card-level-2 dashboard-entry dashboard-entry-training" onclick="navigate('training')">
+                        <div class="wide-icon-left"><i class="ri-shuffle-line"></i></div>
+                        <div class="wide-content-center">
+                            <h3>Training</h3>
+                            <p class="menu-card-copy">Board, Finishing, Scoring und Warmup.</p>
+                        </div>
+                        <div class="wide-info-right"><i class="ri-play-fill"></i></div>
+                    </div>
 
-                <div class="wide-card glass-card dashboard-entry dashboard-entry-online" onclick="UIController.showOnlineSetup()">
-                    <div class="wide-icon-left"><i class="ri-wifi-line"></i></div>
-                    <div class="wide-content-center"><h3>Online</h3></div>
-                    <div class="wide-info-right"><i class="ri-sword-line"></i></div>
-                </div>
-
-                <div class="wide-card glass-card dashboard-entry dashboard-entry-stats" onclick="navigate('stats')">
-                    <div class="wide-icon-left"><i class="ri-bar-chart-box-line"></i></div>
-                    <div class="wide-content-center"><h3>Stats</h3></div>
-                    <div class="wide-info-right"><i class="ri-information-line"></i></div>
+                    <div class="wide-card glass-card menu-card menu-card-level-3 dashboard-entry dashboard-entry-stats" onclick="navigate('stats')">
+                        <div class="wide-icon-left"><i class="ri-bar-chart-box-line"></i></div>
+                        <div class="wide-content-center">
+                            <h3>Stats</h3>
+                            <p class="menu-card-copy">Verlauf, Ratings und Fortschritt.</p>
+                        </div>
+                        <div class="wide-info-right"><i class="ri-information-line"></i></div>
+                    </div>
                 </div>
             </div>
 
             <div id="view-online-setup" class="view hidden">
                 <div class="sub-page-header">
                     <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2>Online Duell</h2>
+                    <div class="sub-page-header-copy">
+                        <h2>Online Duell</h2>
+                        <p>Raum erstellen, Code teilen oder direkt beitreten.</p>
+                    </div>
                 </div>
                 <div class="online-flow-stack animated-in">
-                    <div class="glass-panel online-hero-card">
-                        <span class="online-eyebrow">Phase 1</span>
-                        <h3 id="online-setup-hero-title">Privater Raum fuer 1v1 X01</h3>
-                        <p id="online-setup-hero-copy">Erstelle einen Raumcode oder tritt einem bestehenden Raum bei. Fuer den Start stehen X01, Shanghai, ATC, 121 und JDC als private Duelle bereit.</p>
+                    <div class="glass-panel online-hero-card menu-card menu-card-level-1">
+                        <div class="online-card-head online-card-head-compact">
+                            <div>
+                                <span class="online-eyebrow">Phase 1</span>
+                                <h3 id="online-setup-hero-title">Privater Raum fuer 1v1 X01</h3>
+                            </div>
+                            <button class="online-info-toggle" onclick="UIController.toggleOnlineSetupInfo('online-setup-hero-info')" aria-controls="online-setup-hero-info" aria-expanded="false">
+                                <i class="ri-information-line"></i>
+                            </button>
+                        </div>
+                        <div id="online-setup-hero-info" class="online-info-popover hidden">
+                            <p id="online-setup-hero-copy">Erstelle einen Raumcode oder tritt einem bestehenden Raum bei. Fuer den Start stehen X01, Shanghai, ATC, 121 und JDC als private Duelle bereit.</p>
+                        </div>
                         <div class="setup-group online-setup-group">
                             <label>Spiel waehlen</label>
-                            <div class="option-grid online-game-grid">
-                                <button id="online-game-x01" class="opt-btn active online-game-option" onclick="UIController.selectOnlineGame('x01')">X01</button>
-                                <button id="online-game-shanghai" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('shanghai')">Shanghai</button>
-                                <button id="online-game-atc" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('atc')">ATC</button>
-                                <button id="online-game-game121" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('game121')">121</button>
-                                <button id="online-game-jdc-warmup" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('jdc-warmup')">JDC</button>
+                            <div class="online-picker-shell">
+                                <button id="online-game-picker-trigger" class="glass-btn online-picker-trigger" onclick="UIController.toggleOnlineGamePicker()" aria-controls="online-game-picker-panel" aria-expanded="false">
+                                    <span>Modus</span>
+                                    <strong id="online-game-picker-value">X01</strong>
+                                    <i class="ri-arrow-down-s-line online-picker-caret"></i>
+                                </button>
+                                <div id="online-game-picker-panel" class="option-grid online-game-grid hidden">
+                                    <button id="online-game-x01" class="opt-btn active online-game-option" onclick="UIController.selectOnlineGame('x01')">X01</button>
+                                    <button id="online-game-shanghai" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('shanghai')">Shanghai</button>
+                                    <button id="online-game-atc" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('atc')">ATC</button>
+                                    <button id="online-game-game121" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('game121')">121</button>
+                                    <button id="online-game-jdc-warmup" class="opt-btn online-game-option" onclick="UIController.selectOnlineGame('jdc-warmup')">JDC</button>
+                                </div>
                             </div>
                             <input type="hidden" id="online-game-id" value="x01">
                         </div>
@@ -244,29 +315,43 @@
                         </div>
                     </div>
 
-                    <div class="glass-panel online-action-card">
-                        <div class="online-card-head">
+                    <div class="glass-panel online-action-card menu-card menu-card-level-2">
+                        <div class="online-card-head online-card-head-compact">
                             <div>
                                 <span class="online-eyebrow">Raum erstellen</span>
                                 <h3>Host werden</h3>
                             </div>
-                            <i class="ri-add-circle-line"></i>
+                            <div class="online-card-head-actions">
+                                <button class="online-info-toggle" onclick="UIController.toggleOnlineSetupInfo('online-create-info')" aria-controls="online-create-info" aria-expanded="false">
+                                    <i class="ri-information-line"></i>
+                                </button>
+                                <i class="ri-add-circle-line"></i>
+                            </div>
                         </div>
-                        <p>Erzeuge einen privaten Code, teile ihn mit deinem Gegner und starte das Match aus der Lobby.</p>
+                        <div id="online-create-info" class="online-info-popover hidden">
+                            <p>Erzeuge einen privaten Code, teile ihn mit deinem Gegner und starte das Match aus der Lobby.</p>
+                        </div>
                         <button class="primary-btn flash-btn" onclick="UIController.createOnlineRoom()">
                             Raum erstellen <i class="ri-arrow-right-line"></i>
                         </button>
                     </div>
 
-                    <div class="glass-panel online-action-card">
-                        <div class="online-card-head">
+                    <div class="glass-panel online-action-card menu-card menu-card-level-2">
+                        <div class="online-card-head online-card-head-compact">
                             <div>
                                 <span class="online-eyebrow">Raum beitreten</span>
                                 <h3>Code eingeben</h3>
                             </div>
-                            <i class="ri-login-box-line"></i>
+                            <div class="online-card-head-actions">
+                                <button class="online-info-toggle" onclick="UIController.toggleOnlineSetupInfo('online-join-info')" aria-controls="online-join-info" aria-expanded="false">
+                                    <i class="ri-information-line"></i>
+                                </button>
+                                <i class="ri-login-box-line"></i>
+                            </div>
                         </div>
-                        <p>Gib den privaten Code deines Gegners ein, um der Lobby beizutreten.</p>
+                        <div id="online-join-info" class="online-info-popover hidden">
+                            <p>Gib den privaten Code deines Gegners ein, um der Lobby beizutreten.</p>
+                        </div>
                         <div class="online-join-row">
                             <input id="online-room-code-input" type="text" maxlength="6" class="glass-input online-room-code-input" placeholder="ABC123">
                             <button class="glass-btn" onclick="UIController.joinOnlineRoom()">Beitreten</button>
@@ -279,7 +364,10 @@
             <div id="view-online-lobby" class="view hidden">
                 <div class="sub-page-header">
                     <button class="back-nav-btn" onclick="UIController.leaveOnlineRoom()"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2>Online Lobby</h2>
+                    <div class="sub-page-header-copy">
+                        <h2>Online Lobby</h2>
+                        <p>Bereit machen, Video starten und Match beginnen.</p>
+                    </div>
                 </div>
                 <div id="online-lobby-content" class="online-flow-stack animated-in"></div>
             </div>
@@ -287,27 +375,30 @@
             <div id="view-training" class="view hidden">
                 <div class="sub-page-header">
                     <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2>Training</h2>
+                    <div class="sub-page-header-copy">
+                        <h2>Training</h2>
+                        <p>Wähle den Fokus für deine nächste Session.</p>
+                    </div>
                 </div>
                 <div class="category-list animated-in">
-                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('board')">
+                    <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.showGamesByCategory('board')">
                         <div class="wide-icon-left"><i class="ri-focus-3-line"></i></div>
-                        <div class="wide-content-center"><h3>Board Control</h3></div>
+                        <div class="wide-content-center"><h3>Board Control</h3><p class="menu-card-copy">Präzision und Segmentkontrolle.</p></div>
                         <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
-                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('finishing')">
+                    <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.showGamesByCategory('finishing')">
                         <div class="wide-icon-left"><i class="ri-check-double-line"></i></div>
-                        <div class="wide-content-center"><h3>Finishing</h3></div>
+                        <div class="wide-content-center"><h3>Finishing</h3><p class="menu-card-copy">Checkouts, Wege und Drucksituationen.</p></div>
                         <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
-                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('scoring')">
+                    <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.showGamesByCategory('scoring')">
                         <div class="wide-icon-left"><i class="ri-numbers-line"></i></div>
-                        <div class="wide-content-center"><h3>Scoring</h3></div>
+                        <div class="wide-content-center"><h3>Scoring</h3><p class="menu-card-copy">Rhythmus, Power und Konstanz.</p></div>
                         <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
-                    <div class="wide-card glass-card" onclick="UIController.showGamesByCategory('warmup')">
+                    <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.showGamesByCategory('warmup')">
                         <div class="wide-icon-left"><i class="ri-fire-line"></i></div>
-                        <div class="wide-content-center"><h3>Warmup</h3></div>
+                        <div class="wide-content-center"><h3>Warmup</h3><p class="menu-card-copy">Schnell reinfinden und locker starten.</p></div>
                         <div class="wide-info-right"><i class="ri-information-line"></i></div>
                     </div>
                 </div>
@@ -316,7 +407,10 @@
             <div id="view-challenge" class="view hidden">
                 <div class="sub-page-header">
                     <button class="back-nav-btn" onclick="navigate('dashboard')"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2>Challenge Mode</h2>
+                    <div class="sub-page-header-copy">
+                        <h2>Challenge Mode</h2>
+                        <p>Levelbasierte Runs mit klarer Progression.</p>
+                    </div>
                 </div>
                 <div class="category-list animated-in"></div>
             </div>
@@ -324,7 +418,10 @@
             <div id="view-games-list" class="view hidden">
                 <div class="sub-page-header">
                     <button class="back-nav-btn" onclick="navigate('training')"><i class="ri-arrow-left-s-line"></i></button>
-                    <h2 id="list-title">Spiele</h2>
+                    <div class="sub-page-header-copy">
+                        <h2 id="list-title">Spiele</h2>
+                        <p>Suche dir den passenden Run aus.</p>
+                    </div>
                 </div>
                 <div id="games-container" class="category-list animated-in"></div>
             </div>
@@ -366,7 +463,10 @@
         <button class="back-nav-btn" onclick="navigate('dashboard')">
             <i class="ri-arrow-left-s-line"></i>
         </button>
-        <h2>Statistiken</h2>
+        <div class="sub-page-header-copy">
+            <h2>Statistiken</h2>
+            <p>Formkurve, Ratings und Trends kompakt im Blick.</p>
+        </div>
     </div>
 
     <div class="stats-header">

@@ -341,11 +341,11 @@ export const GameManager = {
         }).join('');
 
         modal.innerHTML = `
-            <div class="setup-card glass-panel animated-in">
+            <div class="setup-card glass-panel menu-modal animated-in">
                 <h2>${config.title}</h2>
                 <div class="setup-fields">${fieldsHtml}</div>
                 <div class="setup-actions">
-                    <button class="glass-btn" onclick="window.closeSetupModal()">Cancel</button>
+                    <button class="glass-btn menu-btn-secondary" onclick="window.closeSetupModal()">Cancel</button>
                     <button class="glass-btn primary" onclick="GameManager.confirmTrainingStart('${gameId}')">Start</button>
                 </div>
             </div>
@@ -379,7 +379,7 @@ export const GameManager = {
         const modal = document.getElementById('modal-game-setup');
         
         modal.innerHTML = `
-            <div class="setup-card glass-panel animated-in">
+            <div class="setup-card glass-panel menu-modal animated-in">
                 <h2 style="color: var(--neon-cyan); margin-bottom: 20px;">GEGNER WÄHLEN</h2>
                 
                 <div class="setup-group">
@@ -410,7 +410,7 @@ export const GameManager = {
                 </div>
 
                 <div class="setup-actions" style="margin-top: 20px;">
-                    <button class="glass-btn" onclick="window.closeSetupModal()">Abbrechen</button>
+                    <button class="glass-btn menu-btn-secondary" onclick="window.closeSetupModal()">Abbrechen</button>
                     <button class="glass-btn primary" onclick="GameManager.confirmOpponentStart('${gameId}')">Start</button>
                 </div>
             </div>
@@ -616,13 +616,13 @@ export const GameManager = {
         this.multiplayerPromptOpen = true;
         modal.innerHTML = `
             <div class="modal-backdrop"></div>
-            <div class="setup-container glass-panel animate-pop">
+            <div class="setup-container glass-panel menu-modal animate-pop">
                 <div class="setup-header">
                     <h2>${finishedPlayer.name} ist fertig</h2>
                     <p>${nextPlayer.name}${nextPlayer.isGuest ? ' (Gast)' : ''} kann jetzt seinen Run zu Ende spielen.</p>
                 </div>
                 <div class="setup-actions" style="margin-top: 20px;">
-                    <button class="glass-btn" onclick="GameManager.finishMultiplayerEarly()">Duell beenden</button>
+                    <button class="glass-btn menu-btn-secondary" onclick="GameManager.finishMultiplayerEarly()">Duell beenden</button>
                     <button class="glass-btn primary" onclick="GameManager.continueMultiplayerAfterFinish()">Weiter spielen</button>
                 </div>
             </div>
@@ -677,7 +677,7 @@ export const GameManager = {
         this.coopUndoPromptOpen = true;
         modal.innerHTML = `
             <div class="modal-backdrop"></div>
-            <div class="setup-container glass-panel animate-pop">
+            <div class="setup-container glass-panel menu-modal animate-pop">
                 <div class="setup-header">
                     <h2>Undo macht den Spielerwechsel rueckgaengig</h2>
                     <p>
@@ -687,7 +687,7 @@ export const GameManager = {
                     </p>
                 </div>
                 <div class="setup-actions" style="margin-top: 20px;">
-                    <button class="glass-btn" onclick="GameManager.cancelMultiplayerUndoPrompt()">Abbrechen</button>
+                    <button class="glass-btn menu-btn-secondary" onclick="GameManager.cancelMultiplayerUndoPrompt()">Abbrechen</button>
                     <button class="glass-btn primary" onclick="GameManager.confirmMultiplayerUndoTurnRevert()">Spielerwechsel rueckgaengig</button>
                 </div>
             </div>
@@ -946,7 +946,7 @@ export const GameManager = {
 
         modal.innerHTML = `
             <div class="modal-backdrop" onclick="GameManager.closeGameInfo()"></div>
-            <div class="setup-container glass-panel animate-pop game-info-modal">
+            <div class="setup-container glass-panel menu-modal animate-pop game-info-modal">
                 <div class="setup-header game-info-header">
                     <div>
                         <h2>${info.title}</h2>

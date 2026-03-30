@@ -5,6 +5,7 @@ const DEFAULT_ICE_SERVERS = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
 ];
+const ICE_FETCH_RETRY_MS = 30000;
 const VIDEO_UI_STORAGE_PREFIX = 'online-video-ui:';
 const VIDEO_ICE_STORAGE_KEYS = [
     'online-video-ice-servers',
@@ -54,6 +55,7 @@ export const OnlineVideoService = {
     uiRefreshQueued: false,
     resolvedIceBundle: null,
     iceServerBundlePromise: null,
+    lastIceBundleFetchFailedAt: 0,
     offerPendingSince: null,
     localVideoSessionId: null,
     opponentVideoSessionId: null,
@@ -191,6 +193,7 @@ export const OnlineVideoService = {
             this.autoResumeAttemptedForRoomId = null;
             this.resolvedIceBundle = null;
             this.iceServerBundlePromise = null;
+            this.lastIceBundleFetchFailedAt = 0;
             this.signalSubscriptionReadyPromise = null;
             this.offerPendingSince = null;
             this.pendingRemoteSignals = [];
@@ -436,6 +439,11 @@ export const OnlineVideoService = {
             return existingBundle;
         }
 
+        if (this.lastIceBundleFetchFailedAt && (Date.now() - this.lastIceBundleFetchFailedAt) < ICE_FETCH_RETRY_MS) {
+            this.resolvedIceBundle = existingBundle;
+            return existingBundle;
+        }
+
         if (this.iceServerBundlePromise) {
             return this.iceServerBundlePromise;
         }
@@ -473,9 +481,12 @@ export const OnlineVideoService = {
                 };
 
                 this.resolvedIceBundle = resolvedBundle;
+                this.lastIceBundleFetchFailedAt = 0;
                 return resolvedBundle;
             } catch (error) {
                 console.warn('managed ice server fetch failed', error);
+                this.lastIceBundleFetchFailedAt = Date.now();
+                this.resolvedIceBundle = existingBundle;
                 return existingBundle;
             } finally {
                 this.iceServerBundlePromise = null;
@@ -517,6 +528,15 @@ export const OnlineVideoService = {
     getIceTransportLabel() {
         const iceBundle = this.getConfiguredIceBundle();
         return iceBundle.hasTurn ? 'TURN bereit' : 'STUN only';
+    },
+
+    getIceCandidatePoolSize() {
+        const configuredValue = Number(this.getRuntimeVideoConfig().iceCandidatePoolSize);
+        if (Number.isFinite(configuredValue) && configuredValue >= 0) {
+            return Math.min(10, Math.max(0, Math.floor(configuredValue)));
+        }
+
+        return this.hasOpponent() ? 6 : 2;
     },
 
     getAudioPolicyLabel() {
@@ -1070,9 +1090,16 @@ export const OnlineVideoService = {
                         <span class="online-eyebrow">Video</span>
                         <h3>Match Kamera</h3>
                     </div>
-                    <span id="online-video-status-pill" class="online-status-pill status-${this.isEnabled ? 'live' : 'waiting'}">${this.isEnabled ? (this.isReceiveOnlyMode ? 'Empfang' : 'Aktiv') : 'Aus'}</span>
+                    <div class="online-card-head-actions">
+                        <button class="online-info-toggle" onclick="UIController.toggleOnlineSetupInfo('online-lobby-video-info')" aria-controls="online-lobby-video-info" aria-expanded="false">
+                            <i class="ri-information-line"></i>
+                        </button>
+                        <span id="online-video-status-pill" class="online-status-pill status-${this.isEnabled ? 'live' : 'waiting'}">${this.isEnabled ? (this.isReceiveOnlyMode ? 'Empfang' : 'Aktiv') : 'Aus'}</span>
+                    </div>
                 </div>
-                <p class="online-room-copy">Optionales Livebild fuer euer Handy-Duell. Erst aktivieren, wenn beide bereit sind.</p>
+                <div id="online-lobby-video-info" class="online-info-popover hidden">
+                    <p class="online-room-copy">Optionales Livebild fuer euer Handy-Duell. Erst aktivieren, wenn beide bereit sind.</p>
+                </div>
                 <div class="online-video-meta-strip">
                     <span id="online-video-mode-chip" class="online-video-chip">${this.getModeLabel()}</span>
                     <span id="online-video-connection-chip" class="online-video-chip">${this.getConnectionIndicator().label}</span>
@@ -1290,14 +1317,16 @@ export const OnlineVideoService = {
         };
     },
 
-    registerElements({ localVideo, remoteVideo, status, controls = [] }) {
+    registerElements({ localVideo, remoteVideo, status, controls = [], skipRefresh = false }) {
         this.pruneDomElementReferences();
         if (localVideo) this.localVideoEls.add(localVideo);
         if (remoteVideo) this.remoteVideoEls.add(remoteVideo);
         if (status) this.statusEls.add(status);
         controls.filter(Boolean).forEach(control => this.controlEls.add(control));
         this.attachVideoStreams();
-        this.refreshUiState();
+        if (!skipRefresh) {
+            this.refreshUiState();
+        }
     },
 
     pruneDisconnectedElements(elementSet) {
@@ -1313,6 +1342,96 @@ export const OnlineVideoService = {
         this.pruneDisconnectedElements(this.remoteVideoEls);
         this.pruneDisconnectedElements(this.statusEls);
         this.pruneDisconnectedElements(this.controlEls);
+    },
+
+    getVisibleGameViewId() {
+        const x01Visible = !document.getElementById('view-game-x01')?.classList.contains('hidden');
+        if (x01Visible) return 'view-game-x01';
+
+        const boardVisible = !document.getElementById('view-game-active')?.classList.contains('hidden');
+        if (boardVisible) return 'view-game-active';
+
+        return null;
+    },
+
+    getIntegratedStageMarkup() {
+        const connectionIndicator = this.getConnectionIndicator();
+        return `
+            <div id="online-match-video-stage" class="online-match-video-stage">
+                <div class="online-match-video-frame">
+                    <div class="online-match-video-overlay-pills">
+                        <span id="online-match-video-state" class="online-video-mini-chip online-match-video-pill">${this.getModeLabel()}</span>
+                        <span id="online-match-video-connection" class="online-video-mini-chip online-match-video-pill tone-${connectionIndicator.tone}">${connectionIndicator.label}</span>
+                    </div>
+                    <video id="online-match-video-remote" class="online-video-feed online-match-video-feed" autoplay playsinline></video>
+                    <video id="online-match-video-local" class="online-video-feed online-match-video-self" autoplay muted playsinline></video>
+                    <div id="online-match-video-placeholder" class="online-match-video-placeholder">
+                        <span class="online-match-video-placeholder-badge">${this.getRemoteTileBadge()}</span>
+                        <strong>${this.getHelperText()}</strong>
+                    </div>
+                </div>
+                <div class="online-match-video-actions">
+                    <button id="online-match-video-connect" class="glass-btn" onclick="OnlineVideoService.handlePrimaryAction()"></button>
+                    <button id="online-match-video-cam" class="glass-btn" onclick="OnlineVideoService.toggleCameraEnabled()">Cam</button>
+                    <button id="online-match-video-mic" class="glass-btn" onclick="OnlineVideoService.toggleMicrophoneEnabled()">Mic</button>
+                    <button id="online-match-video-audio" class="glass-btn" onclick="OnlineVideoService.toggleRemoteAudioMuted()">Ton</button>
+                    <button id="online-match-video-hide" class="glass-btn" onclick="OnlineVideoService.toggleRemoteVideoHidden()">Bild</button>
+                </div>
+                <div id="online-match-video-status" class="online-video-status-text"></div>
+            </div>
+        `;
+    },
+
+    ensureIntegratedMatchStage() {
+        if (typeof document === 'undefined') return null;
+
+        const activeViewId = this.getVisibleGameViewId();
+        const visibleView = activeViewId ? document.getElementById(activeViewId) : null;
+        const shouldShowStage = this.roomStatus === 'live' && !!visibleView;
+
+        ['view-game-x01', 'view-game-active'].forEach(viewId => {
+            const view = document.getElementById(viewId);
+            if (!view) return;
+            view.classList.toggle('online-match-video-view', shouldShowStage && view === visibleView);
+        });
+
+        document.querySelectorAll('.game-board-stage.online-match-video-active').forEach(stage => {
+            if (!shouldShowStage || !visibleView || !visibleView.contains(stage)) {
+                stage.classList.remove('online-match-video-active');
+                stage.querySelector('#online-match-video-stage')?.remove();
+            }
+        });
+
+        if (!shouldShowStage || !visibleView) return null;
+
+        const targetStage = visibleView.querySelector('.game-board-stage');
+        if (!targetStage) return null;
+
+        targetStage.classList.add('online-match-video-active');
+
+        let integratedStage = targetStage.querySelector('#online-match-video-stage');
+        if (!integratedStage) {
+            targetStage.insertAdjacentHTML('afterbegin', this.getIntegratedStageMarkup());
+            integratedStage = targetStage.querySelector('#online-match-video-stage');
+        }
+
+        this.registerElements({
+            localVideo: integratedStage?.querySelector('#online-match-video-local'),
+            remoteVideo: integratedStage?.querySelector('#online-match-video-remote'),
+            status: integratedStage?.querySelector('#online-match-video-status'),
+            controls: [
+                integratedStage?.querySelector('#online-match-video-connect'),
+                integratedStage?.querySelector('#online-match-video-cam'),
+                integratedStage?.querySelector('#online-match-video-mic'),
+                integratedStage?.querySelector('#online-match-video-audio'),
+                integratedStage?.querySelector('#online-match-video-hide'),
+                integratedStage?.querySelector('#online-match-video-connection'),
+                integratedStage?.querySelector('#online-match-video-state')
+            ],
+            skipRefresh: true
+        });
+
+        return integratedStage;
     },
 
     ensureFloatingDock() {
@@ -1380,10 +1499,11 @@ export const OnlineVideoService = {
     },
 
     syncUiVisibility() {
+        const integratedStage = this.ensureIntegratedMatchStage();
         if (!this.floatingDockEl) return;
         const x01Visible = !document.getElementById('view-game-x01')?.classList.contains('hidden');
         const boardVisible = !document.getElementById('view-game-active')?.classList.contains('hidden');
-        const showDock = this.isEnabled && this.roomStatus === 'live' && (x01Visible || boardVisible);
+        const showDock = this.isEnabled && this.roomStatus === 'live' && (x01Visible || boardVisible) && !integratedStage;
         this.floatingDockEl.classList.toggle('hidden', !showDock);
     },
 
@@ -1709,6 +1829,7 @@ export const OnlineVideoService = {
 
         this.localStream = await this.requestCameraStream(this.facingMode);
 
+        this.syncLocalTracksToPeerConnection();
         this.attachVideoStreams();
         return this.localStream;
     },
@@ -1740,6 +1861,14 @@ export const OnlineVideoService = {
         this.ensureSignalSubscription().catch(error => {
             console.warn('video signaling prewarm failed', error);
         });
+
+        if (!this.isEnabled && !this.isStarting && !this.peerConnection) {
+            try {
+                this.ensurePeerConnection();
+            } catch (error) {
+                console.warn('video peer prewarm failed', error);
+            }
+        }
     },
 
     scheduleReplayFallback(options = {}) {
@@ -1870,16 +1999,13 @@ export const OnlineVideoService = {
         if (this.peerConnection) return this.peerConnection;
 
         this.remoteStream = new MediaStream();
-        this.peerConnection = new RTCPeerConnection({ iceServers: this.getConfiguredIceServers() });
+        this.peerConnection = new RTCPeerConnection({
+            iceServers: this.getConfiguredIceServers(),
+            iceCandidatePoolSize: this.getIceCandidatePoolSize()
+        });
 
         const hasLocalVideoTrack = !!this.localStream?.getVideoTracks?.().length;
         const hasLocalAudioTrack = !!this.localStream?.getAudioTracks?.().length;
-
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => {
-                this.peerConnection.addTrack(track, this.localStream);
-            });
-        }
 
         if (!hasLocalVideoTrack) {
             this.peerConnection.addTransceiver('video', { direction: 'recvonly' });
@@ -1930,7 +2056,48 @@ export const OnlineVideoService = {
             this.refreshUiState();
         };
 
+        this.syncLocalTracksToPeerConnection();
+
         return this.peerConnection;
+    },
+
+    syncLocalTracksToPeerConnection() {
+        if (!this.peerConnection || !this.localStream) return;
+
+        const senders = this.peerConnection.getSenders?.() || [];
+        const transceivers = this.peerConnection.getTransceivers?.() || [];
+
+        this.localStream.getTracks().forEach(track => {
+            const alreadySendingTrack = senders.some(sender => sender.track?.id === track.id);
+            if (alreadySendingTrack) return;
+
+            const emptyKindTransceiver = transceivers.find(transceiver =>
+                transceiver?.sender
+                && !transceiver.sender.track
+                && transceiver.receiver?.track?.kind === track.kind
+            );
+
+            if (emptyKindTransceiver?.sender?.replaceTrack) {
+                Promise.resolve(emptyKindTransceiver.sender.replaceTrack(track)).catch(error => {
+                    console.warn(`video ${track.kind} track attach failed`, error);
+                });
+
+                if (emptyKindTransceiver.direction === 'recvonly' || emptyKindTransceiver.direction === 'inactive') {
+                    emptyKindTransceiver.direction = 'sendrecv';
+                }
+                return;
+            }
+
+            const senderForKind = senders.find(sender => sender.track?.kind === track.kind);
+            if (senderForKind?.replaceTrack) {
+                Promise.resolve(senderForKind.replaceTrack(track)).catch(error => {
+                    console.warn(`video ${track.kind} sender replace failed`, error);
+                });
+                return;
+            }
+
+            this.peerConnection.addTrack(track, this.localStream);
+        });
     },
 
     async ensureSignalSubscription() {
@@ -2445,6 +2612,7 @@ export const OnlineVideoService = {
     refreshUiState() {
         this.pruneDomElementReferences();
         this.initializeLifecycleObservers();
+        this.ensureIntegratedMatchStage();
         this.attachVideoStreams();
         const connectionIndicator = this.getConnectionIndicator();
         const debugText = this.getDebugText();
@@ -2569,6 +2737,77 @@ export const OnlineVideoService = {
         if (statusPill) {
             statusPill.textContent = this.isEnabled ? (this.isReceiveOnlyMode ? 'Empfang' : 'Aktiv') : 'Aus';
             statusPill.className = `online-status-pill status-${this.isEnabled ? 'live' : 'waiting'}`;
+        }
+
+        const inlineConnection = document.getElementById('online-match-video-connection');
+        this.updateIndicatorElement(inlineConnection, 'online-video-mini-chip', connectionIndicator);
+
+        const inlineState = document.getElementById('online-match-video-state');
+        if (inlineState) {
+            inlineState.textContent = this.getModeLabel();
+        }
+
+        const inlinePlaceholder = document.getElementById('online-match-video-placeholder');
+        if (inlinePlaceholder) {
+            inlinePlaceholder.classList.toggle('hidden', this.hasRemoteMedia() && !this.isRemoteVideoHidden);
+            const placeholderBadge = inlinePlaceholder.querySelector('.online-match-video-placeholder-badge');
+            if (placeholderBadge) {
+                placeholderBadge.textContent = this.getRemoteTileBadge();
+            }
+            const placeholderText = inlinePlaceholder.querySelector('strong');
+            if (placeholderText) {
+                placeholderText.textContent = this.getHelperText();
+            }
+        }
+
+        const inlineConnect = document.getElementById('online-match-video-connect');
+        if (inlineConnect) {
+            inlineConnect.textContent = this.isEnabled
+                ? 'Video trennen'
+                : (this.isStarting ? 'Starte...' : (this.canUseReceiveOnlyMode() ? 'Empfang starten' : 'Video verbinden'));
+            inlineConnect.disabled = this.isStarting;
+        }
+
+        const inlineCam = document.getElementById('online-match-video-cam');
+        if (inlineCam) {
+            const videoTrack = this.localStream?.getVideoTracks?.()[0];
+            if (this.isReceiveOnlyMode) {
+                inlineCam.textContent = 'HTTPS';
+                inlineCam.disabled = true;
+            } else if (!this.isEnabled) {
+                inlineCam.textContent = 'Cam';
+                inlineCam.disabled = true;
+            } else {
+                inlineCam.textContent = videoTrack?.enabled === false ? 'Cam+' : 'Cam';
+                inlineCam.disabled = false;
+            }
+        }
+
+        const inlineMic = document.getElementById('online-match-video-mic');
+        if (inlineMic) {
+            const microphoneTrack = this.getMicrophoneTrack();
+            if (this.isReceiveOnlyMode) {
+                inlineMic.textContent = 'HTTPS';
+            } else if (!this.isEnabled) {
+                inlineMic.textContent = 'Mic';
+            } else if (!microphoneTrack) {
+                inlineMic.textContent = 'Mic+';
+            } else {
+                inlineMic.textContent = microphoneTrack.enabled ? 'Mute' : 'Mic';
+            }
+            inlineMic.disabled = this.isStarting || this.isReceiveOnlyMode;
+        }
+
+        const inlineAudio = document.getElementById('online-match-video-audio');
+        if (inlineAudio) {
+            inlineAudio.textContent = this.isRemoteAudioMuted ? 'Ton an' : 'Ton aus';
+            inlineAudio.disabled = !this.hasRemoteMedia();
+        }
+
+        const inlineHide = document.getElementById('online-match-video-hide');
+        if (inlineHide) {
+            inlineHide.textContent = this.isRemoteVideoHidden ? 'Bild an' : 'Bild aus';
+            inlineHide.disabled = !this.hasRemoteMedia();
         }
 
         const dockState = document.getElementById('online-video-dock-state');

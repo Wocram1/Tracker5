@@ -7,6 +7,15 @@ export const htmlX01 = `
                 <div class="game-top-meta-title">
                     <button type="button" id="x01-game-name" class="game-name-pill game-name-info-btn" onclick="GameManager.openGameInfo()">X01</button>
                 </div>
+                <div id="x01-online-inline-head" class="x01-online-inline-head hidden">
+                    <span id="x01-online-inline-player" class="x01-online-inline-player">PLAYER</span>
+                    <div class="x01-online-inline-copy">
+                        <span id="x01-score-context" class="x01-online-inline-context">Du bist dran • Opp 501</span>
+                    </div>
+                    <button class="bc-exit-mini x01-inline-exit" onclick="if(confirm('Abbrechen?')) { location.href='index.html'; }">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="game-top-meta-lower">
@@ -37,7 +46,7 @@ export const htmlX01 = `
                     </div>
 
                     <div class="x01-score-center">
-                        <span class="game-primary-label">Score</span>
+                        <span id="x01-score-label" class="game-primary-label">Score</span>
                         <div id="x01-score" class="mini-score-display">501</div>
                     </div>
 
