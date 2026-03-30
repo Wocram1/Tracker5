@@ -748,6 +748,10 @@ export const OnlineVideoService = {
             this.isReceiveOnlyMode = false;
             this.remotePlaybackBlocked = false;
             this.localVideoSessionId = this.generateVideoSessionId();
+            const signalSubscriptionPromise = this.ensureSignalSubscription().catch(error => {
+                console.warn('video signaling start prewarm failed', error);
+                return null;
+            });
             await this.ensureResolvedIceBundle();
 
             try {
@@ -763,7 +767,7 @@ export const OnlineVideoService = {
             }
 
             this.ensurePeerConnection();
-            await this.ensureSignalSubscription();
+            await this.waitForSignalSubscriptionStart(signalSubscriptionPromise);
             this.isEnabled = true;
             this.shouldAutoResumeVideo = true;
             this.autoResumeAttemptedForRoomId = this.roomId;
@@ -772,6 +776,7 @@ export const OnlineVideoService = {
                 facingMode: this.facingMode,
                 receiveOnly: this.isReceiveOnlyMode
             });
+            await this.fetchMissedSignals({ force: true });
             await this.flushPendingRemoteSignals();
 
             if (this.isInitiator() && this.hasOpponent() && this.opponentVideoReady) {
@@ -2136,6 +2141,27 @@ export const OnlineVideoService = {
         });
 
         return this.signalSubscriptionReadyPromise;
+    },
+
+    async waitForSignalSubscriptionStart(subscriptionPromise, timeoutMs = 1200) {
+        const promise = subscriptionPromise || this.signalSubscriptionReadyPromise;
+        if (!promise) return;
+
+        let timeoutId = null;
+        const timeoutPromise = new Promise(resolve => {
+            timeoutId = window.setTimeout(resolve, timeoutMs);
+        });
+
+        try {
+            await Promise.race([
+                promise.catch(() => null),
+                timeoutPromise
+            ]);
+        } finally {
+            if (timeoutId) {
+                window.clearTimeout(timeoutId);
+            }
+        }
     },
 
     async restartSignalSubscription() {
