@@ -37,6 +37,16 @@ const LEVEL_CONFIG = {
             1: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}]  
         }
     },
+    'daily2':  { 
+        rounds: 6,  
+        minPoints: 3,  
+        malus: 0.5, 
+        pointsPerHit: 1, 
+        xpBase: 630,
+        targets: {
+            1: [{v:20, m:0}, {v:20, m:0}, {v:20, m:0}]  
+        }
+    },
 };
 
 export class XXonXX {

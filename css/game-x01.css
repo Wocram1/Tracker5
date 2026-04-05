@@ -311,15 +311,146 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 100%; height: 100%; border-radius: 50%; opacity: 0; pointer-events: none; z-index: 10;
 }
-.flash-active { animation: flashBlue 0.3s ease-out; }
+.flash-active { animation: flashBlue 0.26s ease-out; }
+.flash-triple { animation: flashTriple 0.3s ease-out; }
+.flash-miss { animation: flashMiss 0.24s ease-out; }
 @keyframes flashBlue {
-    0% { background: radial-gradient(circle, rgba(0, 150, 255, 0.5) 0%, transparent 70%); opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+    0% { background: radial-gradient(circle, rgba(0, 150, 255, 0.46) 0%, rgba(0, 150, 255, 0.08) 34%, transparent 74%); opacity: 0.82; transform: translate(-50%, -50%) scale(0.62); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.24); }
+}
+@keyframes flashTriple {
+    0% { background: radial-gradient(circle, rgba(255, 204, 0, 0.56) 0%, rgba(255, 204, 0, 0.1) 34%, transparent 76%); opacity: 0.88; transform: translate(-50%, -50%) scale(0.58); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28); }
+}
+@keyframes flashMiss {
+    0% { background: radial-gradient(circle, rgba(255, 59, 48, 0.34) 0%, rgba(255, 59, 48, 0.06) 34%, transparent 76%); opacity: 0.72; transform: translate(-50%, -50%) scale(0.64); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.14); }
+}
+
+path.segment-path {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: translateZ(0);
+    transition: filter 0.14s ease, opacity 0.14s ease;
+}
+
+.board-segment {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.board-segment.segment-hit-group {
+    animation: boardSegmentGroupPop 0.24s cubic-bezier(0.2, 0.9, 0.24, 1);
+    will-change: transform;
+}
+
+path.segment-path.segment-hit-pulse {
+    animation: boardSegmentHitPulse 0.32s cubic-bezier(0.22, 0.9, 0.26, 1);
+    will-change: transform, filter, opacity;
+    stroke-width: 1.6 !important;
+    stroke: rgba(255, 255, 255, 0.88) !important;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+path.segment-path.segment-hit-single.segment-hit-pulse {
+    animation: boardSegmentHitPulseSingle 0.24s ease-out;
+    stroke-width: 1.25 !important;
+    stroke: rgba(255, 255, 255, 0.62) !important;
+}
+
+path.segment-path.segment-hit-single {
+    filter:
+        drop-shadow(0 0 5px rgba(255, 255, 255, 0.22))
+        brightness(1.05)
+        saturate(1.02) !important;
+}
+
+path.segment-path.segment-hit-double {
+    filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.48)) brightness(1.16) saturate(1.12) !important;
+}
+
+path.segment-path.segment-hit-triple {
+    filter: drop-shadow(0 0 12px rgba(255, 204, 0, 0.54)) brightness(1.18) saturate(1.14) !important;
+}
+
+path.segment-path.segment-hit-bull {
+    filter: drop-shadow(0 0 12px rgba(0, 242, 255, 0.56)) brightness(1.18) saturate(1.12) !important;
+}
+
+@keyframes boardSegmentHitPulse {
+    0% {
+        opacity: 0.78;
+        transform: scale(0.96);
+    }
+    45% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes boardSegmentHitPulseSingle {
+    0% {
+        opacity: 0.86;
+        transform: scale(0.98);
+    }
+    45% {
+        opacity: 1;
+        transform: scale(1.055);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes boardSegmentGroupPop {
+    0% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.14);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes throwHitPulse {
+    0% { transform: scale(0.9); box-shadow: 0 0 0 rgba(255,255,255,0); }
+    45% { transform: scale(1.12); box-shadow: 0 0 0 8px rgba(255,255,255,0.08); }
+    100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
+}
+
+.throw-box.throw-hit-pop {
+    animation: throwHitPulse 0.34s ease-out;
+    border-color: rgba(255, 255, 255, 0.38) !important;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.14);
+}
+
+.throw-box.throw-hit-miss {
+    border-color: rgba(255, 59, 48, 0.52) !important;
+    box-shadow: 0 0 18px rgba(255, 59, 48, 0.16);
 }
 
 @keyframes pulse-red {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flash-active,
+    .flash-triple,
+    .flash-miss,
+    path.segment-path.segment-hit-pulse,
+    .throw-box.throw-hit-pop {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }
 
 .burnout-active { animation: burnout-flash 0.5s ease-out; border: 2px solid #ff453a !important; }
@@ -933,7 +1064,173 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
     border-color: rgba(0,242,255,0.16);
 }
 
+/* --- X01 TARGETED LAYOUT TWEAKS --- */
+#view-game-x01:not(.online-match-video-view) .x01-main-display {
+    gap: 6px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta {
+    position: relative;
+    min-height: 32px;
+    gap: 0;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta-title-row {
+    position: absolute;
+    inset: 0 40px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 32px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta-title {
+    justify-content: flex-start;
+    width: auto;
+    max-width: none;
+    pointer-events: auto;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta-lower {
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 0;
+    min-height: 32px;
+    align-items: center;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta-center {
+    justify-content: flex-start;
+    min-height: 32px;
+    padding-left: 76px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta-identity {
+    justify-content: flex-start;
+    align-items: center;
+    min-height: 32px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-top-meta-side-empty {
+    display: none;
+}
+
+#view-game-x01:not(.online-match-video-view) .unified-game-shell .bc-exit-mini {
+    grid-column: 2;
+    justify-self: end;
+    width: 28px;
+    height: 28px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-focus-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 4px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-primary-card {
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-board-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: stretch;
+}
+
+#view-game-x01:not(.online-match-video-view) .board-visual-container {
+    max-width: min(100%, 244px);
+    padding-top: 2px;
+    padding-bottom: 14px;
+}
+
+#view-game-x01:not(.online-match-video-view) .x01-controls-container {
+    margin-top: auto;
+    padding-top: 18px;
+    padding-bottom: max(2px, env(safe-area-inset-bottom, 0px));
+}
+
+#view-game-x01:not(.online-match-video-view) .game-name-pill {
+    min-height: 28px;
+    padding-top: 0;
+    padding-bottom: 0;
+    line-height: 1;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-player-kicker,
+#view-game-x01:not(.online-match-video-view) .game-mode-kicker,
+#view-game-x01:not(.online-match-video-view) .game-name-pill,
+#view-game-x01:not(.online-match-video-view) .unified-game-shell .bc-exit-mini {
+    display: inline-flex;
+    align-items: center;
+}
+
 @media (max-width: 520px) {
+    #view-game-x01 {
+        height: 100dvh;
+        min-height: 100dvh;
+        justify-content: space-between;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-top-meta {
+        min-height: 28px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-top-meta-title-row {
+        inset: 0 36px 0 0;
+        min-height: 28px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-top-meta-center {
+        min-height: 28px;
+        padding-left: 58px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-top-meta-inline {
+        gap: 6px;
+        min-height: 28px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-player-kicker,
+    #view-game-x01:not(.online-match-video-view) .game-mode-kicker {
+        font-size: 0.6rem;
+        min-height: 28px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .x01-main-display {
+        gap: 5px;
+        flex: 1 1 0;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-focus-stage {
+        gap: 5px;
+        flex: 1 1 0;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-primary-card {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .game-board-stage {
+        grid-template-columns: 1fr 34px;
+        gap: 4px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .board-visual-container {
+        max-width: 214px;
+        padding-top: 2px;
+        padding-bottom: 16px;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .x01-controls-container {
+        margin-top: auto;
+        padding-top: 20px;
+        padding-bottom: max(2px, env(safe-area-inset-bottom, 0px));
+    }
+
     .unified-game-shell .game-top-meta-inline {
         min-height: 24px;
         gap: 4px;
@@ -1052,6 +1349,11 @@ path.segment-path.target-dart-3 { fill: rgba(255, 204, 0, 0.95) !important; filt
         grid-template-columns: 1fr 68px;
         gap: 8px;
         padding: 6px 2px calc(env(safe-area-inset-bottom, 0px) + 10px);
+    }
+
+    #view-game-x01:not(.online-match-video-view) .x01-controls-container {
+        padding: 6px 2px max(0px, env(safe-area-inset-bottom, 0px));
+        margin-bottom: -4px;
     }
 
     .numpad-grid {

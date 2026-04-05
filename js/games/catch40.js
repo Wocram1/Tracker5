@@ -25,6 +25,7 @@ export class Catch40 {
 
             // Beispiel für "Immer auf der 50 bleiben" für 10 Wiederholungen:
             'daily':  { start: 50, end: 50, step: 0, rounds: 2, totalTargets: 4, check: 'single', minPoints: 5, malus: 0 },
+            'daily2': { start: 50, end: 50, step: 0, rounds: 2, totalTargets: 4, check: 'single', minPoints: 5, malus: 0 },
             10: { start: 61, end: 71, step: 1, rounds: 2, totalTargets: 26, check: 'double', minPoints: 30, malus: 0 },
             20: { start: 61, end: 101, step: 1, rounds: 2, totalTargets: 51, check: 'double', minPoints: 60, malus: 0 }
         };

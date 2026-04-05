@@ -1,6 +1,6 @@
-/**
+﻿/**
  * SCORING X01 LOGIC
- * Jetzt mit Level-Konfiguration für Rundenlimits und Checkout-Modi.
+ * Jetzt mit Level-Konfiguration fÃ¼r Rundenlimits und Checkout-Modi.
  */
 
 export const ScoringX01LevelMapper = (playerLevel) => {
@@ -11,8 +11,8 @@ export const ScoringX01LevelMapper = (playerLevel) => {
  * LEVEL CONFIGURATION
  * sScore: Startwert (301, 501, etc.)
  * maxRounds: Maximale Runden (wie in CountUp)
- * doubleOut: true für Double Out, false für Single Out
- * xpBase: Basis XP für das Level
+ * doubleOut: true fÃ¼r Double Out, false fÃ¼r Single Out
+ * xpBase: Basis XP fÃ¼r das Level
  */
 const LEVEL_CONFIG = {
 
@@ -24,7 +24,8 @@ const LEVEL_CONFIG = {
     10: { sScore: 501, maxRounds: 15, doubleOut: false,  xpBase: 900 },
     15: { sScore: 701, maxRounds: 25, doubleOut: true,  xpBase: 1300 },
     20: { sScore: 1001, maxRounds: 30, doubleOut: true, xpBase: 2000 },
-    'daily': { sScore: 301, maxRounds: 7, doubleOut: false, xpBase: 750 } // Spezieller Modus für tägliche Herausforderungen
+    'daily': { sScore: 301, maxRounds: 7, doubleOut: false, xpBase: 750 },
+    'daily2': { sScore: 301, maxRounds: 7, doubleOut: false, xpBase: 750 }
 };
 
 export class ScoringX01Logic {
@@ -40,7 +41,7 @@ export class ScoringX01Logic {
         const config = LEVEL_CONFIG[level] || LEVEL_CONFIG[1];
         this.config = config;
 
-        // Settings Priorität: Custom Settings > Level Config > Default
+        // Settings PrioritÃ¤t: Custom Settings > Level Config > Default
         const settings = customSettings || {};
         this.startScore = parseInt(settings.score) || config.sScore || 501;
         this.maxRounds = parseInt(settings.maxRounds) || config.maxRounds || 99;
@@ -78,8 +79,8 @@ export class ScoringX01Logic {
             facts: [`Startscore ${this.startScore}`, `${this.maxRounds} Runden`, this.isDoubleOut ? 'Double Out' : 'Single Out'],
             sections: [
                 { label: 'Ziel', text: 'Bringe deinen Score exakt auf 0, bevor das Rundenlimit erreicht ist.' },
-                { label: 'Ablauf', text: 'Jeder Dart zieht Punkte vom Restscore ab. Busts setzen die Aufnahme effektiv auf den Stand zu Beginn der Runde zurück.' },
-                { label: 'Checkout', text: this.isDoubleOut ? 'Das letzte Dart muss ein Double sein, sonst zählt der Checkout nicht.' : 'Das Spiel endet, sobald du exakt 0 erreichst.' },
+                { label: 'Ablauf', text: 'Jeder Dart zieht Punkte vom Restscore ab. Busts setzen die Aufnahme effektiv auf den Stand zu Beginn der Runde zurÃ¼ck.' },
+                { label: 'Checkout', text: this.isDoubleOut ? 'Das letzte Dart muss ein Double sein, sonst zÃ¤hlt der Checkout nicht.' : 'Das Spiel endet, sobald du exakt 0 erreichst.' },
                 { label: 'Sieg', text: 'Gewonnen ist die Partie, wenn du 0 sauber checkst. Alles andere endet als verlorene Challenge oder Trainingsresultat.' }
             ]
         };
@@ -217,12 +218,12 @@ export class ScoringX01Logic {
         const hasWon = this.currentScore === 0;
         
         let sr = Math.floor(avg);
-        if (hasWon) sr += 10; // Bonus für Finish
+        if (hasWon) sr += 10; // Bonus fÃ¼r Finish
 
         let finalXP = this.config.xpBase;
         if (hasWon) {
             finalXP += (this.stats.oneEighty * 150) + (this.stats.doubles * 20);
-            // Bonus für Effizienz (Runden-Faktor)
+            // Bonus fÃ¼r Effizienz (Runden-Faktor)
             const speedBonus = Math.max(1, (this.maxRounds - this.round) * 10);
             finalXP += speedBonus;
         } else {
@@ -244,3 +245,5 @@ export class ScoringX01Logic {
         };
     }
 }
+
+

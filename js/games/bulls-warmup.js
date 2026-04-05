@@ -13,6 +13,7 @@ export const BullsWarmupLevelMapper = (playerLevel) => {
  */
 const LEVEL_CONFIG = {
     'daily': { rounds: 1, minPoints: 50, ptsDouble: 2, ptsSingle: 1, xpBase: 400 },
+    'daily2': { rounds: 1, minPoints: 50, ptsDouble: 2, ptsSingle: 1, xpBase: 400 },
     1:  { rounds: 5, minPoints: 5,  ptsDouble: 2, ptsSingle: 1, xpBase: 350 },
     2:  { rounds: 5, minPoints: 5,  ptsDouble: 2, ptsSingle: 1, xpBase: 370 },
     3:  { rounds: 6, minPoints: 6,  ptsDouble: 2, ptsSingle: 1, xpBase: 390 },

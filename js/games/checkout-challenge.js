@@ -23,6 +23,7 @@ export class CheckoutChallenge {
             3:  { range: [41, 61],   attempts: 6, check: 'single', minPoints: 25,  malus: 3,  roundsPerTarget: 2 },
             4:  { range: [51, 71],   attempts: 7, check: 'single', minPoints: 30,  malus: 3,  roundsPerTarget: 2 },
             'daily': { range: [60, 100], attempts: 4, check: 'single-double', switchTarget: 90, minPoints: 50, malus: 10, roundsPerTarget: 3 },
+            'daily2': { range: [60, 100], attempts: 4, check: 'single-double', switchTarget: 90, minPoints: 50, malus: 10, roundsPerTarget: 3 },
             20: { range: [121, 170], attempts: 10, check: 'double', minPoints: 60,  malus: 15, roundsPerTarget: 4 }
         };
 

@@ -168,11 +168,16 @@ export class WarmupController {
 
         this.triggerFlash(safeVal, finalMult);
         this.game.registerHit(safeVal, finalMult);
+        const latestThrow = Array.isArray(this.game.currentRoundThrows)
+            ? this.game.currentRoundThrows[this.game.currentRoundThrows.length - 1]
+            : null;
+        const latestThrowIndex = Math.max(0, this.game.currentRoundThrows.length - 1);
         window.SoundManager?.play(safeVal === 0 ? 'miss' : 'hit');
 
         this.modifier = 1;
         this.captureOnlineProgress();
         this.updateUI();
+        this.animateThrowPill(latestThrowIndex, latestThrow);
 
         const currentDarts = this.game.currentRoundThrows.length;
         if (currentDarts === 3 && !this.game.isFinished) {
@@ -200,14 +205,64 @@ export class WarmupController {
     triggerFlash(val, mult) {
         if (!this.ui.flashOverlay) return;
         const flashClass = mult === 3 ? 'flash-triple' : (val === 0 ? 'flash-miss' : 'flash-active');
+        this.ui.flashOverlay.classList.remove('flash-active', 'flash-triple', 'flash-miss');
+        void this.ui.flashOverlay.offsetWidth;
         this.ui.flashOverlay.classList.add(flashClass);
-        setTimeout(() => this.ui.flashOverlay.classList.remove(flashClass), 400);
+        clearTimeout(this.ui.flashOverlay._flashTimer);
+        this.ui.flashOverlay._flashTimer = setTimeout(() => {
+            this.ui.flashOverlay.classList.remove('flash-active', 'flash-triple', 'flash-miss');
+        }, 460);
 
-        const segment = document.getElementById(`segment-${val}`);
-        if (segment) {
-            segment.classList.add('hit-flash');
-            setTimeout(() => segment.classList.remove('hit-flash'), 400);
-        }
+        if (val === 0) return;
+
+        const segment = this.appContainer?.querySelector(`#segment-${val}`);
+        if (!segment) return;
+
+        const path = val === 25
+            ? (mult === 2 ? segment.querySelector('.bull-inner') : segment.querySelector('.bull-outer'))
+            : (mult === 3
+                ? segment.querySelector('.triple-path')
+                : (mult === 2
+                    ? segment.querySelector('.double-path')
+                    : segment.querySelector('path.segment-path:not(.double-path):not(.triple-path)')));
+
+        if (!path) return;
+
+        const variantClass = val === 25
+            ? 'segment-hit-bull'
+            : (mult === 3 ? 'segment-hit-triple' : (mult === 2 ? 'segment-hit-double' : 'segment-hit-single'));
+
+        segment.classList.remove('segment-hit-group');
+        void segment.offsetWidth;
+        segment.classList.add('segment-hit-group');
+
+        path.classList.remove('segment-hit-pulse', 'segment-hit-single', 'segment-hit-double', 'segment-hit-triple', 'segment-hit-bull');
+        void path.offsetWidth;
+        path.classList.add('segment-hit-pulse', variantClass);
+        clearTimeout(segment._groupHitTimer);
+        segment._groupHitTimer = setTimeout(() => {
+            segment.classList.remove('segment-hit-group');
+        }, 320);
+        clearTimeout(path._hitTimer);
+        path._hitTimer = setTimeout(() => {
+            path.classList.remove('segment-hit-pulse', variantClass);
+        }, 620);
+    }
+
+    animateThrowPill(index, throwData) {
+        const box = this.ui.throws?.[index];
+        if (!box) return;
+
+        const isMiss = !throwData || throwData.isHit === false || throwData.val === 0;
+        box.classList.remove('throw-hit-pop', 'throw-hit-miss');
+        void box.offsetWidth;
+        box.classList.add('throw-hit-pop');
+        if (isMiss) box.classList.add('throw-hit-miss');
+
+        clearTimeout(box._pillTimer);
+        box._pillTimer = setTimeout(() => {
+            box.classList.remove('throw-hit-pop', 'throw-hit-miss');
+        }, 560);
     }
 
     setModifier(m) {

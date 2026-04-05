@@ -1,5 +1,5 @@
-import { htmlX01 } from './views/view-x01.js';
-import { LevelSystem } from './supabase_client.js'; // Import für XP-Berechnung hinzugefügt
+﻿import { htmlX01 } from './views/view-x01.js';
+import { LevelSystem } from './supabase_client.js'; // Import fÃ¼r XP-Berechnung hinzugefÃ¼gt
 import { StatsController } from './stats-controller.js';
 import { OnlineRoomService } from './online/online-room-service.js';
 import { OnlineVideoService } from './online/online-video-service.js';
@@ -149,6 +149,8 @@ function buildOnlineLobbyRenderKey(viewModel) {
 
 const UIController = {
     DAILY_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
+    DAILY2_WORKOUT_IDS: ['numbers-warmup', 'XXonXX', 'catch40', 'game121', 'x01'],
+    CUSTOM_QUICKPLAY_COUNT: 3,
     onlineLobbyRenderKey: '',
     profileHudMetricMode: 'darts',
     profileHudMetricTimer: null,
@@ -505,6 +507,15 @@ const UIController = {
                         <h3>${player.name}</h3>
                     </div>
                     <span class="online-ready-pill ${player.ready ? 'ready' : 'waiting'}">${player.ready ? 'Ready' : 'Wartet'}</span>
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayCustomBuilder()">
+                        <div class="qp-card-row">
+                            <div class="qp-card-copy">
+                                <h3 class="qp-card-title">Custom Queue</h3>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">WÃ¤hle selbst 3 Spiele fÃ¼r deine Session</p>
+                            </div>
+                            <i class="ri-list-check-3 qp-card-icon"></i>
+                        </div>
+                    </div>
                 </div>
                 <div class="online-player-meta">
                     <span>${player.isHost ? 'Host' : 'Gastspieler'}</span>
@@ -725,7 +736,7 @@ const UIController = {
         container.innerHTML = `
             <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.prepareAndRenderGames('board', false)">
                 <div class="wide-icon-left"><i class="ri-focus-3-line"></i></div>
-                <div class="wide-content-center"><h3>Board Control</h3><p class="menu-card-copy">Präzision und Segmentkontrolle.</p></div>
+                <div class="wide-content-center"><h3>Board Control</h3><p class="menu-card-copy">PrÃ¤zision und Segmentkontrolle.</p></div>
                 <div class="wide-info-right"><i class="ri-information-line"></i></div>
             </div>
             <div class="wide-card glass-card menu-card menu-card-level-2" onclick="UIController.prepareAndRenderGames('finishing', false)">
@@ -767,7 +778,7 @@ const UIController = {
                 </button>
                 <div class="sub-page-header-copy">
                     <h2 style="text-transform: capitalize;">${categoryKey} ${isTrainingMode ? '(Training)' : '(Challenge)'}</h2>
-                    <p>${isTrainingMode ? 'Wähle dein nächstes Trainingsspiel.' : 'Wähle deine nächste Challenge.'}</p>
+                    <p>${isTrainingMode ? 'WÃ¤hle dein nÃ¤chstes Trainingsspiel.' : 'WÃ¤hle deine nÃ¤chste Challenge.'}</p>
                 </div>
             </div>
             <div id="games-container" class="category-list animated-in">
@@ -800,7 +811,7 @@ const UIController = {
         this.prepareAndRenderGames(category, true);
     },
 
-    // Hilfsfunktion um das Auswahl-Menü wieder anzuzeigen
+    // Hilfsfunktion um das Auswahl-MenÃ¼ wieder anzuzeigen
     showQuickplayOptions() {
         this.initQuickplay();
     },
@@ -815,7 +826,7 @@ const UIController = {
             <div class="setup-container glass-panel menu-modal animate-pop">
                 <div class="setup-header">
                     <h2>Quickplay</h2>
-                    <p>Wähle dein Trainingsformat</p>
+                    <p>WÃ¤hle dein Trainingsformat</p>
                 </div>
 
                 <div class="qp-options-grid">
@@ -823,9 +834,19 @@ const UIController = {
                         <div class="qp-card-row">
                             <div class="qp-card-copy">
                                 <h3 class="qp-card-title qp-card-title-primary">Daily Workout</h3>
-                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele • ca 10-15mins</p>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele â€¢ ca 10-15mins</p>
                             </div>
                             <i class="ri-calendar-check-line qp-card-icon qp-card-icon-primary"></i>
+                        </div>
+                    </div>
+
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayPreview(['${this.DAILY2_WORKOUT_IDS.join("','")}'], 'Daily 2', 'daily2')">
+                        <div class="qp-card-row">
+                            <div class="qp-card-copy">
+                                <h3 class="qp-card-title">Daily 2</h3>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">5 feste Spiele â€¢ eigener Daily2-Configpfad</p>
+                            </div>
+                            <i class="ri-calendar-event-line qp-card-icon"></i>
                         </div>
                     </div>
 
@@ -833,9 +854,19 @@ const UIController = {
                         <div class="qp-card-row">
                             <div class="qp-card-copy">
                                 <h3 class="qp-card-title">Random Mix</h3>
-                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">3 zufällige Spiele • Kurze Session</p>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">3 zufÃ¤llige Spiele â€¢ Kurze Session</p>
                             </div>
                             <i class="ri-shuffle-line qp-card-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="qp-card glass-btn" onclick="UIController.showQuickplayCustomBuilder()">
+                        <div class="qp-card-row">
+                            <div class="qp-card-copy">
+                                <h3 class="qp-card-title">Custom Queue</h3>
+                                <p style="font-size: 0.8rem; margin: 5px 0 0; opacity: 0.7;">WÃ¤hle selbst 3 Spiele fÃ¼r deine Session</p>
+                            </div>
+                            <i class="ri-list-check-3 qp-card-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -849,6 +880,194 @@ const UIController = {
         modal.classList.remove('hidden');
     },
 
+    showQuickplayCustomBuilder() {
+        const modal = document.getElementById('modal-game-setup');
+        const allGames = Object.values(this.gamesData).flat().filter(g => g.active);
+        const optionsHtml = allGames.map(game => `
+            <button
+                type="button"
+                class="qp-custom-option glass-btn"
+                data-qp-game-id="${game.id}"
+                data-qp-game-name="${game.name}"
+                data-qp-game-icon="${game.icon}"
+                onclick="UIController.toggleCustomQuickplayOption(this)"
+            >
+                <span class="qp-custom-option-main">
+                    <i class="${game.icon} qp-custom-option-icon"></i>
+                    <span class="qp-custom-option-copy">
+                        <strong>${game.name}</strong>
+                        <small>${game.id}</small>
+                    </span>
+                </span>
+                <span class="qp-custom-option-check">
+                    <i class="ri-add-line"></i>
+                </span>
+            </button>
+        `).join('');
+
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="document.getElementById('modal-game-setup').classList.add('hidden')"></div>
+            <div class="setup-container glass-panel menu-modal animate-pop">
+                <div class="setup-header">
+                    <h2>Custom Queue</h2>
+                    <p>WÃ¤hle genau ${this.CUSTOM_QUICKPLAY_COUNT} Spiele fÃ¼r deine Quickplay-Session.</p>
+                </div>
+
+                <div class="qp-custom-toolbar">
+                    <span id="qp-custom-counter" class="qp-custom-counter">0/${this.CUSTOM_QUICKPLAY_COUNT} gewÃ¤hlt</span>
+                    <button class="glass-btn qp-custom-clear" type="button" onclick="UIController.clearCustomQuickplaySelection()">Auswahl leeren</button>
+                </div>
+
+                <div class="qp-custom-grid">
+                    ${optionsHtml}
+                </div>
+
+                <div class="qp-actions qp-actions-split">
+                    <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayOptions()">ZurÃ¼ck</button>
+                    <button id="qp-custom-start" class="primary-btn flash-btn qp-btn-start disabled" type="button" onclick="UIController.startCustomQuickplay()" disabled>
+                        QUEUE STARTEN <i class="ri-play-fill"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        modal.classList.remove('hidden');
+    },
+
+    toggleCustomQuickplayOption(button) {
+        if (!button) return;
+
+        const selected = Array.from(document.querySelectorAll('.qp-custom-option.is-selected'));
+        const isSelected = button.classList.contains('is-selected');
+        const maxSelections = this.CUSTOM_QUICKPLAY_COUNT;
+
+        if (isSelected) {
+            button.classList.remove('is-selected');
+        } else {
+            if (selected.length >= maxSelections) return;
+            button.classList.add('is-selected');
+        }
+
+        this.updateCustomQuickplaySelectionUi();
+    },
+
+    clearCustomQuickplaySelection() {
+        document.querySelectorAll('.qp-custom-option.is-selected').forEach(option => {
+            option.classList.remove('is-selected');
+        });
+        this.updateCustomQuickplaySelectionUi();
+    },
+
+    updateCustomQuickplaySelectionUi() {
+        const selected = Array.from(document.querySelectorAll('.qp-custom-option.is-selected'));
+        const counter = document.getElementById('qp-custom-counter');
+        const startButton = document.getElementById('qp-custom-start');
+        const maxSelections = this.CUSTOM_QUICKPLAY_COUNT;
+
+        document.querySelectorAll('.qp-custom-option').forEach(option => {
+            const check = option.querySelector('.qp-custom-option-check i');
+            const isSelected = option.classList.contains('is-selected');
+            const selectionLimitReached = selected.length >= maxSelections;
+
+            option.classList.toggle('is-locked', !isSelected && selectionLimitReached);
+            if (check) {
+                check.className = isSelected ? 'ri-check-line' : 'ri-add-line';
+            }
+        });
+
+        if (counter) {
+            counter.textContent = `${selected.length}/${maxSelections} gewÃ¤hlt`;
+        }
+
+        if (startButton) {
+            const ready = selected.length === maxSelections;
+            startButton.disabled = !ready;
+            startButton.classList.toggle('disabled', !ready);
+        }
+    },
+
+    startCustomQuickplay() {
+        const selectedQueue = Array.from(document.querySelectorAll('.qp-custom-option.is-selected'))
+            .slice(0, this.CUSTOM_QUICKPLAY_COUNT)
+            .map(option => option.dataset.qpGameId)
+            .filter(Boolean);
+
+        if (selectedQueue.length !== this.CUSTOM_QUICKPLAY_COUNT) return;
+
+        this.showQuickplayPreview(selectedQueue, 'Custom Queue', 'custom');
+    },
+
+    showQuickplaySessionSetup(queueIds, title, qpMode) {
+        const modal = document.getElementById('modal-game-setup');
+
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="document.getElementById('modal-game-setup').classList.add('hidden')"></div>
+            <div class="setup-container glass-panel menu-modal animate-pop">
+                <div class="setup-header">
+                    <h2>${title}</h2>
+                    <p>Wähle, wie du diese Queue spielen möchtest.</p>
+                </div>
+
+                <div class="setup-group">
+                    <label>Spielmodus</label>
+                    <div class="option-grid">
+                        <button class="opt-btn active" onclick="selectModalOption(this, 'quickplay-mode', 'solo')">Solo</button>
+                        <button class="opt-btn" onclick="selectModalOption(this, 'quickplay-mode', 'bot')">Vs Bot</button>
+                        <button class="opt-btn" onclick="selectModalOption(this, 'quickplay-mode', 'local')">Local Coop</button>
+                    </div>
+                    <input type="hidden" id="setup-quickplay-mode" value="solo">
+                </div>
+
+                <div id="qp-bot-settings" class="setup-group hidden">
+                    <label>Bot Schwierigkeit</label>
+                    <div class="option-grid">
+                        <button class="opt-btn active" onclick="selectModalOption(this, 'quickplay-bot-diff', 'rookie')">Rookie</button>
+                        <button class="opt-btn" onclick="selectModalOption(this, 'quickplay-bot-diff', 'pro')">Pro</button>
+                        <button class="opt-btn" onclick="selectModalOption(this, 'quickplay-bot-diff', 'legend')">Legend</button>
+                    </div>
+                    <input type="hidden" id="setup-quickplay-bot-diff" value="rookie">
+                </div>
+
+                <div id="qp-local-settings" class="setup-group hidden">
+                    <label>Spieler 2 (Quick Login oder Leer = Gast)</label>
+                    <input type="email" id="qp-p2-email" placeholder="E-Mail" class="glass-input" style="margin-bottom: 5px; padding: 10px;">
+                    <input type="password" id="qp-p2-password" placeholder="Passwort" class="glass-input" style="padding: 10px;">
+                    <p style="font-size: 0.78rem; opacity: 0.75; margin-top: 8px;">Beide Spieler spielen alle Spiele der Queue nacheinander. Ohne Login wird Spieler 2 als Gast geführt.</p>
+                </div>
+
+                <div class="qp-actions qp-actions-split">
+                    <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayPreview(['${queueIds.join("','")}'], '${title}', '${qpMode}')">Zurück</button>
+                    <button class="primary-btn flash-btn qp-btn-start" onclick="UIController.startQuickplayWithSession(['${queueIds.join("','")}'], '${qpMode}')">
+                        QUEUE STARTEN <i class="ri-play-fill"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const modeInput = document.getElementById('setup-quickplay-mode');
+        const syncQuickplayModePanels = () => {
+            document.getElementById('qp-bot-settings')?.classList.toggle('hidden', modeInput.value !== 'bot');
+            document.getElementById('qp-local-settings')?.classList.toggle('hidden', modeInput.value !== 'local');
+        };
+        syncQuickplayModePanels();
+        new MutationObserver(syncQuickplayModePanels).observe(modeInput, {
+            attributes: true,
+            attributeFilter: ['value']
+        });
+
+        modal.classList.remove('hidden');
+    },
+
+    startQuickplayWithSession(queueIds, qpMode) {
+        const sessionConfig = {
+            mode: document.getElementById('setup-quickplay-mode')?.value || 'solo',
+            botDifficulty: document.getElementById('setup-quickplay-bot-diff')?.value || 'rookie',
+            p2Email: document.getElementById('qp-p2-email')?.value?.trim() || '',
+            p2Pass: document.getElementById('qp-p2-password')?.value || ''
+        };
+
+        GameManager.startQuickplaySequenceWithSession(queueIds, qpMode, sessionConfig);
+    },
     showQuickplayPreview(queueIds, title, qpMode) {
         const modal = document.getElementById('modal-game-setup');
         const allGames = Object.values(this.gamesData).flat();
@@ -879,8 +1098,8 @@ const UIController = {
                 </div>
 
                 <div class="qp-actions qp-actions-split">
-                    <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayOptions()">Zurück</button>
-                    <button class="primary-btn flash-btn qp-btn-start" onclick="GameManager.startQuickplaySequence(['${queueIds.join("','")}'], '${qpMode}')">
+                    <button class="glass-btn" style="flex: 1;" onclick="UIController.showQuickplayOptions()">ZurÃ¼ck</button>
+                    <button class="primary-btn flash-btn qp-btn-start" onclick="UIController.showQuickplaySessionSetup(['${queueIds.join("','")}'], '${title}', '${qpMode}')">
                         JETZT STARTEN <i class="ri-play-fill"></i>
                     </button>
                 </div>
@@ -889,7 +1108,7 @@ const UIController = {
     }
 };
 
-// Globale Funktionen für HTML Access
+// Globale Funktionen fÃ¼r HTML Access
 window.navigate = (t) => UIController.navigate(t);
 window.showGames = (c) => UIController.showGamesByCategory(c);
 window.UIController = UIController;
@@ -938,3 +1157,4 @@ document.addEventListener('keydown', (event) => {
 document.getElementById('btn-app-menu')?.addEventListener('click', () => {
     UIController.toggleHeaderMenu();
 });
+

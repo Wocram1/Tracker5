@@ -1,0 +1,31 @@
+{
+  "name": "OCRAM Dart Tracker Pro",
+  "short_name": "OCRAM Dart",
+  "description": "Trainings-, Challenge- und Online-Dart-App mit Video, Scoring und Stats.",
+  "lang": "de-DE",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "categories": [
+    "sports",
+    "games",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

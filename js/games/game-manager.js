@@ -207,6 +207,7 @@ export const GameManager = {
     quickplayIndex: 0,
     isQuickplayActive: false,
     quickplayMode: null,
+    quickplaySession: null,
     
     // --- NEU: Multiplayer & Bot State ---
     players: [],
@@ -427,6 +428,130 @@ export const GameManager = {
         modal.classList.remove('hidden');
     },
 
+    async resolvePlayerGameLevel(gameId, options = {}) {
+        const { sourceLevel = null, fallbackLevel = 1, presetLevel = null } = options;
+        let resolvedLevel = fallbackLevel;
+
+        if (presetLevel) {
+            return presetLevel;
+        }
+
+        if (!LEVEL_MAPPERS[gameId]) {
+            return resolvedLevel;
+        }
+
+        try {
+            const baseLevel = typeof sourceLevel === 'number'
+                ? sourceLevel
+                : (await LevelSystem.getUserStats()).level;
+            resolvedLevel = LEVEL_MAPPERS[gameId](baseLevel);
+        } catch (error) {
+            console.error(error);
+        }
+
+        return resolvedLevel;
+    },
+
+    async buildOpponentSession(gameId, mode, options = {}) {
+        const {
+            botDifficulty = 'rookie',
+            p2Email = '',
+            p2Pass = '',
+            presetLevel = null
+        } = options;
+
+        const primaryLevel = await this.resolvePlayerGameLevel(gameId, { presetLevel });
+        const players = [{
+            id: 1,
+            name: window.appState?.profile?.username || 'Player 1',
+            gameId,
+            level: primaryLevel,
+            isBot: false,
+            isGuest: false
+        }];
+
+        if (mode === 'solo') {
+            return {
+                mode,
+                isMultiplayer: false,
+                activePlayerIndex: 0,
+                primaryLevel,
+                players
+            };
+        }
+
+        if (mode === 'bot') {
+            players.push({
+                id: 2,
+                name: `Bot (${botDifficulty.toUpperCase()})`,
+                gameId,
+                level: primaryLevel,
+                isBot: true,
+                botDifficulty,
+                isGuest: false
+            });
+
+            return {
+                mode,
+                isMultiplayer: true,
+                activePlayerIndex: 0,
+                primaryLevel,
+                players
+            };
+        }
+
+        if (mode === 'local') {
+            let p2Name = 'Gast';
+            let p2Level = primaryLevel;
+            let isGuest = true;
+            const existingPartner = CoopService.getCoopPartner();
+
+            if (p2Email && p2Pass) {
+                try {
+                    const profile = await CoopService.loginCoopPartner(p2Email, p2Pass);
+                    if (profile) {
+                        p2Name = profile.username;
+                        isGuest = false;
+                        p2Level = await this.resolvePlayerGameLevel(gameId, {
+                            sourceLevel: LevelSystem.calcLevel(profile.xp || 0),
+                            fallbackLevel: primaryLevel,
+                            presetLevel
+                        });
+                    }
+                } catch (error) {
+                    console.error('P2 Login failed', error);
+                }
+            } else if (existingPartner) {
+                p2Name = existingPartner.username;
+                isGuest = false;
+                p2Level = await this.resolvePlayerGameLevel(gameId, {
+                    sourceLevel: LevelSystem.calcLevel(existingPartner.xp || 0),
+                    fallbackLevel: primaryLevel,
+                    presetLevel
+                });
+            } else {
+                CoopService.logoutCoop();
+            }
+
+            players.push({
+                id: 2,
+                name: p2Name,
+                gameId,
+                level: p2Level,
+                isBot: false,
+                isGuest
+            });
+        }
+
+        return {
+            mode,
+            isMultiplayer: true,
+            activePlayerIndex: 0,
+            primaryLevel,
+            players
+        };
+    },
+
     async confirmOpponentStart(gameId) {
         const mode = document.getElementById('setup-opponent-mode').value;
         const botDiff = document.getElementById('setup-bot-diff').value;
@@ -434,6 +559,25 @@ export const GameManager = {
         const p2Pass = document.getElementById('p2-password')?.value;
 
         document.getElementById('modal-game-setup').classList.add('hidden');
+        const session = await this.buildOpponentSession(gameId, mode, {
+            botDifficulty: botDiff,
+            p2Email,
+            p2Pass
+        });
+
+        this.isMultiplayer = session.isMultiplayer;
+        this.players = session.players;
+        this.activePlayerIndex = session.activePlayerIndex;
+        this.multiplayerPromptOpen = false;
+
+        if (!session.isMultiplayer) {
+            this.loadGame(gameId, session.primaryLevel, false);
+            return;
+        }
+
+        this.startMultiplayerSequence(gameId, session.primaryLevel, false);
+        return;
+
         this.isMultiplayer = (mode !== 'solo');
         this.players = [];
 
@@ -585,7 +729,8 @@ export const GameManager = {
         if (!logic || typeof logic.getFinalStats !== 'function') return null;
 
         const final = logic.getFinalStats();
-        const score = final?.stats?.finalScore ?? final?.stats?.points ?? final?.stats?.totalPoints ?? 0;
+        const score = this.extractLocalResultScore(player?.gameId, logic, final);
+        const scoreLabel = this.getLocalResultScoreLabel(player?.gameId, logic);
 
         return {
             id: player.id,
@@ -596,8 +741,47 @@ export const GameManager = {
             xp: final?.xp || 0,
             sr: final?.sr || 0,
             score,
+            scoreLabel,
             stats: final?.stats || {}
         };
+    },
+
+    extractLocalResultScore(gameId, logic, final) {
+        const stats = final?.stats || {};
+        const interfaceType = logic?.interfaceType || '';
+
+        if (gameId === 'x01') {
+            return stats.finalScore ?? stats.lastScore ?? logic.currentScore ?? 0;
+        }
+
+        if (gameId === 'countup') {
+            return stats.finalScore ?? stats.totalPoints ?? logic.currentScore ?? 0;
+        }
+
+        if (interfaceType === 'finishing') {
+            return stats.finalScore ?? stats.finalPoints ?? stats.points ?? logic.points ?? logic.currentScore ?? 0;
+        }
+
+        if (interfaceType === 'x01-warmup') {
+            return stats.finalScore ?? stats.finalPoints ?? stats.points ?? stats.totalPoints ?? logic.points ?? 0;
+        }
+
+        if (interfaceType === 'board-control') {
+            return stats.finalScore ?? stats.finalPoints ?? stats.points ?? stats.totalPoints ?? logic.points ?? logic.currentScore ?? 0;
+        }
+
+        return stats.finalScore ?? stats.finalPoints ?? stats.points ?? stats.totalPoints ?? logic.currentScore ?? logic.points ?? 0;
+    },
+
+    getLocalResultScoreLabel(gameId, logic) {
+        if (gameId === 'x01') return 'Restscore';
+        if (gameId === 'countup') return 'Count Up';
+
+        const interfaceType = logic?.interfaceType || '';
+        if (interfaceType === 'finishing') return 'Punkte';
+        if (interfaceType === 'x01-warmup') return 'Punkte';
+        if (interfaceType === 'board-control') return 'Punkte';
+        return 'Score';
     },
 
     comparePlayerSummaries(a, b) {
@@ -722,12 +906,19 @@ export const GameManager = {
         this.isOnlineMatch = false;
 
         let finalLevel = requestedLevel;
+        const quickplayPresetLevel = this.isQuickplayActive && !isTraining && (this.quickplayMode === 'daily' || this.quickplayMode === 'daily2')
+            ? this.quickplayMode
+            : null;
+
+        if (quickplayPresetLevel) {
+            finalLevel = quickplayPresetLevel;
+        }
 
         // --- Daily Workout Check ---
         if (this.isQuickplayActive && this.quickplayMode === 'daily' && !isTraining) { // <--- GEÄNDERT
             finalLevel = 'daily';
         } 
-        else if (!isTraining && LEVEL_MAPPERS[gameId] && !forceLevel) {
+        else if (!quickplayPresetLevel && !isTraining && LEVEL_MAPPERS[gameId] && !forceLevel) {
             try {
                 const stats = await LevelSystem.getUserStats();
                 finalLevel = LEVEL_MAPPERS[gameId](stats.level);
@@ -754,17 +945,69 @@ export const GameManager = {
         if (targetEl) targetEl.classList.remove('hidden');
     },
 
-    startQuickplaySequence(gameIds, mode= 'daily') {
-        this.quickplayQueue = gameIds;
-        this.quickplayIndex = 0;
-        this.isQuickplayActive = true;
-        this.quickplayMode = mode;
-        
-        document.getElementById('modal-game-setup').classList.add('hidden');
-        this.loadGame(this.quickplayQueue[0], 1, false);
+    async startQuickplaySequence(gameIds, mode= 'daily') {
+        return this.startQuickplaySequenceWithSession(gameIds, mode, { mode: 'solo' });
     },
 
-    nextQuickplayGame() {
+    async startQuickplaySequenceWithSession(gameIds, mode = 'daily', sessionConfig = {}) {
+        this.quickplayQueue = Array.isArray(gameIds) ? [...gameIds] : [];
+        this.quickplayIndex = 0;
+        this.quickplaySession = null;
+        this.isQuickplayActive = true;
+        this.quickplayMode = mode;
+        this.quickplaySession = {
+            mode: sessionConfig.mode || 'solo',
+            botDifficulty: sessionConfig.botDifficulty || 'rookie',
+            p2Email: sessionConfig.p2Email || '',
+            p2Pass: sessionConfig.p2Pass || '',
+            results: []
+        };
+
+        document.getElementById('modal-game-setup').classList.add('hidden');
+        await this.launchQuickplayGameAtIndex(0);
+    },
+
+    async launchQuickplayGameAtIndex(index) {
+        if (index < 0 || index >= this.quickplayQueue.length) {
+            this.closeResultModal();
+            return;
+        }
+
+        const gameId = this.quickplayQueue[index];
+        const quickplayPresetLevel = this.quickplayMode === 'daily' || this.quickplayMode === 'daily2'
+            ? this.quickplayMode
+            : null;
+        const sessionMode = this.quickplaySession?.mode || 'solo';
+
+        if (sessionMode === 'solo') {
+            this.isMultiplayer = false;
+            this.players = [];
+            this.activePlayerIndex = 0;
+            await this.loadGame(gameId, 1, false);
+            return;
+        }
+
+        const session = await this.buildOpponentSession(gameId, sessionMode, {
+            botDifficulty: this.quickplaySession?.botDifficulty || 'rookie',
+            p2Email: this.quickplaySession?.p2Email || '',
+            p2Pass: this.quickplaySession?.p2Pass || '',
+            presetLevel: quickplayPresetLevel
+        });
+
+        this.quickplaySession = {
+            ...this.quickplaySession,
+            p2Email: '',
+            p2Pass: ''
+        };
+        this.isMultiplayer = session.isMultiplayer;
+        this.players = session.players;
+        this.activePlayerIndex = session.activePlayerIndex;
+        this.multiplayerPromptOpen = false;
+        this.coopUndoPromptOpen = false;
+        await this.startMultiplayerSequence(gameId, session.primaryLevel, false);
+    },
+
+    async nextQuickplayGame() {
         this.quickplayIndex++;
 
  
@@ -772,9 +1015,8 @@ export const GameManager = {
         document.body.classList.remove('game-active', 'hide-app-header'); 
        
         if (this.quickplayIndex < this.quickplayQueue.length) {
-            const nextGameId = this.quickplayQueue[this.quickplayIndex];
             setTimeout(() => {
-                this.loadGame(nextGameId, 1, false);
+                this.launchQuickplayGameAtIndex(this.quickplayIndex);
             }, 50);
         } else {
             this.closeResultModal();
@@ -1047,10 +1289,11 @@ export const GameManager = {
         }
 
         const srCategory = activeLogic.srCategory || 'boardcontrol';
+        const isFinalQuickplayGame = this.isQuickplayActive && this.quickplayIndex === this.quickplayQueue.length - 1;
 
         // DB Sync mit dem neuen p2SyncPayload Argument
         const activePlayer = this.isMultiplayer ? this.players[this.activePlayerIndex] : null;
-        const isBotPlaying = activePlayer && activePlayer.isBot;
+        const isBotPlaying = !this.isMultiplayer && activePlayer && activePlayer.isBot;
 
         if (window.syncMatchToDatabase && !isBotPlaying) {
             await window.syncMatchToDatabase(
@@ -1061,6 +1304,14 @@ export const GameManager = {
                 activeLogic.isTraining || false,
                 p2SyncPayload
             );
+        }
+        if (this.isQuickplayActive) {
+            this.recordQuickplayResult({
+                gameId: this.lastGameId,
+                xp: p1FinalData.xp,
+                won: !!res.won,
+                winnerSummary
+            });
         }
         
         // --- UI & MODAL ---
@@ -1082,7 +1333,22 @@ export const GameManager = {
         if (this.isMultiplayer) {
             titleEl.textContent = winnerSummary ? `${winnerSummary.name.toUpperCase()} GEWINNT!` : "HOTSEAT BEENDET";
         }
-        if (subtitleEl) subtitleEl.textContent = '';
+        if (subtitleEl) {
+            let subtitle = '';
+            if (this.isQuickplayActive) {
+                const queueLabel = this.getQuickplayModeLabel(this.quickplayMode);
+                const sessionLabel = this.getQuickplaySessionModeLabel();
+                subtitle = isFinalQuickplayGame
+                    ? `${queueLabel} abgeschlossen • ${sessionLabel}`
+                    : `${queueLabel} • Spiel ${this.quickplayIndex + 1}/${this.quickplayQueue.length}`;
+                if (sessionLabel) {
+                    if (!isFinalQuickplayGame) {
+                        subtitle += ` • ${sessionLabel}`;
+                    }
+                }
+            }
+            subtitleEl.textContent = subtitle;
+        }
         titleEl.style.color = res.won ? "var(--neon-green)" : "var(--neon-red)";
         
         if (res.won) {
@@ -1101,14 +1367,14 @@ export const GameManager = {
                 if (btnNext) {
                     btnNext.classList.remove('hidden');
                     // GEÄNDERT: Zieht sich dynamisch die Länge der Queue (3 oder 5)
-                    btnNext.innerHTML = `NEXT CHALLENGE (${this.quickplayIndex + 2}/${this.quickplayQueue.length}) <i class="ri-skip-forward-line"></i>`; 
+                    btnNext.innerHTML = `NAECHSTES SPIEL (${this.quickplayIndex + 2}/${this.quickplayQueue.length}) <i class="ri-skip-forward-line"></i>`; 
                 }
                 if (btnDone) btnDone.classList.add('hidden');
             } else {
                 if (btnNext) btnNext.classList.add('hidden');
                 if (btnDone) {
                     btnDone.classList.remove('hidden');
-                    btnDone.innerHTML = `FINISH QUICKPLAY <i class="ri-check-double-line"></i>`;
+                    btnDone.innerHTML = `QUICKPLAY ABSCHLIESSEN <i class="ri-check-double-line"></i>`;
                 }
             }
             if (btnLevelDown) btnLevelDown.classList.add('hidden');
@@ -1127,8 +1393,10 @@ export const GameManager = {
             }
         }
 
-        if (this.isMultiplayer && playerSummaries.length >= 2) {
-            this.renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary);
+        if (isFinalQuickplayGame) {
+            this.renderQuickplayCompletionSummary();
+        } else if (this.isMultiplayer && playerSummaries.length >= 2) {
+            this.renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary, this.lastGameId || activePlayer?.gameId || 'x01');
         } else if(this.renderDynamicStats) {
             this.renderDynamicStats(res.stats);
         }
@@ -1136,14 +1404,127 @@ export const GameManager = {
         this.hideAllViews(); 
         modal.classList.remove('hidden');
 
+        const quickplaySummary = isFinalQuickplayGame ? this.getQuickplayQueueSummary() : null;
+        const xpDisplayValue = quickplaySummary?.totalXp ?? p1FinalData.xp;
         document.getElementById('xp-total').innerHTML = isBotPlaying ? "0 XP (Bot)" : "0 XP";
         if (!isBotPlaying) {
-            this.animateValue('xp-total', 0, p1FinalData.xp, 1000, " XP");
+            this.animateValue('xp-total', 0, xpDisplayValue, 1000, " XP");
         }
         
-        if (p1FinalData.xp > 0 && this.triggerFloatingXP && !isBotPlaying) {
-            setTimeout(() => this.triggerFloatingXP(p1FinalData.xp), 600);
+        if (xpDisplayValue > 0 && this.triggerFloatingXP && !isBotPlaying) {
+            setTimeout(() => this.triggerFloatingXP(xpDisplayValue), 600);
         }
+    },
+
+    getQuickplayModeLabel(mode) {
+        if (mode === 'daily') return 'Daily Workout';
+        if (mode === 'daily2') return 'Daily 2';
+        if (mode === 'random') return 'Random Mix';
+        if (mode === 'custom') return 'Custom Queue';
+        return 'Quickplay';
+    },
+
+    getQuickplaySessionModeLabel() {
+        const sessionMode = this.quickplaySession?.mode || 'solo';
+        if (sessionMode === 'bot') {
+            const diff = this.quickplaySession?.botDifficulty || 'rookie';
+            return `Vs Bot (${String(diff).toUpperCase()})`;
+        }
+        if (sessionMode === 'local') return 'Local Coop';
+        return 'Solo';
+    },
+
+    getGameDisplayName(gameId) {
+        const allGames = Object.values(window.UIController?.gamesData || {}).flat();
+        return allGames.find(game => game.id === gameId)?.name || gameId || 'Spiel';
+    },
+
+    recordQuickplayResult(payload = {}) {
+        if (!this.quickplaySession) return;
+        if (!Array.isArray(this.quickplaySession.results)) {
+            this.quickplaySession.results = [];
+        }
+
+        const primaryPlayer = this.players?.[0] || null;
+        const winnerId = payload.winnerSummary?.id ?? null;
+        const didPrimaryPlayerWin = winnerId !== null
+            ? winnerId === primaryPlayer?.id
+            : !!payload.won;
+
+        this.quickplaySession.results[this.quickplayIndex] = {
+            index: this.quickplayIndex,
+            gameId: payload.gameId || this.quickplayQueue[this.quickplayIndex] || '',
+            gameName: this.getGameDisplayName(payload.gameId || this.quickplayQueue[this.quickplayIndex] || ''),
+            xp: payload.xp || 0,
+            multiplayer: !!this.isMultiplayer,
+            didPrimaryPlayerWin,
+            winnerName: payload.winnerSummary?.name || null,
+            resultText: this.isMultiplayer
+                ? (payload.winnerSummary?.name ? `${payload.winnerSummary.name} gewinnt` : 'Beendet')
+                : (payload.won ? 'Erfolgreich' : 'Nicht geschafft')
+        };
+    },
+
+    getQuickplayQueueSummary() {
+        const results = Array.isArray(this.quickplaySession?.results)
+            ? this.quickplaySession.results.filter(Boolean)
+            : [];
+        const totalXp = results.reduce((sum, entry) => sum + (entry.xp || 0), 0);
+        const successCount = results.reduce((sum, entry) => sum + (entry.didPrimaryPlayerWin ? 1 : 0), 0);
+
+        return {
+            results,
+            totalXp,
+            successCount,
+            totalGames: results.length
+        };
+    },
+
+    renderQuickplayCompletionSummary() {
+        const grid = document.getElementById('dynamic-stats-grid');
+        if (!grid) return;
+
+        const summary = this.getQuickplayQueueSummary();
+        const queueLabel = this.getQuickplayModeLabel(this.quickplayMode);
+        const sessionLabel = this.getQuickplaySessionModeLabel();
+
+        grid.classList.remove('coop-results-grid');
+        grid.classList.add('quickplay-results-grid');
+        grid.innerHTML = `
+            <div class="quickplay-summary-card">
+                <div class="quickplay-summary-head">
+                    <span class="quickplay-summary-kicker">${queueLabel}</span>
+                    <h3>Queue abgeschlossen</h3>
+                    <p>${sessionLabel} • ${summary.totalGames}/${this.quickplayQueue.length} Spiele beendet</p>
+                </div>
+                <div class="quickplay-summary-metrics">
+                    <div class="res-dyn-stat">
+                        <span class="label">XP Gesamt</span>
+                        <span class="value">${summary.totalXp}</span>
+                    </div>
+                    <div class="res-dyn-stat">
+                        <span class="label">Abgeschlossen</span>
+                        <span class="value">${summary.totalGames}</span>
+                    </div>
+                    <div class="res-dyn-stat">
+                        <span class="label">${this.isMultiplayer ? 'P1 Siege' : 'Erfolge'}</span>
+                        <span class="value">${summary.successCount}</span>
+                    </div>
+                </div>
+                <div class="quickplay-summary-list">
+                    ${summary.results.map(entry => `
+                        <div class="quickplay-summary-row">
+                            <span class="quickplay-summary-index">${entry.index + 1}</span>
+                            <div class="quickplay-summary-copy">
+                                <strong>${entry.gameName}</strong>
+                                <small>${entry.resultText}</small>
+                            </div>
+                            <span class="quickplay-summary-xp">+${entry.xp} XP</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
     },
 
     getOnlineSyncStorageKey(roomId, userId) {
@@ -1337,6 +1718,7 @@ export const GameManager = {
         this.quickplayIndex = 0;
         
         // Multiplay State aufräumen
+        this.quickplaySession = null;
         this.isMultiplayer = false;
         this.isOnlineMatch = false;
         this.players = [];
@@ -1372,6 +1754,7 @@ export const GameManager = {
         const grid = document.getElementById('dynamic-stats-grid');
         if (!grid) return;
         grid.classList.remove('coop-results-grid');
+        grid.classList.remove('quickplay-results-grid');
         grid.innerHTML = ''; 
         
         const statLabels = {
@@ -1423,8 +1806,9 @@ export const GameManager = {
     renderMultiplayerSummaryEnhanced(playerSummaries, winnerSummary, gameId = 'x01') {
         const grid = document.getElementById('dynamic-stats-grid');
         if (!grid) return;
+        grid.classList.remove('quickplay-results-grid');
         grid.classList.add('coop-results-grid');
-        const scoreLabel = this.getOnlineMatchConfig(gameId).scoreLabel;
+        const scoreLabel = ONLINE_MATCH_CONFIG[gameId]?.scoreLabel || playerSummaries[0]?.scoreLabel || 'Score';
 
         grid.innerHTML = playerSummaries.map(summary => {
             const tags = [];

@@ -15,6 +15,7 @@ export class ScoringX01Control {
         this.onlineStatusTimeout = null;
         this.lastConfirmedScore = null;
         this.lastConfirmedRound = null;
+        this.autoNextTimeout = null;
     }
 
     setOnlineMode(service) {
@@ -285,19 +286,106 @@ export class ScoringX01Control {
     }
 
     // Standard Methoden bleiben unverändert
+    triggerBoardFlash(val, mult) {
+        const overlay = this.appContainer?.querySelector('#board-flash-overlay');
+        if (!overlay) return;
+
+        const flashClass = val === 0
+            ? 'flash-miss'
+            : (mult === 3 ? 'flash-triple' : 'flash-active');
+
+        overlay.classList.remove('flash-active', 'flash-triple', 'flash-miss');
+        void overlay.offsetWidth;
+        overlay.classList.add(flashClass);
+
+        window.clearTimeout(overlay._flashTimer);
+        overlay._flashTimer = window.setTimeout(() => {
+            overlay.classList.remove('flash-active', 'flash-triple', 'flash-miss');
+        }, 460);
+    }
+
+    getBoardHitPath(val, mult) {
+        const segment = this.appContainer?.querySelector(`#segment-${val}`);
+        if (!segment) return null;
+
+        if (val === 25) {
+            return mult === 2
+                ? segment.querySelector('.bull-inner')
+                : segment.querySelector('.bull-outer');
+        }
+
+        if (mult === 3) return segment.querySelector('.triple-path');
+        if (mult === 2) return segment.querySelector('.double-path');
+        return segment.querySelector('path.segment-path:not(.double-path):not(.triple-path)');
+    }
+
+    animateBoardHit(val, mult) {
+        this.triggerBoardFlash(val, mult);
+        if (val === 0) return;
+
+        const segmentGroup = this.appContainer?.querySelector(`#segment-${val}`);
+        const path = this.getBoardHitPath(val, mult);
+        if (!path || !segmentGroup) return;
+
+        const variantClass = val === 25
+            ? 'segment-hit-bull'
+            : (mult === 3 ? 'segment-hit-triple' : (mult === 2 ? 'segment-hit-double' : 'segment-hit-single'));
+
+        segmentGroup.classList.remove('segment-hit-group');
+        void segmentGroup.offsetWidth;
+        segmentGroup.classList.add('segment-hit-group');
+
+        path.classList.remove('segment-hit-pulse', 'segment-hit-single', 'segment-hit-double', 'segment-hit-triple', 'segment-hit-bull');
+        void path.offsetWidth;
+        path.classList.add('segment-hit-pulse', variantClass);
+
+        window.clearTimeout(segmentGroup._groupHitTimer);
+        segmentGroup._groupHitTimer = window.setTimeout(() => {
+            segmentGroup.classList.remove('segment-hit-group');
+        }, 320);
+
+        window.clearTimeout(path._hitTimer);
+        path._hitTimer = window.setTimeout(() => {
+            path.classList.remove('segment-hit-pulse', variantClass);
+        }, 620);
+    }
+
+    animateThrowPill(index, throwData) {
+        const box = this.ui.throws?.[index];
+        if (!box) return;
+
+        const isMiss = !throwData || throwData.isBust || throwData.base === 0;
+        box.classList.remove('throw-hit-pop', 'throw-hit-miss');
+        void box.offsetWidth;
+        box.classList.add('throw-hit-pop');
+        if (isMiss) box.classList.add('throw-hit-miss');
+
+        window.clearTimeout(box._pillTimer);
+        box._pillTimer = window.setTimeout(() => {
+            box.classList.remove('throw-hit-pop', 'throw-hit-miss');
+        }, 560);
+    }
+
   handleInput(val, mult) {
         if (this.isInputLocked) return;
         if (this.isSubmittingOnlineTurn) return;
         if (this.game.isFinished || this.game.dartsThrown >= 3) return;
+        const hitValue = parseInt(val, 10) || 0;
         const finalMult = this.modifier !== 1 ? this.modifier : mult;
-        
-        this.game.registerHit(parseInt(val), finalMult);
+
+        this.game.registerHit(hitValue, finalMult);
+        const latestThrow = Array.isArray(this.game.currentRoundThrows)
+            ? this.game.currentRoundThrows[this.game.currentRoundThrows.length - 1]
+            : null;
+        const latestThrowIndex = Math.max(0, this.game.dartsThrown - 1);
+        this.animateBoardHit(hitValue, finalMult);
         
         // SOUND: Miss (0) oder Hit (>0)
-        window.SoundManager?.play(parseInt(val) === 0 ? 'miss' : 'hit');
+        window.SoundManager?.play(hitValue === 0 ? 'miss' : 'hit');
         
         this.modifier = 1; 
         this.updateUI();
+        this.animateThrowPill(latestThrowIndex, latestThrow);
         this.persistOnlineProgress();
 const currentDarts = this.game.dartsThrown;
       if (currentDarts === 3 && !this.game.isFinished) {

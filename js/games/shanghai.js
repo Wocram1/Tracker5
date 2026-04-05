@@ -49,7 +49,8 @@ export class Shanghai {
             11:{ rounds: 15, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 0, startHerz: 3, hM: 1, hH: 1, minPoints: 500 },
             12:{ rounds: 15, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 0, startHerz: 3, hM: 2, hH: 2, minPoints: 550 },
             13:{ rounds: 15, targets: [12,13,14,15,16,17,18,19,20,25], startBlitz: 0, startHerz: 3, hM: 3, hH: 3, minPoints: 575 },
-            'daily': { rounds: 8, targets: [20,20,20,20,20,20,20,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 100 } 
+            'daily': { rounds: 8, targets: [20,20,20,20,20,20,20,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 100 },
+            'daily2': { rounds: 8, targets: [20,20,20,20,20,20,20,20], startBlitz: 0, startHerz: 0, bM: 0, bH: 0, minPoints: 100 } 
         };
 
         this.config = isTraining ? this.setupTraining(customSettings) : this.levelConfig[level];
