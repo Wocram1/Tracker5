@@ -1070,46 +1070,54 @@ path.segment-path.segment-hit-bull {
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta {
-    position: relative;
-    min-height: 32px;
+    --game-top-rail-height: 34px;
+    --game-top-pill-bg: rgba(255,255,255,0.055);
+    --game-top-pill-border: rgba(255,255,255,0.09);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 10px;
+    min-height: var(--game-top-rail-height);
     gap: 0;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta-title-row {
-    position: absolute;
-    inset: 0 40px 0 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    min-height: 32px;
-    pointer-events: none;
-    z-index: 2;
+    display: contents;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta-title {
+    display: flex;
+    align-items: center;
     justify-content: flex-start;
     width: auto;
     max-width: none;
-    pointer-events: auto;
+    min-height: var(--game-top-rail-height);
+    grid-column: 1;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta-lower {
-    grid-template-columns: minmax(0, 1fr) 34px;
-    gap: 0;
-    min-height: 32px;
-    align-items: center;
+    display: contents;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta-center {
-    justify-content: flex-start;
-    min-height: 32px;
-    padding-left: 76px;
+    justify-content: center;
+    min-height: var(--game-top-rail-height);
+    padding-left: 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    grid-column: 2;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta-identity {
+    display: inline-flex;
     justify-content: flex-start;
     align-items: center;
-    min-height: 32px;
+    min-height: var(--game-top-rail-height);
+    height: var(--game-top-rail-height);
+    flex-wrap: nowrap;
+    overflow: hidden;
+    gap: 6px;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-top-meta-side-empty {
@@ -1117,10 +1125,15 @@ path.segment-path.segment-hit-bull {
 }
 
 #view-game-x01:not(.online-match-video-view) .unified-game-shell .bc-exit-mini {
-    grid-column: 2;
+    grid-column: 3;
     justify-self: end;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
+    min-height: 30px;
+    border-radius: 999px;
+    background: var(--game-top-pill-bg);
+    border-color: var(--game-top-pill-border);
+    box-shadow: none;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-focus-stage {
@@ -1153,10 +1166,15 @@ path.segment-path.segment-hit-bull {
 }
 
 #view-game-x01:not(.online-match-video-view) .game-name-pill {
-    min-height: 28px;
-    padding-top: 0;
-    padding-bottom: 0;
+    min-height: 30px;
+    height: 30px;
+    padding: 0 12px;
     line-height: 1;
+    border-radius: 999px;
+    background: var(--game-top-pill-bg);
+    border-color: var(--game-top-pill-border);
+    box-shadow: none;
+    justify-content: center;
 }
 
 #view-game-x01:not(.online-match-video-view) .game-player-kicker,
@@ -1165,6 +1183,28 @@ path.segment-path.segment-hit-bull {
 #view-game-x01:not(.online-match-video-view) .unified-game-shell .bc-exit-mini {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    line-height: 1;
+    white-space: nowrap;
+    align-self: center;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-player-kicker,
+#view-game-x01:not(.online-match-video-view) .game-mode-kicker {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--game-top-pill-bg);
+    border: 1px solid var(--game-top-pill-border);
+    box-shadow: none;
+    letter-spacing: 0.04em;
+    position: relative;
+    top: 1px;
+}
+
+#view-game-x01:not(.online-match-video-view) .game-subline-dot {
+    display: none;
 }
 
 @media (max-width: 520px) {
@@ -1172,31 +1212,42 @@ path.segment-path.segment-hit-bull {
         height: 100dvh;
         min-height: 100dvh;
         justify-content: space-between;
+        box-sizing: border-box;
+        padding-top: max(12px, env(safe-area-inset-top, 0px) + 8px);
+        padding-bottom: 0;
+    }
+
+    #view-game-x01:not(.online-match-video-view) .x01-main-display {
+        margin: 0 8px 0;
     }
 
     #view-game-x01:not(.online-match-video-view) .game-top-meta {
-        min-height: 28px;
+        --game-top-rail-height: 30px;
+        --game-top-pill-bg: rgba(255,255,255,0.05);
+        --game-top-pill-border: rgba(255,255,255,0.08);
+        min-height: var(--game-top-rail-height);
+        column-gap: 6px;
     }
 
     #view-game-x01:not(.online-match-video-view) .game-top-meta-title-row {
-        inset: 0 36px 0 0;
-        min-height: 28px;
+        min-height: var(--game-top-rail-height);
     }
 
     #view-game-x01:not(.online-match-video-view) .game-top-meta-center {
-        min-height: 28px;
-        padding-left: 58px;
+        min-height: var(--game-top-rail-height);
     }
 
     #view-game-x01:not(.online-match-video-view) .game-top-meta-inline {
         gap: 6px;
-        min-height: 28px;
+        min-height: var(--game-top-rail-height);
     }
 
     #view-game-x01:not(.online-match-video-view) .game-player-kicker,
     #view-game-x01:not(.online-match-video-view) .game-mode-kicker {
         font-size: 0.6rem;
-        min-height: 28px;
+        min-height: var(--game-top-rail-height);
+        padding: 0 8px;
+        top: 1px;
     }
 
     #view-game-x01:not(.online-match-video-view) .x01-main-display {
@@ -1222,7 +1273,7 @@ path.segment-path.segment-hit-bull {
     #view-game-x01:not(.online-match-video-view) .board-visual-container {
         max-width: 214px;
         padding-top: 2px;
-        padding-bottom: 16px;
+        padding-bottom: 10px;
     }
 
     #view-game-x01:not(.online-match-video-view) .x01-controls-container {
@@ -1347,27 +1398,28 @@ path.segment-path.segment-hit-bull {
 
     .x01-controls-container {
         grid-template-columns: 1fr 68px;
-        gap: 8px;
-        padding: 6px 2px calc(env(safe-area-inset-bottom, 0px) + 10px);
+        gap: 6px;
+        padding: 2px 1px max(2px, env(safe-area-inset-bottom, 0px));
+        margin-bottom: -11px;
     }
 
     #view-game-x01:not(.online-match-video-view) .x01-controls-container {
-        padding: 6px 2px max(0px, env(safe-area-inset-bottom, 0px));
-        margin-bottom: -4px;
+        padding: 2px 1px max(2px, env(safe-area-inset-bottom, 0px));
+        margin-bottom: -11px;
     }
 
     .numpad-grid {
-        gap: 6px;
+        gap: 5px;
     }
 
     .numpad-grid button {
-        height: 44px;
+        height: 42px;
         border-radius: 12px;
-        font-size: 0.92rem;
+        font-size: 0.88rem;
     }
 
     .side-action-stack {
-        gap: 6px;
+        gap: 5px;
     }
 
     .mod-btn,

@@ -348,6 +348,21 @@ export class FinishingController {
             this.pendingSubmittedProgress = this.createLocalProgressSnapshot();
         }
 
+        const shouldResolveCheckoutImmediatelyOffline = !this.onlineService
+            && !this.game.isFinished
+            && this.game.currentScore === 0
+            && typeof this.game.nextRound === 'function';
+
+        if (shouldResolveCheckoutImmediatelyOffline) {
+            this.clearAutoNextState();
+            this.autoNextTimeout = setTimeout(() => {
+                this.game.nextRound();
+                this.updateUI();
+                this.autoNextTimeout = null;
+            }, 120);
+            return;
+        }
+
         const shouldAutoAdvanceOnline = !!this.onlineService && (this.isRoundReadyForAdvance() || this.pendingOnlineTurnThrows?.length);
         const shouldAutoAdvanceOffline = !this.onlineService && this.isRoundReadyForAdvance() && !this.game.isFinished;
 

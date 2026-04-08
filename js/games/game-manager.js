@@ -1527,6 +1527,27 @@ export const GameManager = {
         `;
     },
 
+    restoreDashboardProfileRotator() {
+        const profileHeader = document.getElementById('user-profile-header');
+        const rotator = document.getElementById('dashboard-profile-rotator');
+        const ratingsPane = document.getElementById('profile-sr-strip');
+        if (!profileHeader || !rotator) return;
+
+        if (profileHeader.parentElement !== rotator) {
+            if (ratingsPane && ratingsPane.parentElement === rotator) {
+                rotator.insertBefore(profileHeader, ratingsPane);
+            } else {
+                rotator.prepend(profileHeader);
+            }
+        }
+
+        if (window.UIController?.ensureProfileHudPaneRotator) {
+            window.UIController.ensureProfileHudPaneRotator();
+        } else if (window.UIController?.applyProfileHudPaneState) {
+            window.UIController.applyProfileHudPaneState();
+        }
+    },
+
     getOnlineSyncStorageKey(roomId, userId) {
         if (!roomId || !userId) return null;
         return `ocram-online-match-synced-${roomId}-${String(userId).toLowerCase()}`;
@@ -1705,12 +1726,8 @@ export const GameManager = {
     },
 
    closeResultModal() {
-        const profileHeader = document.getElementById('user-profile-header');
-        const dashboardView = document.getElementById('view-dashboard');
         const appHeader = document.querySelector('.app-top-bar');
-        if (profileHeader && dashboardView) {
-            dashboardView.insertBefore(profileHeader, dashboardView.firstChild);
-        }
+        this.restoreDashboardProfileRotator();
 
         this.isQuickplayActive = false;
         this.quickplayMode = null;
@@ -1737,11 +1754,7 @@ export const GameManager = {
     },
 
     retryLowerLevel() {
-        const profileHeader = document.getElementById('user-profile-header');
-        const dashboardView = document.getElementById('view-dashboard');
-        if (profileHeader && dashboardView) {
-            dashboardView.insertBefore(profileHeader, dashboardView.firstChild);
-        }
+        this.restoreDashboardProfileRotator();
         document.body.classList.remove('game-active', 'hide-app-header');
         document.getElementById('modal-game-result').classList.add('hidden');
 

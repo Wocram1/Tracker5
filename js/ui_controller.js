@@ -918,8 +918,10 @@ const UIController = {
                     <button class="glass-btn qp-custom-clear" type="button" onclick="UIController.clearCustomQuickplaySelection()">Auswahl leeren</button>
                 </div>
 
-                <div class="qp-custom-grid">
-                    ${optionsHtml}
+                <div class="qp-custom-scroll">
+                    <div class="qp-custom-grid">
+                        ${optionsHtml}
+                    </div>
                 </div>
 
                 <div class="qp-actions qp-actions-split">

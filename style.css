@@ -2410,6 +2410,8 @@ body::after {
 .glass-input {
     width: 100%; background: rgba(255,255,255,0.05) !important; border: 1px solid var(--glass-border) !important;
     padding: 18px; border-radius: 18px; margin-bottom: 15px; color: #fff !important;
+    font-size: 16px;
+    line-height: 1.25;
 }
 
 .primary-btn {
@@ -4272,6 +4274,16 @@ body::after {
     border-radius: 18px;
     color: var(--text-main) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    font-size: 16px;
+    line-height: 1.25;
+}
+
+#auth-screen .glass-input,
+#auth-screen input,
+#auth-screen select,
+#auth-screen textarea {
+    font-size: 16px !important;
+    line-height: 1.25;
 }
 
 .glass-btn,
@@ -4560,6 +4572,18 @@ body::after {
     margin-bottom: 8px;
 }
 
+.qp-custom-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(46vh, 420px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    margin-right: -4px;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
 .qp-custom-option {
     width: 100%;
     justify-content: flex-start;
@@ -4680,6 +4704,10 @@ body::after {
 
     .qp-custom-grid {
         grid-template-columns: 1fr;
+    }
+
+    .qp-custom-scroll {
+        max-height: min(48vh, 52dvh);
     }
 }
 
@@ -6559,6 +6587,7 @@ body {
         margin-bottom: 0;
         padding-bottom: 0;
         -webkit-overflow-scrolling: auto;
+        scrollbar-gutter: auto !important;
         min-height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
@@ -6567,6 +6596,9 @@ body {
     body.game-active #app-screen,
     body.game-active #content-area,
     body.game-active #view-game-x01 {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+        scrollbar-gutter: auto !important;
         min-height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
@@ -6578,9 +6610,9 @@ body {
         body.game-active #view-game-x01,
         #app-screen[data-view="game-active"] #view-game-x01,
         #app-screen[data-view="game-x01"] #view-game-x01 {
-            min-height: 100svh;
-            height: 100svh;
-            max-height: 100svh;
+            min-height: 100dvh;
+            height: 100dvh;
+            max-height: 100dvh;
         }
     }
 
