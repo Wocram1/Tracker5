@@ -80,6 +80,15 @@ export class Game121 {
             t19FirstDart: 0,
             perfectDartsNeeded: 0 
         };
+
+        this.historyRestoreTarget = null;
+        this.historyRestoreScore = null;
+        this.historyRestoreRoundsUsed = null;
+        this.historyRestoreTargetsPlayed = null;
+        this.historyRestorePoints = null;
+        this.historyRestoreStats = null;
+        this.historyRestoreDisplayRound = null;
+        this.displayRoundOverride = null;
     }
 
     static getTrainingConfig() {
@@ -226,6 +235,14 @@ export class Game121 {
     }
 
     targetChecked() {
+        const maxRounds = this.maxRoundsPerTarget || this.levelConfig[this.level]?.rounds || 3;
+        const restoreDisplayRound = Math.min(maxRounds, Math.max(1, (this.roundsUsedForTarget || 0) + 1));
+        const restorePoints = this.points;
+        const restoreTargetsPlayed = this.targetsPlayed;
+        const restoreStats = { ...this.stats };
+        const resolvedTarget = this.currentTarget;
+        const resolvedRoundsUsed = this.roundsUsedForTarget;
+
         this.points += 10;
         this.stats.checks++;
         this.targetsPlayed++;
@@ -247,6 +264,14 @@ export class Game121 {
             this.isFinished = true;
         }
 
+        this.historyRestoreTarget = resolvedTarget;
+        this.historyRestoreScore = 0;
+        this.historyRestoreRoundsUsed = resolvedRoundsUsed;
+        this.historyRestoreTargetsPlayed = restoreTargetsPlayed;
+        this.historyRestorePoints = restorePoints;
+        this.historyRestoreStats = restoreStats;
+        this.historyRestoreDisplayRound = restoreDisplayRound;
+
         this.finishRound(true);
     }
 
@@ -258,6 +283,7 @@ export class Game121 {
     }
 
     finishRound(checked) {
+        this.displayRoundOverride = null;
         this.roundsUsedForTarget++;
         this.saveToHistory();
 
@@ -293,15 +319,23 @@ export class Game121 {
 
     saveToHistory() {
         this.roundHistory.push(JSON.stringify({
-            score: this.currentScore,
-            points: this.points,
+            score: this.historyRestoreScore ?? this.currentScore,
+            points: this.historyRestorePoints ?? this.points,
             round: this.round,
-            target: this.currentTarget,
-            targetsPlayed: this.targetsPlayed,
-            roundsUsed: this.roundsUsedForTarget,
+            target: this.historyRestoreTarget ?? this.currentTarget,
+            targetsPlayed: this.historyRestoreTargetsPlayed ?? this.targetsPlayed,
+            roundsUsed: this.historyRestoreRoundsUsed ?? this.roundsUsedForTarget,
+            displayRound: this.historyRestoreDisplayRound ?? this.getDisplayRoundNumber(),
             throws: [...this.currentRoundThrows],
-            stats: {...this.stats}
+            stats: this.historyRestoreStats ? { ...this.historyRestoreStats } : { ...this.stats }
         }));
+        this.historyRestoreTarget = null;
+        this.historyRestoreScore = null;
+        this.historyRestoreRoundsUsed = null;
+        this.historyRestoreTargetsPlayed = null;
+        this.historyRestorePoints = null;
+        this.historyRestoreStats = null;
+        this.historyRestoreDisplayRound = null;
     }
 
     undo() {
@@ -314,21 +348,28 @@ export class Game121 {
             if (lastDart.mult === 3) this.stats.triples--;
 
             this.currentScore = lastDart.scoreBefore;
+            if (this.currentRoundThrows.length === 0 && typeof this.displayRoundOverride === 'number') {
+                this.displayRoundOverride = Math.max(1, this.displayRoundOverride - 1);
+                this.roundsUsedForTarget = Math.max(0, this.displayRoundOverride - 1);
+            }
             return;
         }
 
         if (this.roundHistory.length > 0) {
-            this.roundHistory.pop(); 
-            const prevStateString = this.roundHistory[this.roundHistory.length - 1];
+            const stateString = this.roundHistory.pop();
             
-            if (prevStateString) {
-                const state = JSON.parse(prevStateString);
+            if (stateString) {
+                const state = JSON.parse(stateString);
                 this.currentScore = state.score;
                 this.points = state.points;
                 this.round = state.round;
                 this.currentTarget = state.target;
                 this.targetsPlayed = state.targetsPlayed || 0;
-                this.roundsUsedForTarget = state.roundsUsed;
+                this.roundsUsedForTarget = Math.max(0, Math.min(state.roundsUsed ?? 0, (this.maxRoundsPerTarget || this.levelConfig[this.level]?.rounds || 3) - 1));
+                this.displayRoundOverride = Math.min(
+                    this.maxRoundsPerTarget || this.levelConfig[this.level]?.rounds || 3,
+                    Math.max(1, this.roundsUsedForTarget + 1)
+                );
                 this.currentRoundThrows = state.throws;
                 this.stats = state.stats;
                 this.roundDarts = this.currentRoundThrows.filter(t => !t.isDummy).length;
@@ -348,15 +389,22 @@ export class Game121 {
         this.currentRoundThrows = [];
         this.roundDarts = 0;
         this.roundsUsedForTarget = 0;
+        this.displayRoundOverride = null;
+    }
+
+    getDisplayRoundNumber() {
+        const max = this.maxRoundsPerTarget || this.levelConfig[this.level]?.rounds || 3;
+        if (typeof this.displayRoundOverride === 'number') {
+            return Math.min(max, Math.max(1, this.displayRoundOverride));
+        }
+        return Math.min(max, Math.max(1, (this.roundsUsedForTarget || 0) + 1));
     }
 
     get currentRoundDisplay() {
-    // roundsUsedForTarget zählt die bereits beendeten Runden. 
-    // Wir addieren 1 für die laufende Runde.
-    const current = this.roundsUsedForTarget + 1;
     const max = this.maxRoundsPerTarget || this.levelConfig[this.level]?.rounds || 3;
+    const current = this.getDisplayRoundNumber();
     return `${current}/${max}`;
-}
+    }
 
     getFinalStats() {
         let sr = 0;

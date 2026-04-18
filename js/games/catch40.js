@@ -59,6 +59,13 @@ export class Catch40 {
             triples: 0,
             perfectDartsNeeded: 0 
         };
+
+        this.historyRestoreTarget = null;
+        this.historyRestoreScore = null;
+        this.historyRestoreRoundsUsed = null;
+        this.historyRestoreTargetsPlayed = null;
+        this.historyRestorePoints = null;
+        this.historyRestoreStats = null;
     }
 
     static getTrainingConfig() {
@@ -216,6 +223,12 @@ export class Catch40 {
     }
 
     targetChecked() {
+        const restorePoints = this.points;
+        const restoreTargetsPlayed = this.targetsPlayed;
+        const restoreStats = { ...this.stats };
+        const resolvedTarget = this.currentTarget;
+        const resolvedRoundsUsed = this.roundsUsedForTarget;
+
         const totalDartsUsed = (this.roundsUsedForTarget * 3) + this.roundDarts;
         
         if (totalDartsUsed === 1) this.points += 4;
@@ -238,6 +251,13 @@ export class Catch40 {
         if (this.targetsPlayed >= this.totalTargetsToPlay || (this.step > 0 && this.currentTarget > this.endTarget)) {
             this.isFinished = true;
         }
+
+        this.historyRestoreTarget = resolvedTarget;
+        this.historyRestoreScore = 0;
+        this.historyRestoreRoundsUsed = resolvedRoundsUsed;
+        this.historyRestoreTargetsPlayed = restoreTargetsPlayed;
+        this.historyRestorePoints = restorePoints;
+        this.historyRestoreStats = restoreStats;
 
         this.finishRound(true);
     }
@@ -281,15 +301,21 @@ export class Catch40 {
 
     saveToHistory() {
         this.roundHistory.push(JSON.stringify({
-            score: this.currentScore,
-            points: this.points,
+            score: this.historyRestoreScore ?? this.currentScore,
+            points: this.historyRestorePoints ?? this.points,
             round: this.round,
-            target: this.currentTarget,
-            targetsPlayed: this.targetsPlayed,
-            roundsUsed: this.roundsUsedForTarget,
+            target: this.historyRestoreTarget ?? this.currentTarget,
+            targetsPlayed: this.historyRestoreTargetsPlayed ?? this.targetsPlayed,
+            roundsUsed: this.historyRestoreRoundsUsed ?? this.roundsUsedForTarget,
             throws: [...this.currentRoundThrows],
-            stats: {...this.stats}
+            stats: this.historyRestoreStats ? { ...this.historyRestoreStats } : { ...this.stats }
         }));
+        this.historyRestoreTarget = null;
+        this.historyRestoreScore = null;
+        this.historyRestoreRoundsUsed = null;
+        this.historyRestoreTargetsPlayed = null;
+        this.historyRestorePoints = null;
+        this.historyRestoreStats = null;
     }
 
     undo() {
@@ -298,19 +324,21 @@ export class Catch40 {
             this.roundDarts--;
             this.stats.totalDarts--;
             this.currentScore = lastDart.scoreBefore;
+            if (this.currentRoundThrows.length === 0 && this.roundsUsedForTarget > 0) {
+                this.roundsUsedForTarget = Math.max(0, this.roundsUsedForTarget - 1);
+            }
             return;
         }
         if (this.roundHistory.length > 0) {
-            this.roundHistory.pop(); 
-            const prevStateString = this.roundHistory[this.roundHistory.length - 1];
-            if (prevStateString) {
-                const state = JSON.parse(prevStateString);
+            const stateString = this.roundHistory.pop();
+            if (stateString) {
+                const state = JSON.parse(stateString);
                 this.currentScore = state.score;
                 this.points = state.points;
                 this.round = state.round;
                 this.currentTarget = state.target;
                 this.targetsPlayed = state.targetsPlayed;
-                this.roundsUsedForTarget = state.roundsUsed;
+                this.roundsUsedForTarget = Math.max(0, Math.min(state.roundsUsed ?? 0, (this.maxRoundsPerTarget || 3) - 1));
                 this.currentRoundThrows = state.throws;
                 this.stats = state.stats;
                 this.roundDarts = this.currentRoundThrows.filter(t => !t.isDummy).length;
@@ -322,6 +350,12 @@ export class Catch40 {
             }
             this.isFinished = false;
         }
+    }
+
+    get currentRoundDisplay() {
+        const max = this.maxRoundsPerTarget || 3;
+        const current = Math.min(max, Math.max(1, (this.roundsUsedForTarget || 0) + 1));
+        return `${current}/${max}`;
     }
 
     getFinalStats() {

@@ -1738,32 +1738,125 @@ body::after {
    5. XP BARS, LEVEL HEXAGON & TIER SYSTEM
    ========================================================================== */
 
-/* DEFAULT / ROOKIE (Lvl 1-10) -> Cyan */
-.tier-rookie {
-    --tier-main: #00f2fe;
-    --tier-secondary: #4facfe;
-    --tier-glow: 0 0 15px rgba(0, 242, 254, 0.5);
+/* 20-TIER XP / LEVEL PALETTE */
+.tier-01 {
+    --tier-main: #4b3122;
+    --tier-secondary: #7a533d;
+    --tier-glow: 0 0 15px rgba(75, 49, 34, 0.44);
 }
 
-/* PRO (Lvl 11-30) -> Giftgrün */
-.tier-pro {
-    --tier-main: #39ff14;
-    --tier-secondary: #008f11;
-    --tier-glow: 0 0 15px rgba(57, 255, 20, 0.5);
+.tier-02 {
+    --tier-main: #6f4528;
+    --tier-secondary: #a06643;
+    --tier-glow: 0 0 15px rgba(111, 69, 40, 0.46);
 }
 
-/* ELITE (Lvl 31-60) -> Lila */
-.tier-elite {
-    --tier-main: #ea62ff;
-    --tier-secondary: #a335f3;
-    --tier-glow: 0 0 20px rgba(234, 98, 255, 0.6);
+.tier-03 {
+    --tier-main: #915727;
+    --tier-secondary: #c47d3f;
+    --tier-glow: 0 0 16px rgba(145, 87, 39, 0.5);
 }
 
-/* LEGEND (Lvl 61+) -> Gold */
-.tier-legend {
-    --tier-main: #ffd700;
-    --tier-secondary: #ff8c00;
-    --tier-glow: 0 0 25px rgba(255, 215, 0, 0.8);
+.tier-04 {
+    --tier-main: #b87d1f;
+    --tier-secondary: #e1a83f;
+    --tier-glow: 0 0 16px rgba(184, 125, 31, 0.54);
+}
+
+.tier-05 {
+    --tier-main: #707f1f;
+    --tier-secondary: #a5b83b;
+    --tier-glow: 0 0 17px rgba(112, 127, 31, 0.56);
+}
+
+.tier-06 {
+    --tier-main: #4a971f;
+    --tier-secondary: #79c53c;
+    --tier-glow: 0 0 17px rgba(74, 151, 31, 0.58);
+}
+
+.tier-07 {
+    --tier-main: #139b55;
+    --tier-secondary: #41d684;
+    --tier-glow: 0 0 18px rgba(19, 155, 85, 0.6);
+}
+
+.tier-08 {
+    --tier-main: #129989;
+    --tier-secondary: #35d0bc;
+    --tier-glow: 0 0 18px rgba(18, 153, 137, 0.6);
+}
+
+.tier-09 {
+    --tier-main: #0c97af;
+    --tier-secondary: #39d2e9;
+    --tier-glow: 0 0 18px rgba(12, 151, 175, 0.62);
+}
+
+.tier-10 {
+    --tier-main: #1189d8;
+    --tier-secondary: #49c5ff;
+    --tier-glow: 0 0 19px rgba(17, 137, 216, 0.64);
+}
+
+.tier-11 {
+    --tier-main: #2d73ee;
+    --tier-secondary: #72a8ff;
+    --tier-glow: 0 0 19px rgba(45, 115, 238, 0.66);
+}
+
+.tier-12 {
+    --tier-main: #4f5ff4;
+    --tier-secondary: #8c98ff;
+    --tier-glow: 0 0 20px rgba(79, 95, 244, 0.68);
+}
+
+.tier-13 {
+    --tier-main: #6548f4;
+    --tier-secondary: #9a87ff;
+    --tier-glow: 0 0 20px rgba(101, 72, 244, 0.7);
+}
+
+.tier-14 {
+    --tier-main: #7b30f4;
+    --tier-secondary: #b074ff;
+    --tier-glow: 0 0 22px rgba(123, 48, 244, 0.76);
+}
+
+.tier-15 {
+    --tier-main: #9529f0;
+    --tier-secondary: #ce6eff;
+    --tier-glow: 0 0 23px rgba(149, 41, 240, 0.78);
+}
+
+.tier-16 {
+    --tier-main: #bd22e6;
+    --tier-secondary: #ea73ff;
+    --tier-glow: 0 0 24px rgba(189, 34, 230, 0.8);
+}
+
+.tier-17 {
+    --tier-main: #d81e79;
+    --tier-secondary: #ff73b2;
+    --tier-glow: 0 0 24px rgba(216, 30, 121, 0.82);
+}
+
+.tier-18 {
+    --tier-main: #eb4e22;
+    --tier-secondary: #ff9165;
+    --tier-glow: 0 0 25px rgba(235, 78, 34, 0.84);
+}
+
+.tier-19 {
+    --tier-main: #f2ad12;
+    --tier-secondary: #ffd561;
+    --tier-glow: 0 0 26px rgba(242, 173, 18, 0.88);
+}
+
+.tier-20 {
+    --tier-main: #ffe06a;
+    --tier-secondary: #fff8c9;
+    --tier-glow: 0 0 30px rgba(255, 224, 106, 0.98);
 }
 
 /* --- HEXAGON --- */
@@ -1888,7 +1981,7 @@ body::after {
     100% { filter: drop-shadow(0 0 5px var(--tier-main)); }
 }
 
-.tier-legend .level-circle {
+.tier-20 .level-circle {
     animation: tierPulse 3s infinite ease-in-out;
 }
 
@@ -5057,12 +5150,107 @@ body::after {
         border-radius: 22px;
     }
 
+    #view-dashboard.dashboard-layout {
+        gap: 10px;
+        padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+
+    #dashboard-profile-rotator {
+        margin-bottom: 12px;
+    }
+
     .profile-container {
-        padding: 18px;
+        padding: 16px;
+        gap: 14px;
     }
 
     .profile-sr-strip {
-        padding: 14px;
+        padding: 12px;
+    }
+
+    .user-meta h2 {
+        font-size: 1.28rem;
+    }
+
+    .rank-title {
+        font-size: 0.64rem;
+        letter-spacing: 0.14em;
+    }
+
+    .counters-row {
+        gap: 8px;
+        flex-basis: 152px;
+    }
+
+    .stat-mini.compact {
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .stat-mini.compact i {
+        font-size: 0.84rem;
+    }
+
+    .stat-mini.compact span {
+        font-size: 0.88rem;
+    }
+
+    .stat-mini.compact label {
+        font-size: 0.5rem;
+    }
+
+    .level-circle {
+        width: 54px;
+        height: 60px;
+    }
+
+    .level-circle span {
+        font-size: 1.42rem;
+    }
+
+    .xp-fusion-wrapper {
+        min-height: 58px;
+    }
+
+    .xp-container {
+        height: 10px;
+    }
+
+    .dashboard-menu-stack {
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .dashboard-secondary-stack {
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .menu-card-level-1 {
+        min-height: 188px;
+        padding: 22px;
+    }
+
+    .menu-card-level-2 {
+        min-height: 86px;
+    }
+
+    .menu-card-level-3 {
+        min-height: 64px;
+    }
+
+    .dashboard-entry-online.square-card .square-title,
+    .dashboard-entry-quickplay .square-title,
+    .menu-card .square-title,
+    .wide-card h3 {
+        font-size: 0.96rem;
+    }
+
+    .dashboard-entry-online.square-card .square-desc,
+    .dashboard-entry-quickplay .square-desc,
+    .menu-card .square-desc,
+    .wide-card p {
+        font-size: 0.74rem;
     }
 }
 
@@ -6581,7 +6769,8 @@ body {
     }
 
     #app-screen[data-view="game-active"] #view-game-x01,
-    #app-screen[data-view="game-x01"] #view-game-x01 {
+    #app-screen[data-view="game-x01"] #view-game-x01,
+    #app-screen[data-view="game-active"] #view-game-active {
         overflow: hidden !important;
         overscroll-behavior: none;
         margin-bottom: 0;
@@ -6591,29 +6780,53 @@ body {
         min-height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
 
     body.game-active #app-screen,
     body.game-active #content-area,
-    body.game-active #view-game-x01 {
+    body.game-active #view-game-x01,
+    body.game-active #view-game-active {
         padding-bottom: 0 !important;
         margin-bottom: 0 !important;
         scrollbar-gutter: auto !important;
         min-height: 100dvh;
         height: 100dvh;
         max-height: 100dvh;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
 
     @supports (height: 100svh) {
         body.game-active #app-screen,
         body.game-active #content-area,
         body.game-active #view-game-x01,
+        body.game-active #view-game-active,
         #app-screen[data-view="game-active"] #view-game-x01,
-        #app-screen[data-view="game-x01"] #view-game-x01 {
+        #app-screen[data-view="game-x01"] #view-game-x01,
+        #app-screen[data-view="game-active"] #view-game-active {
             min-height: 100dvh;
             height: 100dvh;
             max-height: 100dvh;
         }
+    }
+
+    body.game-active .numpad-grid button,
+    body.game-active .mod-btn,
+    body.game-active .next-btn-side,
+    body.game-active .undo-btn,
+    body.game-active .bc-btn-small,
+    body.game-active .bc-action-wide,
+    body.game-active .board-segment,
+    body.game-active svg,
+    body.game-active .throw-box {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     #view-online-setup .online-flow-stack,
@@ -6986,5 +7199,66 @@ body {
     #view-stats .stats-inline-badge {
         padding: 6px 10px;
         font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+    body,
+    #app-screen,
+    #content-area,
+    #view-dashboard,
+    #view-training,
+    #view-games-list,
+    #view-challenge,
+    #view-online-setup,
+    #view-online-lobby,
+    #view-stats {
+        overflow-x: hidden;
+    }
+
+    #app-screen[data-view="dashboard"] #content-area,
+    #app-screen[data-view="training"] #content-area,
+    #app-screen[data-view="games-list"] #content-area,
+    #app-screen[data-view="challenge"] #content-area,
+    #app-screen[data-view="online-setup"] #content-area,
+    #app-screen[data-view="online-lobby"] #content-area,
+    #app-screen[data-view="stats"] #content-area {
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-x: none;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #app-screen[data-view="dashboard"] #content-area > .view,
+    #app-screen[data-view="training"] #content-area > .view,
+    #app-screen[data-view="games-list"] #content-area > .view,
+    #app-screen[data-view="challenge"] #content-area > .view,
+    #app-screen[data-view="online-setup"] #content-area > .view,
+    #app-screen[data-view="online-lobby"] #content-area > .view,
+    #app-screen[data-view="stats"] #content-area > .view {
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-x: none;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
+    }
+
+    #content-area > .view.swipe-back-preview {
+        --swipe-back-offset: 0px;
+        transform: translateX(var(--swipe-back-offset));
+        transition:
+            transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+        box-shadow: -8px 0 24px -24px rgba(16, 185, 129, 0.45);
+        will-change: transform;
+    }
+
+    #content-area > .view.swipe-back-commit {
+        transition:
+            transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity: 0.98;
     }
 }

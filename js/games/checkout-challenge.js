@@ -58,6 +58,10 @@ export class CheckoutChallenge {
         this.generateNewTarget();
         this.currentRoundThrows = [];
         this.dartsInRound = 0;
+        this.historyRestoreAttemptsLeft = null;
+        this.historyRestorePoints = null;
+        this.historyRestoreStats = null;
+        this.historyRestoreRoundsUsed = null;
     }
 
     // --- INTERFACE BRIDGE GETTERS ---
@@ -237,6 +241,18 @@ export class CheckoutChallenge {
         }
 
         const isChecked = (this.currentScore === 0);
+        const restorePoints = this.points;
+        const restoreAttemptsLeft = this.attemptsLeft;
+        const restoreStats = { ...this.stats };
+        const restoreRoundsUsed = this.roundsUsedForCurrentTarget;
+
+        if (isChecked) {
+            this.historyRestorePoints = restorePoints;
+            this.historyRestoreAttemptsLeft = restoreAttemptsLeft;
+            this.historyRestoreStats = restoreStats;
+            this.historyRestoreRoundsUsed = restoreRoundsUsed;
+        }
+
         this.saveHistory();
 
         if (isChecked) {
@@ -261,10 +277,8 @@ export class CheckoutChallenge {
     }
 
 get currentRoundDisplay() {
-    // Nutzt die korrekte Variable für die Runden
-    const current = (this.roundsUsedForCurrentTarget || 0) + 1;
-    // Nutzt den bereits im Constructor berechneten Max-Wert
     const max = this.maxRoundsPerTarget || 3;
+    const current = Math.min(max, Math.max(1, (this.roundsUsedForCurrentTarget || 0) + 1));
     return `${current}/${max}`;
 }
 
@@ -288,6 +302,9 @@ get currentRoundDisplay() {
             if (last.mult === 2) this.stats.doubles--;
             if (last.mult === 3) this.stats.triples--;
             this.currentScore = last.scoreBefore;
+            if (this.currentRoundThrows.length === 0 && this.roundsUsedForCurrentTarget > 0) {
+                this.roundsUsedForCurrentTarget = Math.max(0, this.roundsUsedForCurrentTarget - 1);
+            }
             return;
         }
 
@@ -298,7 +315,7 @@ get currentRoundDisplay() {
             this.points = state.points;
             this.attemptsLeft = state.attemptsLeft;
             this.round = state.round;
-            this.roundsUsedForCurrentTarget = state.roundsUsed;
+            this.roundsUsedForCurrentTarget = Math.max(0, Math.min(state.roundsUsed ?? 0, (this.maxRoundsPerTarget || 3) - 1));
             this.stats = state.stats;
             this.currentRoundThrows = state.throws;
             this.dartsInRound = this.currentRoundThrows.length;
@@ -310,13 +327,17 @@ get currentRoundDisplay() {
         this.history.push(JSON.stringify({
             target: this.currentTarget,
             score: this.currentScore,
-            points: this.points,
-            attemptsLeft: this.attemptsLeft,
+            points: this.historyRestorePoints ?? this.points,
+            attemptsLeft: this.historyRestoreAttemptsLeft ?? this.attemptsLeft,
             round: this.round,
-            roundsUsed: this.roundsUsedForCurrentTarget,
-            stats: { ...this.stats },
+            roundsUsed: this.historyRestoreRoundsUsed ?? this.roundsUsedForCurrentTarget,
+            stats: this.historyRestoreStats ? { ...this.historyRestoreStats } : { ...this.stats },
             throws: [...this.currentRoundThrows]
         }));
+        this.historyRestoreAttemptsLeft = null;
+        this.historyRestorePoints = null;
+        this.historyRestoreStats = null;
+        this.historyRestoreRoundsUsed = null;
     }
 
     getFinalStats() {

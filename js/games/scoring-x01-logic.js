@@ -114,7 +114,13 @@ export class ScoringX01Logic {
         const isBust = this._checkBust(potentialNewScore, val, mult);
         
         if (isBust) {
-            this._recordThrow(val, mult, 0, false);
+            const bustScoreBefore = this.currentScore;
+            this.currentScore = this.scoreAtRoundStart;
+            this._recordThrow(val, mult, 0, false, {
+                isBust: true,
+                scoreBefore: bustScoreBefore,
+                roundStartScore: this.scoreAtRoundStart
+            });
             this.dartsThrown = 3; // Runde beenden bei Bust
         } else {
             this.currentScore = potentialNewScore;
@@ -137,10 +143,12 @@ export class ScoringX01Logic {
         return false;
     }
 
-    _recordThrow(val, mult, points, isValid) {
+    _recordThrow(val, mult, points, isValid, meta = {}) {
         this.currentRoundThrows.push({
             base: val, mult, points, // Hier 'base: val' statt nur 'val'
-            scoreBefore: isValid ? this.currentScore + points : this.currentScore,
+            scoreBefore: meta.scoreBefore ?? (isValid ? this.currentScore + points : this.currentScore),
+            roundStartScore: meta.roundStartScore ?? this.scoreAtRoundStart,
+            isBust: !!meta.isBust,
             isDoubleAttempt: this._isCheckoutRange()
         });
 
@@ -182,24 +190,34 @@ export class ScoringX01Logic {
 
     undo() {
         if (this.currentRoundThrows.length > 0) {
+            const roundTotalBeforeUndo = this.currentRoundThrows.reduce((sum, t) => sum + (t.points || 0), 0);
+            const roundLengthBeforeUndo = this.currentRoundThrows.length;
             const last = this.currentRoundThrows.pop();
             this.currentScore = last.scoreBefore;
-            this.stats.totalPoints -= last.points;
-            this.totalDarts--;
-            this.dartsThrown--;
+            this.stats.totalPoints = Math.max(0, this.stats.totalPoints - (last.points || 0));
+            if ((last.points || 0) > 0) {
+                if (last.mult === 3) this.stats.triples = Math.max(0, this.stats.triples - 1);
+                if (last.mult === 2) this.stats.doubles = Math.max(0, this.stats.doubles - 1);
+            }
+            if (roundLengthBeforeUndo === 3 && roundTotalBeforeUndo === 180) {
+                this.stats.oneEighty = Math.max(0, this.stats.oneEighty - 1);
+            }
+            this.totalDarts = Math.max(0, this.totalDarts - 1);
+            this.dartsThrown = this.currentRoundThrows.length;
             this.isFinished = false;
             return;
         }
         
         if (this.history.length > 0) {
             const lastState = JSON.parse(this.history.pop());
-            this.currentScore = lastState.scoreStart;
+            this.currentScore = lastState.scoreAfterRound;
             this.scoreAtRoundStart = lastState.scoreStart;
             this.round--;
+            this.lastScore = lastState.lastScore ?? 0;
             this.stats = lastState.stats;
             this.totalDarts = lastState.totalDarts;
-            this.currentRoundThrows = [];
-            this.dartsThrown = 0;
+            this.currentRoundThrows = Array.isArray(lastState.throws) ? lastState.throws : [];
+            this.dartsThrown = this.currentRoundThrows.length;
             this.isFinished = false;
         }
     }
@@ -207,8 +225,11 @@ export class ScoringX01Logic {
     saveHistory() {
         this.history.push(JSON.stringify({
             scoreStart: this.scoreAtRoundStart,
+            scoreAfterRound: this.currentScore,
+            lastScore: this.currentRoundThrows.reduce((sum, t) => sum + (t.points || 0), 0),
             stats: { ...this.stats },
-            totalDarts: this.totalDarts
+            totalDarts: this.totalDarts,
+            throws: this.currentRoundThrows.map(throwData => ({ ...throwData }))
         }));
     }
 

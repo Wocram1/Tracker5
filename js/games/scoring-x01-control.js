@@ -377,7 +377,7 @@ export class ScoringX01Control {
         const latestThrow = Array.isArray(this.game.currentRoundThrows)
             ? this.game.currentRoundThrows[this.game.currentRoundThrows.length - 1]
             : null;
-        const latestThrowIndex = Math.max(0, this.game.dartsThrown - 1);
+        const latestThrowIndex = Math.max(0, (this.game.currentRoundThrows?.length || 1) - 1);
         this.animateBoardHit(hitValue, finalMult);
         
         // SOUND: Miss (0) oder Hit (>0)
@@ -476,7 +476,9 @@ const currentDarts = this.game.dartsThrown;
                     base: t.base ?? t.val ?? 0,
                     mult: t.mult ?? 1,
                     points: t.points ?? ((t.base ?? t.val ?? 0) * (t.mult ?? 1)),
-                    scoreBefore: t.scoreBefore ?? this.game.currentScore
+                    scoreBefore: t.scoreBefore ?? this.game.currentScore,
+                    isBust: !!t.isBust,
+                    roundStartScore: t.roundStartScore ?? this.game.currentScore
                 }))
                 : [];
             this.game.dartsThrown = this.game.currentRoundThrows.length;

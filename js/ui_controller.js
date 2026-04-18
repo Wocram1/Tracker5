@@ -85,6 +85,40 @@ const ONLINE_GAME_UI_CONFIG = {
     }
 };
 
+const PROFILE_TIER_CONFIG = [
+    { minLevel: 1, className: 'tier-01', label: 'UMBER' },
+    { minLevel: 6, className: 'tier-02', label: 'WALNUT' },
+    { minLevel: 11, className: 'tier-03', label: 'BRONZE' },
+    { minLevel: 16, className: 'tier-04', label: 'OCHRE' },
+    { minLevel: 21, className: 'tier-05', label: 'OLIVE' },
+    { minLevel: 26, className: 'tier-06', label: 'MOSS' },
+    { minLevel: 31, className: 'tier-07', label: 'JADE' },
+    { minLevel: 36, className: 'tier-08', label: 'TEAL' },
+    { minLevel: 41, className: 'tier-09', label: 'LAGOON' },
+    { minLevel: 46, className: 'tier-10', label: 'CYAN' },
+    { minLevel: 51, className: 'tier-11', label: 'AZURE' },
+    { minLevel: 56, className: 'tier-12', label: 'COBALT' },
+    { minLevel: 61, className: 'tier-13', label: 'INDIGO' },
+    { minLevel: 66, className: 'tier-14', label: 'VIOLET' },
+    { minLevel: 71, className: 'tier-15', label: 'AMETHYST' },
+    { minLevel: 76, className: 'tier-16', label: 'MAGENTA' },
+    { minLevel: 81, className: 'tier-17', label: 'CRIMSON' },
+    { minLevel: 86, className: 'tier-18', label: 'EMBER' },
+    { minLevel: 91, className: 'tier-19', label: 'AMBER' },
+    { minLevel: 96, className: 'tier-20', label: 'AURIC' }
+];
+
+const PROFILE_TIER_CLASSES = PROFILE_TIER_CONFIG.map((tier) => tier.className);
+
+function resolveProfileTier(level) {
+    let activeTier = PROFILE_TIER_CONFIG[0];
+    for (const tier of PROFILE_TIER_CONFIG) {
+        if (level >= tier.minLevel) activeTier = tier;
+        else break;
+    }
+    return activeTier;
+}
+
 const ONLINE_GAME_IDS = Object.keys(ONLINE_GAME_UI_CONFIG);
 const HAPTIC_CLICK_SELECTOR = '.primary-btn, .secondary-btn, .icon-only-btn, .back-nav-btn, .glass-btn, .adaptive-nav-btn, .opt-btn, .stat-pill, .overview-chip, .app-menu-trigger, .app-header-menu-item';
 
@@ -204,6 +238,133 @@ const UIController = {
         document.querySelectorAll('.adaptive-nav-btn').forEach(btn => {
             btn.classList.toggle('active', group !== '' && btn.dataset.navGroup === group);
         });
+    },
+
+    getActiveViewElement() {
+        return document.querySelector('#content-area > .view:not(.hidden)');
+    },
+
+    triggerCurrentBackNavigation() {
+        const activeView = this.getActiveViewElement();
+        if (!activeView) return false;
+
+        const backButton = activeView.querySelector('.back-nav-btn, .back-btn');
+        if (!backButton || typeof backButton.click !== 'function') return false;
+
+        backButton.click();
+        return true;
+    },
+
+    initMobileSwipeBack() {
+        if (this.mobileSwipeBackBound) return;
+        this.mobileSwipeBackBound = true;
+
+        const contentArea = document.getElementById('content-area');
+        if (!contentArea) return;
+
+        let startX = 0;
+        let startY = 0;
+        let tracking = false;
+        let allowSwipeBack = false;
+        let swipeClaimed = false;
+        let activeSwipeView = null;
+
+        const isCompactTouchViewport = () => window.matchMedia('(max-width: 768px) and (pointer: coarse)').matches;
+        const resetSwipePreview = () => {
+            if (!activeSwipeView) return;
+            activeSwipeView.style.removeProperty('--swipe-back-offset');
+            activeSwipeView.classList.remove('swipe-back-preview', 'swipe-back-commit');
+            activeSwipeView = null;
+        };
+
+        contentArea.addEventListener('touchstart', (event) => {
+            if (!isCompactTouchViewport()) return;
+            if (event.touches.length !== 1) return;
+
+            const setupModalOpen = !document.getElementById('modal-game-setup')?.classList.contains('hidden');
+            const infoModalOpen = !document.getElementById('modal-game-info')?.classList.contains('hidden');
+            const resultModalOpen = !document.getElementById('modal-game-result')?.classList.contains('hidden');
+            if (setupModalOpen || infoModalOpen || resultModalOpen) return;
+
+            const appView = document.getElementById('app-screen')?.dataset.view || 'dashboard';
+            if (appView === 'dashboard' || appView === 'game-active' || appView === 'game-x01') return;
+
+            const target = event.target;
+            if (target?.closest('button, a, input, textarea, select, label, [role="button"], .glass-input, .opt-btn, .primary-btn, .secondary-btn')) return;
+
+            const activeView = this.getActiveViewElement();
+            const scrollTop = activeView?.scrollTop ?? contentArea.scrollTop ?? 0;
+
+            startX = event.touches[0].clientX;
+            startY = event.touches[0].clientY;
+            tracking = startX <= 72;
+            allowSwipeBack = tracking && scrollTop <= 2;
+            swipeClaimed = false;
+            activeSwipeView = allowSwipeBack ? activeView : null;
+
+            if (activeSwipeView) {
+                activeSwipeView.classList.add('swipe-back-preview');
+                activeSwipeView.style.setProperty('--swipe-back-offset', '0px');
+            }
+        }, { passive: true });
+
+        contentArea.addEventListener('touchmove', (event) => {
+            if (!tracking || !allowSwipeBack || event.touches.length !== 1) return;
+
+            const deltaX = event.touches[0].clientX - startX;
+            const deltaY = event.touches[0].clientY - startY;
+
+            if (activeSwipeView) {
+                const previewOffset = Math.max(0, Math.min(26, deltaX * 0.24));
+                activeSwipeView.style.setProperty('--swipe-back-offset', `${previewOffset}px`);
+            }
+
+            if (deltaX > 12 && Math.abs(deltaY) < Math.abs(deltaX) * 0.85) {
+                swipeClaimed = true;
+                event.preventDefault();
+            }
+        }, { passive: false });
+
+        contentArea.addEventListener('touchend', (event) => {
+            if (!tracking || !allowSwipeBack) {
+                tracking = false;
+                allowSwipeBack = false;
+                swipeClaimed = false;
+                resetSwipePreview();
+                return;
+            }
+
+            const touch = event.changedTouches?.[0];
+            if (!touch) {
+                tracking = false;
+                allowSwipeBack = false;
+                swipeClaimed = false;
+                resetSwipePreview();
+                return;
+            }
+
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
+            if ((deltaX >= 52 && Math.abs(deltaY) <= 72) || (swipeClaimed && deltaX >= 40 && Math.abs(deltaY) <= 84)) {
+                if (activeSwipeView) activeSwipeView.classList.add('swipe-back-commit');
+                this.triggerCurrentBackNavigation();
+                window.setTimeout(() => resetSwipePreview(), 180);
+            } else {
+                resetSwipePreview();
+            }
+
+            tracking = false;
+            allowSwipeBack = false;
+            swipeClaimed = false;
+        }, { passive: true });
+
+        contentArea.addEventListener('touchcancel', () => {
+            tracking = false;
+            allowSwipeBack = false;
+            swipeClaimed = false;
+            resetSwipePreview();
+        }, { passive: true });
     },
 
     openHeaderMenu() {
@@ -628,20 +789,18 @@ const UIController = {
         const xpFill = document.getElementById('display-xp-fill');
         const xpText = document.getElementById('display-xp');
         const headerContainer = document.getElementById('user-profile-header');
+        const rankNameEl = document.getElementById('rank-name');
         
         if (nameEl) nameEl.textContent = profile.username;
         
         const lvl = LevelSystem.calcLevel(profile.xp || 0);
+        const activeTier = resolveProfileTier(lvl);
         if (levelEl) levelEl.textContent = lvl;
-
-        let tierClass = 'tier-rookie';
-        if (lvl > 60) tierClass = 'tier-legend';
-        else if (lvl > 30) tierClass = 'tier-elite';
-        else if (lvl > 10) tierClass = 'tier-pro';
+        if (rankNameEl) rankNameEl.textContent = activeTier.label;
 
         if (headerContainer) {
-            headerContainer.classList.remove('tier-rookie', 'tier-pro', 'tier-elite', 'tier-legend');
-            headerContainer.classList.add(tierClass);
+            headerContainer.classList.remove(...PROFILE_TIER_CLASSES);
+            headerContainer.classList.add(activeTier.className);
         }
 
         if (xpFill && xpText) {
@@ -1114,6 +1273,7 @@ const UIController = {
 window.navigate = (t) => UIController.navigate(t);
 window.showGames = (c) => UIController.showGamesByCategory(c);
 window.UIController = UIController;
+UIController.initMobileSwipeBack();
 window.closeSetupModal = () => {
     document.getElementById('modal-game-setup').classList.add('hidden');
     UIController.navigate('dashboard');
